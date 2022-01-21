@@ -1,14 +1,25 @@
 local api = vim.api
--- local log = require("fidget.log")
 
 local fidget = {}
+
 local options = {
-  message = {
+  text = {
     commenced = "Started",
     completed = "Completed",
+    spinner = { "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷" },
+    -- Lots of fancy spinners here:
+    -- https://github.com/sindresorhus/cli-spinners/blob/main/spinners.json
+    done = "✔",
   },
-  leftalign = false,
-  topalign = false,
+  align = {
+    left = false,
+    top = false,
+  },
+  timer = {
+    task_decay = 1000,
+    spinner_rate = 125,
+    widget_decay = 2000,
+  },
   fmt = {
     leftpad = true,
     task = function(task_name, message, percentage)
@@ -20,19 +31,8 @@ local options = {
       )
     end,
     widget = function(widget_name, spinner)
-      -- return string.format("%s %s", spinner, widget_name)
       return string.format("%s %s", widget_name, spinner)
     end,
-    -- spinner = { "▙", "▛", "▜", "▟" },
-    spinner = { "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷" },
-    -- Lots of fancy spinners here:
-    -- https://github.com/sindresorhus/cli-spinners/blob/main/spinners.json
-    done = "✔",
-  },
-  timer = {
-    task_decay = 1000,
-    spinner_rate = 125,
-    widget_decay = 2000,
   },
 }
 
@@ -59,8 +59,8 @@ local base_widget = {
 function base_widget:fmt()
   local line = options.fmt.widget(
     self.name,
-    self.spinner_idx == -1 and options.fmt.done
-      or options.fmt.spinner[self.spinner_idx + 1]
+    self.spinner_idx == -1 and options.text.done
+      or options.text.spinner[self.spinner_idx + 1]
   )
   self.lines = { line }
   self.max_line_len = #line
@@ -81,11 +81,11 @@ end
 function base_widget:show(offset)
   local height = #self.lines
   local width = self.max_line_len
-  local col = options.leftalign and 1 or api.nvim_win_get_width(0)
-  local row = options.topalign and (1 + offset)
+  local col = options.align.left and 1 or api.nvim_win_get_width(0)
+  local row = options.align.top and (1 + offset)
     or (api.nvim_win_get_height(0) - offset)
-  local anchor = (options.topalign and "N" or "S")
-    .. (options.leftalign and "W" or "E")
+  local anchor = (options.align.top and "N" or "S")
+    .. (options.align.left and "W" or "E")
 
   if self.bufid == nil or not api.nvim_buf_is_valid(self.bufid) then
     self.bufid = api.nvim_create_buf(false, true)
@@ -114,7 +114,10 @@ function base_widget:show(offset)
     })
   end
 
+  api.nvim_win_set_option(self.winid, "winblend", 100) -- Make transparent
+  api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetText")
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
+  api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", 0, 0, -1)
 
   return #self.lines + offset
 end
@@ -134,7 +137,7 @@ end
 function base_widget:spin()
   vim.defer_fn(function()
     if self:has_tasks() then
-      self.spinner_idx = (self.spinner_idx + 1) % #options.fmt.spinner
+      self.spinner_idx = (self.spinner_idx + 1) % #options.text.spinner
       self:spin()
     else
       self.spinner_idx = -1
@@ -172,9 +175,7 @@ local function new_task()
 end
 
 local function handle_progress(_, msg, info)
-  -- https://microsoft.github.io/language-server-protocol/specifications/specification-current/#progress
-  -- https://github.com/arkav/lualine-lsp-progress/blob/master/lua/lualine/components/lsp_progress.lua#L73
-  -- TODO: copy from ts context: https://github.com/romgrk/nvim-treesitter-context/blob/b7d7aba81683c1cd76141e090ff335bb55332cba/lua/treesitter-context.lua#L269
+  -- See: https://microsoft.github.io/language-server-protocol/specifications/specification-current/#progress
 
   local task = msg.token
   local val = msg.value
@@ -201,7 +202,7 @@ local function handle_progress(_, msg, info)
   -- Update progress state
   if val.kind == "begin" then
     progress.title = val.title
-    progress.message = options.message.commenced
+    progress.message = options.text.commenced
   elseif val.kind == "report" then
     if val.percentage then
       progress.percentage = val.percentage
@@ -213,7 +214,7 @@ local function handle_progress(_, msg, info)
     if progress.percentage then
       progress.percentage = 100
     end
-    progress.message = options.message.completed
+    progress.message = options.text.completed
     vim.defer_fn(function()
       widget:kill_task(task)
     end, options.timer.task_decay)
@@ -225,6 +226,8 @@ end
 function fidget.setup(opts)
   options = vim.tbl_deep_extend("force", options, opts or {})
   vim.lsp.handlers["$/progress"] = handle_progress
+  vim.cmd([[highlight default link FidgetText Comment]])
+  vim.cmd([[highlight default link FidgetTitle Title]])
 end
 
 return fidget
