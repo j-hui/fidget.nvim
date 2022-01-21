@@ -24,7 +24,7 @@ local options = {
       return string.format("%s %s", widget_name, spinner)
     end,
     -- spinner = { "▙", "▛", "▜", "▟" },
-    spinner = {'⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'},
+    spinner = { "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷" },
     -- Lots of fancy spinners here:
     -- https://github.com/sindresorhus/cli-spinners/blob/main/spinners.json
     done = "✔",
@@ -57,9 +57,11 @@ local base_widget = {
 }
 
 function base_widget:fmt()
-  local line = options.fmt.widget(self.name,
+  local line = options.fmt.widget(
+    self.name,
     self.spinner_idx == -1 and options.fmt.done
-                           or options.fmt.spinner[self.spinner_idx + 1])
+      or options.fmt.spinner[self.spinner_idx + 1]
+  )
   self.lines = { line }
   self.max_line_len = #line
   for _, task in pairs(self.tasks) do
@@ -68,7 +70,7 @@ function base_widget:fmt()
     self.max_line_len = math.max(self.max_line_len, #line)
   end
   if options.fmt.leftpad then
-    local pad = "%"..tostring(self.max_line_len).."s"
+    local pad = "%" .. tostring(self.max_line_len) .. "s"
     for i, _ in ipairs(self.lines) do
       self.lines[i] = string.format(pad, self.lines[i])
     end
@@ -81,9 +83,9 @@ function base_widget:show(offset)
   local width = self.max_line_len
   local col = options.leftalign and 1 or api.nvim_win_get_width(0)
   local row = options.topalign and (1 + offset)
-                               or (api.nvim_win_get_height(0) - offset)
-  local anchor = (options.topalign and "N" or "S") ..
-                 (options.leftalign and "W" or "E")
+    or (api.nvim_win_get_height(0) - offset)
+  local anchor = (options.topalign and "N" or "S")
+    .. (options.leftalign and "W" or "E")
 
   if self.bufid == nil or not api.nvim_buf_is_valid(self.bufid) then
     self.bufid = api.nvim_create_buf(false, true)
@@ -130,7 +132,7 @@ function base_widget:has_tasks()
 end
 
 function base_widget:spin()
-  vim.defer_fn(function ()
+  vim.defer_fn(function()
     if self:has_tasks() then
       self.spinner_idx = (self.spinner_idx + 1) % #options.fmt.spinner
       self:spin()
@@ -143,7 +145,7 @@ function base_widget:spin()
 end
 
 function base_widget:kill()
-  vim.defer_fn(function ()
+  vim.defer_fn(function()
     if self:has_tasks() then -- double check
       self:spin()
     else
@@ -156,7 +158,11 @@ function base_widget:kill()
 end
 
 local function new_widget(key, name)
-  local widget = vim.tbl_extend("force", base_widget, { key = key, name = name })
+  local widget = vim.tbl_extend(
+    "force",
+    base_widget,
+    { key = key, name = name }
+  )
   widget:spin()
   return widget
 end
@@ -210,7 +216,7 @@ local function handle_progress(_, msg, info)
     progress.message = options.message.completed
     vim.defer_fn(function()
       widget:kill_task(task)
-      end, options.timer.task_decay)
+    end, options.timer.task_decay)
   end
 
   widget:fmt()
