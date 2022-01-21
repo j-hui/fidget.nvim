@@ -4,6 +4,6 @@ Self-contained LSP progress handler and display.
 
 TODOs:
 
-- [ ] Configure highlighting
+- [x] Configure highlighting
 - [ ] Better formatting options?
 - [ ] Write documentation + the rest of this README
