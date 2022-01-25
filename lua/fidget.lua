@@ -232,6 +232,10 @@ local function handle_progress(_, msg, info)
   fidget:fmt()
 end
 
+function M.is_installed()
+  return vim.lsp.handlers["$/progress"] == handle_progress
+end
+
 function M.setup(opts)
   options = vim.tbl_deep_extend("force", options, opts or {})
   if type(options.text.spinner) == "string" then

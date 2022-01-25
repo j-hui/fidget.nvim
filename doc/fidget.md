@@ -261,6 +261,37 @@ meter
 See <lua/fidget/spinners.lua> of this plugin's source code to see how each
 animation is defined.
 
+## Troubleshooting
+
+If in doubt, file an issue on <https://github.com/j-hui/fidget.nvim/issues>.
+
+### I set up this plugin but nothing appears!
+
+This plugin automatically installs its progress handler, but that may be
+overwritten by other plugins by the time you arrive at the text buffer.
+For example, if you also use
+[nvim-lua/lsp-status.nvim](https://github.com/nvim-lua/lsp-status.nvim),
+its `register_progress` function will overwrite Fidget's progress handler.
+
+You can check whether Fidget's progress handler is correctly installed using
+`is_installed`. For example, to do this interactively, run the following Vim
+command:
+
+```vim
+:lua print(require"fidget".is_installed())
+```
+
+If it isn't installed, make sure that it works by manually calling `setup`,
+e.g.,:
+
+```vim
+:lua require"fidget".setup{}
+```
+
+If that works, then you need to make sure other plugins aren't clashing with
+this one, or at least call Fidget's `setup` function after the other plugins
+are done setting up.
+
 ## Acknowledgements
 
 This plugin takes inspiration and borrows code from
