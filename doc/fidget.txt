@@ -1,0 +1,326 @@
+*fidget.txt*                               Standalone UI for nvim-lsp progress
+
+==============================================================================
+Table of Contents                                   *fidget-table-of-contents*
+
+1. fidget.nvim                                            |fidget-fidget.nvim|
+  - Installation                                         |fidget-installation|
+  - Concepts                                                 |fidget-concepts|
+  - Options                                                   |fidget-options|
+  - Highlights                                             |fidget-highlights|
+  - Spinners                                                 |fidget-spinners|
+  - Acknowledgements                                 |fidget-acknowledgements|
+
+==============================================================================
+1. fidget.nvim                                            *fidget-fidget.nvim*
+
+INSTALLATION                                             *fidget-installation*
+
+Install this plugin using your favorite plugin manager. For example, using
+vim-plug <https://github.com/junegunn/vim-plug>:
+
+>
+    Plug 'j-hui/fidget.nvim'
+<
+
+
+Make sure the plugin installed (e.g., run `:PlugInstall` if using vim-plug).
+After the plugin is loaded (e.g., after `plug#end()` for vim-plug), call its
+`setup` function (in Lua):
+
+>
+    require"fidget.nvim".setup{}
+<
+
+
+`setup` takes a table of |fidget-options| as its parameter, used to configure
+the plugin.
+
+CONCEPTS                                                     *fidget-concepts*
+
+This section summarizes the vocabulary used by this plugin and its
+documentation to describe relevant concepts, and clarifies the relationship
+between those concepts.
+
+A **task** is a particular job that is completed in the background. Examples
+include indexing a project, linting a module, or formatting a file.
+
+A task’s **message** describes its status.
+
+A **fidget** (a pun on "widget") represents an entity that performs a
+collection of tasks. For now, this plugin only supports fidgets that represent
+LSP servers. A fidget may perform multiple tasks concurrently.
+
+A fidget’s **spinner** is an icon shown next next to the fidget’s name, for
+purely aesthetic purposes.
+
+This plugin displays the progress of tasks grouped by fidget. For example, if
+there are two fidgets, `fidgetA` and `fidgetB`, with tasks `taskA1`, `taskA2`
+and `taskB1`, `taskB2`, respectively, they might be displayed as follows:
+
+>
+    fidgetA ...
+    Started [taskA1]
+    Ongoing [taskA2]
+    fidgetB ...
+    Completed [taskB1]
+    Ongoing [taskB2]
+<
+
+
+Each fidget’s spinner is `...`; the tasks’ messages are `Started`,
+`Ongoing`, and `Completed`.
+
+OPTIONS                                                       *fidget-options*
+
+The following table shows the default options for this plugin:
+
+>
+    {
+      text = {
+        spinner = "pipe",         -- animation shown when tasks are ongoing
+        done = "✔",               -- character shown when all tasks are complete
+        commenced = "Started",    -- message shown when task starts
+        completed = "Completed",  -- message shown when task completes
+      },
+      align = {
+        bottom = true,            -- align fidgets along bottom edge of buffer
+        right = true,             -- align fidgets along right edge of buffer
+      },
+      timer = {
+        spinner_rate = 125,       -- frame rate of spinner animation, in ms
+        fidget_decay = 2000,      -- how long to keep around empty fidget, in ms
+        task_decay = 1000,        -- how long to keep around completed task, in ms
+      },
+      fmt = {
+        leftpad = true,           -- right-justify text in fidget box
+        fidget =                  -- function to format fidget title
+          function(fidget_name, spinner)
+            return string.format("%s %s", fidget_name, spinner)
+          end,
+        task =                    -- function to format each task line
+          function(task_name, message, percentage)
+            return string.format(
+              "%s%s [%s]",
+              message,
+              percentage and string.format(" (%s%%)", percentage) or "",
+              task_name
+            )
+          end,
+      },
+    }
+<
+
+
+                                                         *fidget-text.spinner*
+
+text.spinner                           Animation shown in fidget title when its
+                                       tasks are ongoing. Can either be the
+                                       name of one of the predefined
+                                       |fidget-fidet-spinners|, or an array of
+                                       strings representing each frame of the
+                                       animation.
+
+
+Type: `string` or `[string]` (default: `"pipe"`)
+
+                                                            *fidget-text.done*
+
+text.done                              Text shown in fidget title when all its
+                                       tasks are completed, i.e., it has no
+                                       more tasks.
+
+
+Type: `string` (default: `"✔"`)
+
+                                                       *fidget-text.commenced*
+
+text.commenced                         Message shown when a task starts.
+
+
+Type: `string` (default: `"Started"`)
+
+                                                       *fidget-text.completed*
+
+text.completed                         Message shown when a task completes.
+
+
+Type: `string` (default: `"Completed"`)
+
+                                                         *fidget-align.bottom*
+
+align.bottom                           Whether to align fidgets along the
+                                       bottom edge of each buffer.
+
+
+Type: `bool` (default: `true`)
+
+                                                          *fidget-align.right*
+
+align.right                            Whether to align fidgets along the right
+                                       edge of each buffer. Setting this to
+                                       `false` is not recommended, since that
+                                       will lead to the fidget text being
+                                       regularly overlaid on top of buffer text
+                                       (which is supported but unsightly).
+
+
+Type: `bool` (default: `true`)
+
+                                                   *fidget-timer.spinner_rate*
+
+timer.spinner_rate                     Duration of each frame of the spinner
+                                       animation, in ms. Set to `0` to only use
+                                       the first frame of the spinner
+                                       animation.
+
+
+Type: `int` (default: `125`)
+
+                                                   *fidget-timer.fidget_decay*
+
+timer.fidget_decay                     How long to continue showing a fidget
+                                       after all its tasks are completed, in
+                                       ms. Set to `0` to clear each fidget as
+                                       soon as all its tasks are completed; set
+                                       to any negative number to keep it around
+                                       indefinitely (not recommended).
+
+
+Type: `int` (default: `2000`)
+
+                                                     *fidget-timer.task_decay*
+
+timer.task_decay                       How long to continue showing a task
+                                       after it is complete, in ms. Set to `0`
+                                       to clear each task as soon as it is
+                                       completed; set to any negative number to
+                                       keep it around until its fidget is
+                                       cleared.
+
+
+Type: `int` (default: `1000`)
+
+                                                          *fidget-fmt.leftpad*
+
+fmt.leftpad                            Whether to right-justify the text in a
+                                       fidget box by left-padding it with
+                                       spaces. Recommended when
+                                       |fidget-align.right| is `true`.
+
+
+Type: `bool` (default: `true`)
+
+                                                           *fidget-fmt.fidget*
+
+fmt.fidget                             Function used to format the title of a
+                                       fidget. Given two arguments: the name of
+                                       the fidget, and the current frame of the
+                                       spinner. Returns the formatted fidget
+                                       title.
+
+
+Type: `(string, string) -> string` (default: something sane)
+
+                                                             *fidget-fmt.task*
+
+fmt.task                               Function used to format the status of
+                                       each task. Given three arguments: the
+                                       name of the task, its message, and its
+                                       progress as a percentage. Returns the
+                                       formatted task status.
+
+
+Type: `(string, string, string) -> string` (default: something sane)
+
+HIGHLIGHTS                                                 *fidget-highlights*
+
+This plugin uses the following highlights to display the fidgets, and can be
+overridden to customize how fidgets look.
+
+For example, to make the `FidgetTitle` blue, add the following to your .vimrc:
+
+>
+    highlight FidgetTitle ctermfg=110 guifg=#6cb6eb
+<
+
+
+Or to link <hi-link> it to the `Variable` highlight group:
+
+>
+    highlight link FidgetTitle Variable
+<
+
+
+                                                          *fidget-FidgetTitle*
+
+FidgetTitle                            Highlight used for the title of a
+                                       fidget.
+
+
+Default: linked to hl-Title <hl-Title>
+
+                                                           *fidget-FidgetTask*
+
+FidgetTask                             Highlight used for the body (the tasks)
+                                       of a fidget.
+
+
+Default: linked to hl-LineNr <hl-LineNr>
+
+SPINNERS                                                     *fidget-spinners*
+
+The |fidget-text.spinner| option recognizes the following spinner pattern
+names:
+
+>
+    dots
+    dots_negative
+    dots_snake
+    dots_footsteps
+    dots_hop
+    line
+    pipe
+    dots_ellipsis
+    dots_scrolling
+    star
+    flip
+    hamburger
+    grow_vertical
+    grow_horizontal
+    noise
+    dots_bounce
+    triangle
+    arc
+    circle
+    square_corners
+    circle_quarters
+    circle_halves
+    dots_toggle
+    box_toggle
+    arrow
+    zip
+    bouncing_bar
+    bouncing_ball
+    clock
+    earth
+    moon
+    dots_pulse
+    meter
+<
+
+
+See <lua/fidget/spinners.lua> of this plugin’s source code to see how each
+animation is defined.
+
+ACKNOWLEDGEMENTS                                     *fidget-acknowledgements*
+
+This plugin takes inspiration and borrows code from arkav/lualine-lsp-progress
+<https://github.com/arkav/lualine-lsp-progress>.
+
+|fidget-fidget-spinner| designs adapted from the npm package
+sindresorhus/cli-spinners <https://github.com/sindresorhus/cli-spinners>.
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:
