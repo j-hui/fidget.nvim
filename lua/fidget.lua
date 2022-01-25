@@ -242,8 +242,8 @@ function M.setup(opts)
     options.text.spinner = spinner
   end
   vim.lsp.handlers["$/progress"] = handle_progress
-  vim.cmd([[highlight default link FidgetTitle Title]])
-  vim.cmd([[highlight default link FidgetTask NonText]])
+  vim.cmd([[highlight! default link FidgetTitle Title]])
+  vim.cmd([[highlight! default link FidgetTask NonText]])
 end
 
 return M
