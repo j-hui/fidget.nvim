@@ -1,27 +1,27 @@
 local api = vim.api
-
-local fidget = {}
+local M = {}
 
 local options = {
   text = {
+    spinner = "pipe",
+    done = "✔",
     commenced = "Started",
     completed = "Completed",
-    spinner = { "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷" },
-    -- Lots of fancy spinners here:
-    -- https://github.com/sindresorhus/cli-spinners/blob/main/spinners.json
-    done = "✔",
   },
   align = {
-    left = false,
-    top = false,
+    bottom = true,
+    right = true,
   },
   timer = {
-    task_decay = 1000,
     spinner_rate = 125,
-    widget_decay = 2000,
+    fidget_decay = 2000,
+    task_decay = 1000,
   },
   fmt = {
     leftpad = true,
+    fidget = function(fidget_name, spinner)
+      return string.format("%s %s", fidget_name, spinner)
+    end,
     task = function(task_name, message, percentage)
       return string.format(
         "%s%s [%s]",
@@ -30,22 +30,19 @@ local options = {
         task_name
       )
     end,
-    widget = function(widget_name, spinner)
-      return string.format("%s %s", widget_name, spinner)
-    end,
   },
 }
 
-local widgets = {}
+local fidgets = {}
 
-local function render_widgets()
+local function render_fidgets()
   local offset = 0
-  for _, widget in pairs(widgets) do
-    offset = offset + widget:show(offset)
+  for _, fidget in pairs(fidgets) do
+    offset = offset + fidget:show(offset)
   end
 end
 
-local base_widget = {
+local base_fidget = {
   key = nil,
   name = nil,
   bufid = nil,
@@ -56,8 +53,8 @@ local base_widget = {
   max_line_len = 0,
 }
 
-function base_widget:fmt()
-  local line = options.fmt.widget(
+function base_fidget:fmt()
+  local line = options.fmt.fidget(
     self.name,
     self.spinner_idx == -1 and options.text.done
       or options.text.spinner[self.spinner_idx + 1]
@@ -75,17 +72,17 @@ function base_widget:fmt()
       self.lines[i] = string.format(pad, self.lines[i])
     end
   end
-  render_widgets()
+  render_fidgets()
 end
 
-function base_widget:show(offset)
+function base_fidget:show(offset)
   local height = #self.lines
   local width = self.max_line_len
-  local col = options.align.left and 1 or api.nvim_win_get_width(0)
-  local row = options.align.top and (1 + offset)
-    or (api.nvim_win_get_height(0) - offset)
-  local anchor = (options.align.top and "N" or "S")
-    .. (options.align.left and "W" or "E")
+  local col = options.align.right and api.nvim_win_get_width(0) or 1
+  local row = options.align.bottom and (api.nvim_win_get_height(0) - offset)
+    or (1 + offset)
+  local anchor = (options.align.bottom and "S" or "N")
+    .. (options.align.right and "E" or "W")
 
   if self.bufid == nil or not api.nvim_buf_is_valid(self.bufid) then
     self.bufid = api.nvim_create_buf(false, true)
@@ -115,59 +112,67 @@ function base_widget:show(offset)
   end
 
   api.nvim_win_set_option(self.winid, "winblend", 100) -- Make transparent
-  api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetText")
+  api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetTask")
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
   api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", 0, 0, -1)
 
   return #self.lines + offset
 end
 
-function base_widget:kill_task(task)
+function base_fidget:kill_task(task)
   self.tasks[task] = nil
   self:fmt()
 end
 
-function base_widget:has_tasks()
+function base_fidget:has_tasks()
   for _, _ in pairs(self.tasks) do
     return true
   end
   return false
 end
 
-function base_widget:spin()
-  vim.defer_fn(function()
-    if self:has_tasks() then
-      self.spinner_idx = (self.spinner_idx + 1) % #options.text.spinner
-      self:spin()
-    else
-      self.spinner_idx = -1
-      self:kill()
-    end
-    self:fmt()
-  end, options.timer.spinner_rate)
+function base_fidget:spin()
+  if options.timer.spinner_rate > 0 then
+    vim.defer_fn(function()
+      if self:has_tasks() then
+        self.spinner_idx = (self.spinner_idx + 1) % #options.text.spinner
+        self:spin()
+      else
+        self.spinner_idx = -1
+        self:kill()
+      end
+      self:fmt()
+    end, options.timer.spinner_rate)
+  end
 end
 
-function base_widget:kill()
-  vim.defer_fn(function()
-    if self:has_tasks() then -- double check
+function base_fidget:kill()
+  local function do_kill()
+    if self:has_tasks() then -- double check, in case new tasks have started
       self:spin()
     else
-      widgets[self.key] = nil
+      fidgets[self.key] = nil
       api.nvim_win_close(self.winid, true)
       api.nvim_buf_delete(self.bufid, { force = true })
-      render_widgets()
+      render_fidgets()
     end
-  end, options.timer.widget_decay)
+  end
+
+  if options.timer.fidget_decay > 0 then
+    vim.defer_fn(do_kill, options.timer.fidget_decay)
+  elseif options.timer.fidget_decay == 0 then
+    do_kill()
+  end
 end
 
-local function new_widget(key, name)
-  local widget = vim.tbl_extend(
+local function new_fidget(key, name)
+  local fidget = vim.tbl_extend(
     "force",
-    base_widget,
+    base_fidget,
     { key = key, name = name }
   )
-  widget:spin()
-  return widget
+  fidget:spin()
+  return fidget
 end
 
 local function new_task()
@@ -186,18 +191,18 @@ local function handle_progress(_, msg, info)
   end
 
   -- Create entry if missing
-  if widgets[client_key] == nil then
-    widgets[client_key] = new_widget(
+  if fidgets[client_key] == nil then
+    fidgets[client_key] = new_fidget(
       client_key,
       vim.lsp.get_client_by_id(info.client_id).name
     )
   end
-  local widget = widgets[client_key]
-  if widget.tasks[task] == nil then
-    widget.tasks[task] = new_task()
+  local fidget = fidgets[client_key]
+  if fidget.tasks[task] == nil then
+    fidget.tasks[task] = new_task()
   end
 
-  local progress = widget.tasks[task]
+  local progress = fidget.tasks[task]
 
   -- Update progress state
   if val.kind == "begin" then
@@ -215,19 +220,30 @@ local function handle_progress(_, msg, info)
       progress.percentage = 100
     end
     progress.message = options.text.completed
-    vim.defer_fn(function()
-      widget:kill_task(task)
-    end, options.timer.task_decay)
+    if options.timer.task_decay > 0 then
+      vim.defer_fn(function()
+        fidget:kill_task(task)
+      end, options.timer.task_decay)
+    elseif options.timer.task_decay == 0 then
+      fidget:kill_task(task)
+    end
   end
 
-  widget:fmt()
+  fidget:fmt()
 end
 
-function fidget.setup(opts)
+function M.setup(opts)
   options = vim.tbl_deep_extend("force", options, opts or {})
+  if type(options.text.spinner) == "string" then
+    local spinner = require("fidget.spinners")[options.text.spinner]
+    if spinner == nil then
+      error("Unknown spinner name: " .. options.text.spinner)
+    end
+    options.text.spinner = spinner
+  end
   vim.lsp.handlers["$/progress"] = handle_progress
-  vim.cmd([[highlight default link FidgetText Comment]])
   vim.cmd([[highlight default link FidgetTitle Title]])
+  vim.cmd([[highlight default link FidgetTask NonText]])
 end
 
-return fidget
+return M
