@@ -29,7 +29,7 @@ After the plugin is loaded (e.g., after `plug#end()` for vim-plug), call its
 `setup` function (in Lua):
 
 >
-    require"fidget.nvim".setup{}
+    require"fidget".setup{}
 <
 
 
