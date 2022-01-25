@@ -2,6 +2,8 @@
 
 Standalone UI for nvim-lsp progress. Eye candy for the impatient.
 
+![fidget.nvim demo](https://github.com/j-hui/fidget.nvim/blob/media/gifs/fidget-demo-rust-analyzer.gif?raw=true)
+
 ## Why?
 
 The goals of this plugin are:
