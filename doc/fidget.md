@@ -21,7 +21,7 @@ After the plugin is loaded (e.g., after `plug#end()` for vim-plug), call its
 `setup` function (in Lua):
 
 ```lua
-require"fidget.nvim".setup{}
+require"fidget".setup{}
 ```
 
 `setup` takes a table of [options](#options) as its parameter, used to
