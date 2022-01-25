@@ -20,7 +20,7 @@ local options = {
   fmt = {
     leftpad = true,
     fidget = function(fidget_name, spinner)
-      return string.format("%s %s", fidget_name, spinner)
+      return string.format("%s %s", spinner, fidget_name)
     end,
     task = function(task_name, message, percentage)
       return string.format(

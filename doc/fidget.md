@@ -86,7 +86,7 @@ The following table shows the default options for this plugin:
     leftpad = true,           -- right-justify text in fidget box
     fidget =                  -- function to format fidget title
       function(fidget_name, spinner)
-        return string.format("%s %s", fidget_name, spinner)
+        return string.format("%s %s", spinner, fidget_name)
       end,
     task =                    -- function to format each task line
       function(task_name, message, percentage)
