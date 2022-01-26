@@ -19,7 +19,7 @@ local options = {
   },
   fmt = {
     leftpad = true,
-    stack_upwards = false,
+    stack_upwards = true,
     fidget = function(fidget_name, spinner)
       return string.format("%s %s", spinner, fidget_name)
     end,
