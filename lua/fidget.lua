@@ -111,7 +111,7 @@ function base_fidget:show(offset)
     })
   end
 
-  api.nvim_win_set_option(self.winid, "winblend", 100) -- Make transparent
+  -- api.nvim_win_set_option(self.winid, "winblend", 100) -- Make transparent
   api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetTask")
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
   api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", 0, 0, -1)
