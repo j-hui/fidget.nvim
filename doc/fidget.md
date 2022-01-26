@@ -84,7 +84,7 @@ The following table shows the default options for this plugin:
   },
   fmt = {
     leftpad = true,           -- right-justify text in fidget box
-    stack_upwards = false,    -- list of tasks grows upwards when true
+    stack_upwards = true,     -- list of tasks grows upwards
     fidget =                  -- function to format fidget title
       function(fidget_name, spinner)
         return string.format("%s %s", spinner, fidget_name)
@@ -178,7 +178,7 @@ Type: `bool` (default: `true`)
 Whether the list of tasks should grow upward in a fidget box. With this set to
 `true`, fidget titles tend to jump around less.
 
-Type: `bool` (default: `false`)
+Type: `bool` (default: `true`)
 
 #### fmt.fidget
 
