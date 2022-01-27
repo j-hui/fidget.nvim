@@ -42,8 +42,10 @@ local fidgets = {}
 
 local function render_fidgets()
   local offset = 0
-  for _, fidget in pairs(fidgets) do
-    offset = offset + fidget:show(offset)
+  for client_id, fidget in pairs(fidgets) do
+    if vim.lsp.buf_is_attached(0, client_id) then
+      offset = offset + fidget:show(offset)
+    end
   end
 end
 
@@ -202,7 +204,7 @@ local function handle_progress(err, msg, info)
 
   local task = msg.token
   local val = msg.value
-  local client_key = tostring(info.client_id)
+  local client_key = info.client_id
 
   if not task then
     return
