@@ -100,7 +100,7 @@ The following table shows the default options for this plugin:
       end,
   },
   debug = {
-    enable = false,           -- whether to enable logging, for debugging
+    logging = false,          -- whether to enable logging, for debugging
   },
 }
 ```
@@ -199,7 +199,7 @@ the formatted task status.
 
 Type: `(string, string, string) -> string` (default: something sane)
 
-#### debug.enable
+#### debug.logging
 
 Whether to enable logging, for debugging. The log is written to
 `~/.local/share/fidget.nvim.log`.

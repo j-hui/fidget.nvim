@@ -34,7 +34,7 @@ local options = {
     end,
   },
   debug = {
-    enable = false,
+    logging = false,
   },
 }
 
@@ -256,9 +256,11 @@ end
 
 function M.setup(opts)
   options = vim.tbl_deep_extend("force", options, opts or {})
-  if options.debug.enable then
+
+  if options.debug.logging then
     log.new({ level = "debug" }, true)
   end
+
   if type(options.text.spinner) == "string" then
     local spinner = require("fidget.spinners")[options.text.spinner]
     if spinner == nil then
@@ -266,6 +268,7 @@ function M.setup(opts)
     end
     options.text.spinner = spinner
   end
+
   vim.lsp.handlers["$/progress"] = handle_progress
   vim.cmd([[highlight default link FidgetTitle Title]])
   vim.cmd([[highlight default link FidgetTask NonText]])
