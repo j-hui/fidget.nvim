@@ -110,6 +110,9 @@ The following table shows the default options for this plugin:
             )
           end,
       },
+      debug = {
+        enable = false,           -- whether to enable logging, for debugging
+      },
     }
 <
 
@@ -244,6 +247,15 @@ fmt.task                               Function used to format the status of
 
 
 Type: `(string, string, string) -> string` (default: something sane)
+
+                                                         *fidget-debug.enable*
+
+debug.enable                           Whether to enable logging, for
+                                       debugging. The log is written to
+                                       `~/.local/share/fidget.nvim.log`.
+
+
+Type: `bool` (default: `false`)
 
 HIGHLIGHTS                                                 *fidget-highlights*
 
