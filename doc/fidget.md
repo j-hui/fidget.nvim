@@ -99,6 +99,9 @@ The following table shows the default options for this plugin:
         )
       end,
   },
+  debug = {
+    enable = false,           -- whether to enable logging, for debugging
+  },
 }
 ```
 
@@ -195,6 +198,13 @@ the name of the task, its message, and its progress as a percentage. Returns
 the formatted task status.
 
 Type: `(string, string, string) -> string` (default: something sane)
+
+#### debug.enable
+
+Whether to enable logging, for debugging. The log is written to
+`~/.local/share/fidget.nvim.log`.
+
+Type: `bool` (default: `false`)
 
 ## Highlights
 
