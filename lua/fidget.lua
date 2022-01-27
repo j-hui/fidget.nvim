@@ -1,7 +1,6 @@
-local api = vim.api
 local M = {}
-
-local log = require"fidget.log"
+local api = vim.api
+local log = require("fidget.log")
 
 local options = {
   text = {
@@ -196,7 +195,10 @@ end
 local function handle_progress(err, msg, info)
   -- See: https://microsoft.github.io/language-server-protocol/specifications/specification-current/#progress
 
-  log.debug("Received progress notification:", {err = err, msg = msg, info = info})
+  log.debug(
+    "Received progress notification:",
+    { err = err, msg = msg, info = info }
+  )
 
   local task = msg.token
   local val = msg.value
@@ -255,7 +257,7 @@ end
 function M.setup(opts)
   options = vim.tbl_deep_extend("force", options, opts or {})
   if options.debug.enable then
-    log.new({level = "debug"}, true)
+    log.new({ level = "debug" }, true)
   end
   if type(options.text.spinner) == "string" then
     local spinner = require("fidget.spinners")[options.text.spinner]
