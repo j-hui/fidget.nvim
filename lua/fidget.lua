@@ -19,6 +19,7 @@ local options = {
   },
   fmt = {
     leftpad = true,
+    stack_upwards = true,
     fidget = function(fidget_name, spinner)
       return string.format("%s %s", spinner, fidget_name)
     end,
@@ -63,7 +64,11 @@ function base_fidget:fmt()
   self.max_line_len = #line
   for _, task in pairs(self.tasks) do
     line = options.fmt.task(task.title, task.message, task.percentage)
-    table.insert(self.lines, line)
+    if options.fmt.stack_upwards then
+      table.insert(self.lines, 1, line)
+    else
+      table.insert(self.lines, line)
+    end
     self.max_line_len = math.max(self.max_line_len, #line)
   end
   if options.fmt.leftpad then
@@ -114,7 +119,11 @@ function base_fidget:show(offset)
   -- api.nvim_win_set_option(self.winid, "winblend", 100) -- Make transparent
   api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetTask")
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
-  api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", 0, 0, -1)
+  if options.fmt.stack_upwards then
+    api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", height - 1, 0, -1)
+  else
+    api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", 0, 0, -1)
+  end
 
   return #self.lines + offset
 end
@@ -246,8 +255,8 @@ function M.setup(opts)
     options.text.spinner = spinner
   end
   vim.lsp.handlers["$/progress"] = handle_progress
-  vim.cmd([[highlight! default link FidgetTitle Title]])
-  vim.cmd([[highlight! default link FidgetTask NonText]])
+  vim.cmd([[highlight default link FidgetTitle Title]])
+  vim.cmd([[highlight default link FidgetTask NonText]])
 end
 
 return M
