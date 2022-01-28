@@ -36,11 +36,8 @@ Who doesn't love a little bit of eye candy?
 Having a working nvim-lsp setup is not technically necessary to _setup_ the
 plugin, but it won't do anything without a source of progress notifications.
 
-Known to work with the following LSP servers:
-
-- [rust-analyzer](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#rust_analyzer) (Rust)
-- [sumneko](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#sumneko_lua) (Lua)
-- [null-ls](https://github.com/jose-elias-alvarez/null-ls.nvim) (generic)
+For an up-to-date list of LSP servers this plugin is known to work with, see
+[this pinned issue](https://github.com/j-hui/fidget.nvim/issues/17).
 
 ## Quickstart
 

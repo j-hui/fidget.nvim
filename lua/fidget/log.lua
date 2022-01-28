@@ -9,10 +9,10 @@
 -- User configuration section
 local default_config = {
   -- Name of the plugin. Prepended to log messages
-  plugin = 'vlog.nvim',
+  plugin = "fidget.nvim",
 
   -- Should print the output to neovim while running
-  use_console = true,
+  use_console = false,
 
   -- Should highlighting be used in console (using echohl)
   highlights = true,
@@ -21,7 +21,7 @@ local default_config = {
   use_file = true,
 
   -- Any messages above this level will be logged.
-  level = "trace",
+  level = "info",
 
   -- Level configuration
   modes = {
