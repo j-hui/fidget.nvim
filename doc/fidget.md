@@ -310,6 +310,45 @@ If that works, then you need to make sure other plugins aren't clashing with
 this one, or at least call Fidget's `setup` function after the other plugins
 are done setting up.
 
+### My progress notifications are being cut short.
+
+Some language servers may send long progress messages that cannot be nicely
+displayed on a single line. These messages are forcibly truncated to the width
+of the focused editor window or 99 characters, whichever is shorter.
+
+The way truncation is implemented is not sensitive to the format of each line,
+potentially leading to lines with unmatched brackets:
+
+```
+Message [long title...
+```
+
+If you would like to to avoid this behavior, you can override the
+[fmt.task](#fmt.task) handler with one that truncates the message/title before
+formatting:
+
+```lua
+{
+  fmt = {
+    task =
+      function(task_name, message, percentage)
+        if #message > 42 then
+          message = string.format("%.39s...", message)
+        end
+        if #task_name > 42 then
+          task_name = string.format("%.39s...", task_name)
+        end
+        return string.format(
+          "%s%s [%s]",
+          message,
+          percentage and string.format(" (%s%%)", percentage) or "",
+          task_name
+        )
+      end,
+  },
+}
+```
+
 ## Acknowledgements
 
 This plugin takes inspiration and borrows code from
