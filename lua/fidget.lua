@@ -77,7 +77,9 @@ function base_fidget:fmt()
   end
 
   -- Never try to output any text wider than the width of the current window
-  self.max_line_len = math.min(self.max_line_len, api.nvim_win_get_width(0))
+  -- Also, Lua's string.format does not seem to support any %Ns format specifier
+  -- where n > 99, so we cap it here.
+  self.max_line_len = math.min(self.max_line_len, api.nvim_win_get_width(0), 99)
 
   local pad = "%" .. tostring(self.max_line_len) .. "s"
   local trunc = "%." .. tostring(self.max_line_len) - 3 .. "s..."
