@@ -108,8 +108,8 @@ The following table shows the default options for this plugin:
 #### text.spinner
 
 Animation shown in fidget title when its tasks are ongoing. Can either be the
-name of one of the predefined [fidet-spinners](#fidget-spinners), or an array
-of strings representing each frame of the animation.
+name of one of the predefined [fidget-spinners](#spinners), or an array of
+strings representing each frame of the animation.
 
 Type: `string` or `[string]` (default: `"pipe"`)
 
@@ -237,8 +237,8 @@ Default: linked to [hl-LineNr](hl-LineNr)
 
 ## Spinners
 
-The [text.spinner](#fidget-text.spinner) option recognizes the following
-spinner pattern names:
+The [text.spinner](#text.spinner) option recognizes the following spinner
+pattern names:
 
 ```
 dots
@@ -354,5 +354,5 @@ formatting:
 This plugin takes inspiration and borrows code from
 [arkav/lualine-lsp-progress](https://github.com/arkav/lualine-lsp-progress).
 
-[fidget-spinner](#fidget-spinner) designs adapted from the npm package
+[fidget-spinner](#spinner) designs adapted from the npm package
 [sindresorhus/cli-spinners](https://github.com/sindresorhus/cli-spinners).
