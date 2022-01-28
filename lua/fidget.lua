@@ -45,6 +45,8 @@ local function render_fidgets()
   for client_id, fidget in pairs(fidgets) do
     if vim.lsp.buf_is_attached(0, client_id) then
       offset = offset + fidget:show(offset)
+    else
+      fidget:close()
     end
   end
 end
