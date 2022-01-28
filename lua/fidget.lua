@@ -146,37 +146,51 @@ function base_fidget:has_tasks()
   return false
 end
 
-function base_fidget:spin()
-  if options.timer.spinner_rate > 0 then
-    vim.defer_fn(function()
-      if self:has_tasks() then
-        self.spinner_idx = (self.spinner_idx + 1) % #options.text.spinner
-        self:spin()
-      else
-        self.spinner_idx = -1
-        self:kill()
-      end
-      self:fmt()
-    end, options.timer.spinner_rate)
+function base_fidget:close()
+  if self.winid ~= nil and api.nvim_win_is_valid(self.winid) then
+    api.nvim_win_close(self.winid, true)
+    self.winid = nil
+  end
+  if self.bufid ~= nil and api.nvim_buf_is_valid(self.bufid) then
+    api.nvim_buf_delete(self.bufid, { force = true })
+    self.bufid = nil
   end
 end
 
-function base_fidget:kill()
-  local function do_kill()
-    if self:has_tasks() then -- double check, in case new tasks have started
-      self:spin()
-    else
-      fidgets[self.key] = nil
-      api.nvim_win_close(self.winid, true)
-      api.nvim_buf_delete(self.bufid, { force = true })
-      render_fidgets()
-    end
+function base_fidget:spin()
+  local function do_spin(idx, continuation, delay)
+    self.spinner_idx = idx
+    self:fmt()
+    vim.defer_fn(continuation, delay)
   end
 
-  if options.timer.fidget_decay > 0 then
-    vim.defer_fn(do_kill, options.timer.fidget_decay)
-  elseif options.timer.fidget_decay == 0 then
-    do_kill()
+  local function do_kill()
+    self:close()
+    fidgets[self.key] = nil
+    render_fidgets()
+  end
+
+  local function spin_again()
+    self:spin()
+  end
+
+  if self:has_tasks() then
+    local next_idx = (self.spinner_idx + 1) % #options.text.spinner
+    do_spin(next_idx, spin_again, options.timer.spinner_rate)
+  else
+    if options.timer.fidget_decay > 0 then
+      -- kill later; indicate done for now
+      do_spin(-1, function()
+        if self:has_tasks() then
+          do_spin(0, spin_again, options.timer.spinner_rate)
+        else
+          do_kill()
+        end
+      end, options.timer.fidget_decay)
+    else
+      -- kill now
+      do_kill()
+    end
   end
 end
 
@@ -186,7 +200,11 @@ local function new_fidget(key, name)
     base_fidget,
     { key = key, name = name }
   )
-  fidget:spin()
+  if options.timer.spinner_rate > 0 then
+    vim.defer_fn(function()
+      fidget:spin()
+    end, options.timer.spinner_rate)
+  end
   return fidget
 end
 
