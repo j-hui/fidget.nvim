@@ -93,6 +93,11 @@ The following table shows the default options for this plugin:
         fidget_decay = 2000,      -- how long to keep around empty fidget, in ms
         task_decay = 1000,        -- how long to keep around completed task, in ms
       },
+      window = {
+        relative = "win",         -- where to anchor the window, either `"win"` or `"editor"`
+        blend = 100,              -- `&winblend` for the window
+        zindex = nil,             -- the `zindex` value for the window
+      },
       fmt = {
         leftpad = true,           -- right-justify text in fidget box
         stack_upwards = true,     -- list of tasks grows upwards
@@ -122,7 +127,7 @@ The following table shows the default options for this plugin:
 text.spinner                           Animation shown in fidget title when its
                                        tasks are ongoing. Can either be the
                                        name of one of the predefined
-                                       |fidget-fidet-spinners|, or an array of
+                                       |fidget-fidget-spinners|, or an array of
                                        strings representing each frame of the
                                        animation.
 
@@ -171,6 +176,31 @@ align.right                            Whether to align fidgets along the right
 
 
 Type: `bool` (default: `true`)
+
+                                                      *fidget-window.relative*
+
+window.relative                        Whether to position the window relative
+                                       to the current window, or the editor.
+                                       Valid values are `"win"` or `"editor"`.
+
+
+Type: `string` (default: `"win"`)
+
+                                                      *fidget-window.winblend*
+
+window.winblend                        The value to use for `&winblend` for the
+                                       window.
+
+
+Type: `number` (default: `100`)
+
+                                                        *fidget-window.zindex*
+
+window.zindex                          The value to use for `zindex` (see `:h
+                                       nvim_win_open`) for the window.
+
+
+Type: `number` (default: `nil`)
 
                                                    *fidget-timer.spinner_rate*
 
@@ -369,6 +399,47 @@ e.g.,:
 If that works, then you need to make sure other plugins aren’t clashing with
 this one, or at least call Fidget’s `setup` function after the other plugins
 are done setting up.
+
+MY PROGRESS NOTIFICATIONS ARE BEING CUT SHORT. ~
+
+Some language servers may send long progress messages that cannot be nicely
+displayed on a single line. These messages are forcibly truncated to the width
+of the focused editor window or 99 characters, whichever is shorter.
+
+The way truncation is implemented is not sensitive to the format of each line,
+potentially leading to lines with unmatched brackets:
+
+>
+    Message [long title...
+<
+
+
+If you would like to to avoid this behavior, you can override the
+|fidget-fmt.task| handler with one that truncates the message/title before
+formatting:
+
+>
+    {
+      fmt = {
+        task =
+          function(task_name, message, percentage)
+            if #message > 42 then
+              message = string.format("%.39s...", message)
+            end
+            if #task_name > 42 then
+              task_name = string.format("%.39s...", task_name)
+            end
+            return string.format(
+              "%s%s [%s]",
+              message,
+              percentage and string.format(" (%s%%)", percentage) or "",
+              task_name
+            )
+          end,
+      },
+    }
+<
+
 
 ACKNOWLEDGEMENTS                                     *fidget-acknowledgements*
 
