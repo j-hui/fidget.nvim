@@ -82,6 +82,11 @@ The following table shows the default options for this plugin:
     fidget_decay = 2000,      -- how long to keep around empty fidget, in ms
     task_decay = 1000,        -- how long to keep around completed task, in ms
   },
+  window = {
+    relative = "win",         -- where to anchor the window, either `"win"` or `"editor"`
+    blend = 100,              -- `&winblend` for the window
+    zindex = nil,             -- the `zindex` value for the window
+  },
   fmt = {
     leftpad = true,           -- right-justify text in fidget box
     stack_upwards = true,     -- list of tasks grows upwards
@@ -145,6 +150,25 @@ Whether to align fidgets along the right edge of each buffer. Setting this to
 regularly overlaid on top of buffer text (which is supported but unsightly).
 
 Type: `bool` (default: `true`)
+
+#### window.relative
+
+Whether to position the window relative to the current window, or the editor.
+Valid values are `"win"` or `"editor"`.
+
+Type: `string` (default: `"win"`)
+
+#### window.winblend
+
+The value to use for `&winblend` for the window.
+
+Type: `number` (default: `100`)
+
+#### window.zindex
+
+The value to use for `zindex` (see `:h nvim_win_open`) for the window.
+
+Type: `number` (default: `nil`)
 
 #### timer.spinner_rate
 

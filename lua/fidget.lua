@@ -13,6 +13,11 @@ local options = {
     bottom = true,
     right = true,
   },
+  window = {
+    relative = "win",
+    blend = 100,
+    zindex = nil,
+  },
   timer = {
     spinner_rate = 125,
     fidget_decay = 2000,
@@ -49,6 +54,48 @@ local function render_fidgets()
       fidget:close()
     end
   end
+end
+
+local function get_window_position(offset)
+  local width, height, baseheight
+  if options.window.relative == "editor" then
+    local statusline_height = 0
+    local laststatus = vim.opt.laststatus:get()
+    if
+      laststatus == 2
+      or (laststatus == 1 and #vim.api.nvim_tabpage_list_wins() > 1)
+    then
+      statusline_height = 1
+    end
+
+    height = vim.opt.lines:get() - (statusline_height + vim.opt.cmdheight:get())
+
+    -- Does not account for &signcolumn or &foldcolumn, but there is no amazing way to get the
+    -- actual "viewable" width of the editor
+    --
+    -- However, I cannot imagine that many people will render fidgets on the left side of their
+    -- editor as it will more often overlay text
+    width = vim.opt.columns:get()
+
+    -- Applies when the layout is anchored at the top, need to check &tabline height
+    baseheight = 0
+    if options.window.relative == "editor" then
+      local showtabline = vim.opt.showtabline:get()
+      if
+        showtabline == 2
+        or (showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
+      then
+        baseheight = 1
+      end
+    end
+  else
+    height = api.nvim_win_get_height(0)
+    width = api.nvim_win_get_width(0)
+    baseheight = 1
+  end
+
+  return options.align.bottom and (height - offset) or (baseheight + offset),
+    options.align.right and width or 1
 end
 
 local base_fidget = {
@@ -110,9 +157,7 @@ end
 function base_fidget:show(offset)
   local height = #self.lines
   local width = self.max_line_len
-  local col = options.align.right and api.nvim_win_get_width(0) or 1
-  local row = options.align.bottom and (api.nvim_win_get_height(0) - offset)
-    or (1 + offset)
+  local row, col = get_window_position(offset)
   local anchor = (options.align.bottom and "S" or "N")
     .. (options.align.right and "E" or "W")
 
@@ -121,7 +166,7 @@ function base_fidget:show(offset)
   end
   if self.winid == nil or not api.nvim_win_is_valid(self.winid) then
     self.winid = api.nvim_open_win(self.bufid, false, {
-      relative = "win",
+      relative = options.window.relative,
       width = width,
       height = height,
       row = row,
@@ -129,21 +174,24 @@ function base_fidget:show(offset)
       anchor = anchor,
       focusable = false,
       style = "minimal",
+      zindex = options.window.zindex,
       noautocmd = true,
     })
   else
     api.nvim_win_set_config(self.winid, {
-      win = api.nvim_get_current_win(),
-      relative = "win",
+      win = options.window.relative == "win" and api.nvim_get_current_win()
+        or nil,
+      relative = options.window.relative,
       width = width,
       height = height,
       row = row,
       col = col,
       anchor = anchor,
+      zindex = options.window.zindex,
     })
   end
 
-  api.nvim_win_set_option(self.winid, "winblend", 100) -- Make transparent
+  api.nvim_win_set_option(self.winid, "winblend", options.window.blend)
   api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetTask")
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
   if options.fmt.stack_upwards then
@@ -161,10 +209,7 @@ function base_fidget:kill_task(task)
 end
 
 function base_fidget:has_tasks()
-  for _, _ in pairs(self.tasks) do
-    return true
-  end
-  return false
+  return next(self.tasks)
 end
 
 function base_fidget:close()
