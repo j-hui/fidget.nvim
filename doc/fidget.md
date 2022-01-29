@@ -83,9 +83,9 @@ The following table shows the default options for this plugin:
     task_decay = 1000,        -- how long to keep around completed task, in ms
   },
   window = {
-    relative = "win",         -- where to anchor the window, either `"win"` or `"editor"`
-    blend = 100,              -- `&winblend` for the window
-    zindex = nil,             -- the `zindex` value for the window
+    relative = "win",         -- where to anchor, either "win" or "editor"
+    blend = 100,              -- &winblend for the window
+    zindex = nil,             -- the zindex value for the window
   },
   fmt = {
     leftpad = true,           -- right-justify text in fidget box
@@ -175,7 +175,7 @@ Type: `number` (default: `nil`)
 Duration of each frame of the spinner animation, in ms. Set to `0` to only use
 the first frame of the spinner animation.
 
-Type: `int` (default: `125`)
+Type: `number` (default: `125`)
 
 #### timer.fidget_decay
 
@@ -183,7 +183,7 @@ How long to continue showing a fidget after all its tasks are completed, in ms.
 Set to `0` to clear each fidget as soon as all its tasks are completed; set
 to any negative number to keep it around indefinitely (not recommended).
 
-Type: `int` (default: `2000`)
+Type: `number` (default: `2000`)
 
 #### timer.task_decay
 
@@ -191,7 +191,7 @@ How long to continue showing a task after it is complete, in ms. Set to `0` to
 clear each task as soon as it is completed; set to any negative number to keep
 it around until its fidget is cleared.
 
-Type: `int` (default: `1000`)
+Type: `number` (default: `1000`)
 
 #### fmt.leftpad
 
