@@ -108,8 +108,8 @@ The following table shows the default options for this plugin:
 #### text.spinner
 
 Animation shown in fidget title when its tasks are ongoing. Can either be the
-name of one of the predefined [fidet-spinners](#fidget-spinners), or an array
-of strings representing each frame of the animation.
+name of one of the predefined [fidget-spinners](#spinners), or an array of
+strings representing each frame of the animation.
 
 Type: `string` or `[string]` (default: `"pipe"`)
 
@@ -237,8 +237,8 @@ Default: linked to [hl-LineNr](hl-LineNr)
 
 ## Spinners
 
-The [text.spinner](#fidget-text.spinner) option recognizes the following
-spinner pattern names:
+The [text.spinner](#text.spinner) option recognizes the following spinner
+pattern names:
 
 ```
 dots
@@ -310,10 +310,49 @@ If that works, then you need to make sure other plugins aren't clashing with
 this one, or at least call Fidget's `setup` function after the other plugins
 are done setting up.
 
+### My progress notifications are being cut short.
+
+Some language servers may send long progress messages that cannot be nicely
+displayed on a single line. These messages are forcibly truncated to the width
+of the focused editor window or 99 characters, whichever is shorter.
+
+The way truncation is implemented is not sensitive to the format of each line,
+potentially leading to lines with unmatched brackets:
+
+```
+Message [long title...
+```
+
+If you would like to to avoid this behavior, you can override the
+[fmt.task](#fmt.task) handler with one that truncates the message/title before
+formatting:
+
+```lua
+{
+  fmt = {
+    task =
+      function(task_name, message, percentage)
+        if #message > 42 then
+          message = string.format("%.39s...", message)
+        end
+        if #task_name > 42 then
+          task_name = string.format("%.39s...", task_name)
+        end
+        return string.format(
+          "%s%s [%s]",
+          message,
+          percentage and string.format(" (%s%%)", percentage) or "",
+          task_name
+        )
+      end,
+  },
+}
+```
+
 ## Acknowledgements
 
 This plugin takes inspiration and borrows code from
 [arkav/lualine-lsp-progress](https://github.com/arkav/lualine-lsp-progress).
 
-[fidget-spinner](#fidget-spinner) designs adapted from the npm package
+[fidget-spinner](#spinner) designs adapted from the npm package
 [sindresorhus/cli-spinners](https://github.com/sindresorhus/cli-spinners).
