@@ -21,6 +21,7 @@ local options = {
   fmt = {
     leftpad = true,
     stack_upwards = true,
+    opacity = 100,
     fidget = function(fidget_name, spinner)
       return string.format("%s %s", spinner, fidget_name)
     end,
@@ -120,7 +121,7 @@ function base_fidget:show(offset)
     })
   end
 
-  api.nvim_win_set_option(self.winid, "winblend", 100) -- Make transparent
+  api.nvim_win_set_option(self.winid, "winblend", options.fmt.opacity)
   api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetTask")
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
   if options.fmt.stack_upwards then

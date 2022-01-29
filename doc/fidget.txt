@@ -216,6 +216,17 @@ fmt.leftpad                            Whether to right-justify the text in a
 
 Type: `bool` (default: `true`)
 
+                                                          *fidget-fmt.opacity*
+
+fmt.opacity                            Controls the transparency of the
+                                       fidget box's background. Set a value
+                                       from `0` to `100`, with `0` for fully
+                                       transparent backgrounds, and `100` for
+                                       completely opaque backgrounds.
+
+
+Type: `int` (default: `100`)
+
                                                     *fidget-fmt.stack_upwards*
 
 fmt.stack_upwards                      Whether the list of tasks should grow

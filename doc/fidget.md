@@ -85,6 +85,7 @@ The following table shows the default options for this plugin:
   fmt = {
     leftpad = true,           -- right-justify text in fidget box
     stack_upwards = true,     -- list of tasks grows upwards
+    opacity = 100             -- opacity of background
     fidget =                  -- function to format fidget title
       function(fidget_name, spinner)
         return string.format("%s %s", spinner, fidget_name)
