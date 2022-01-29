@@ -225,7 +225,7 @@ fmt.opacity                            Controls the transparency of the
                                        completely opaque backgrounds.
 
 
-Type: `int` (default: `100`)
+Type: `int` (default: `0`)
 
                                                     *fidget-fmt.stack_upwards*
 

@@ -21,7 +21,7 @@ local options = {
   fmt = {
     leftpad = true,
     stack_upwards = true,
-    opacity = 100,
+    opacity = 0,
     fidget = function(fidget_name, spinner)
       return string.format("%s %s", spinner, fidget_name)
     end,
