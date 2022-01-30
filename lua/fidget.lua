@@ -110,44 +110,43 @@ local base_fidget = {
 }
 
 function base_fidget:fmt()
+  -- Substitute tabs into spaces, to make strlen easier to count.
+  local function subtab(s)
+    return s:gsub("\t", "  ")
+  end
+  local strlen = vim.fn.strdisplaywidth
+
   local line = options.fmt.fidget(
     self.name,
     self.spinner_idx == -1 and options.text.done
       or options.text.spinner[self.spinner_idx + 1]
   )
   self.lines = { line }
-  self.max_line_len = #line
+  self.max_line_len = strlen(line)
   for _, task in pairs(self.tasks) do
-    line = options.fmt.task(task.title, task.message, task.percentage)
+    line = options.fmt.task(
+      subtab(task.title),
+      subtab(task.message),
+      subtab(task.percentage)
+    )
     if options.fmt.stack_upwards then
       table.insert(self.lines, 1, line)
     else
       table.insert(self.lines, line)
     end
-    self.max_line_len = math.max(self.max_line_len, #line)
+    self.max_line_len = math.max(self.max_line_len, strlen(line))
   end
 
-  -- Never try to output any text wider than the width of the current window
-  -- Also, Lua's string.format does not seem to support any %Ns format specifier
-  -- where n > 99, so we cap it here.
-  self.max_line_len = math.min(self.max_line_len, api.nvim_win_get_width(0), 99)
+  -- Never try to output any text wider than the width of the current window.
+  self.max_line_len = math.min(self.max_line_len, api.nvim_win_get_width(0))
 
-  local pad = "%" .. tostring(self.max_line_len) .. "s"
-  local trunc = "%." .. tostring(self.max_line_len) - 3 .. "s..."
-
-  if options.fmt.leftpad then
-    for i, _ in ipairs(self.lines) do
-      if #self.lines[i] > self.max_line_len then
-        self.lines[i] = string.format(trunc, self.lines[i])
-      else
-        self.lines[i] = string.format(pad, self.lines[i])
-      end
-    end
-  else
-    for i, _ in ipairs(self.lines) do
-      if #self.lines[i] > self.max_line_len then
-        self.lines[i] = string.format(trunc, self.lines[i])
-      end
+  for i, s in ipairs(self.lines) do
+    if strlen(s) > self.max_line_len then
+      -- truncate
+      self.lines[i] = vim.fn.strcharpart(s, 0, self.max_line_len - 3) .. "..."
+    elseif options.fmt.leftpad then
+      -- pad
+      self.lines[i] = string.rep(" ", self.max_line_len - strlen(s)) .. s
     end
   end
 
