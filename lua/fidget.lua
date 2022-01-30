@@ -13,6 +13,11 @@ local options = {
     bottom = true,
     right = true,
   },
+  window = {
+    relative = "win",
+    blend = 100,
+    zindex = nil,
+  },
   timer = {
     spinner_rate = 125,
     fidget_decay = 2000,
@@ -42,9 +47,55 @@ local fidgets = {}
 
 local function render_fidgets()
   local offset = 0
-  for _, fidget in pairs(fidgets) do
-    offset = offset + fidget:show(offset)
+  for client_id, fidget in pairs(fidgets) do
+    if vim.lsp.buf_is_attached(0, client_id) then
+      offset = offset + fidget:show(offset)
+    else
+      fidget:close()
+    end
   end
+end
+
+local function get_window_position(offset)
+  local width, height, baseheight
+  if options.window.relative == "editor" then
+    local statusline_height = 0
+    local laststatus = vim.opt.laststatus:get()
+    if
+      laststatus == 2
+      or (laststatus == 1 and #vim.api.nvim_tabpage_list_wins() > 1)
+    then
+      statusline_height = 1
+    end
+
+    height = vim.opt.lines:get() - (statusline_height + vim.opt.cmdheight:get())
+
+    -- Does not account for &signcolumn or &foldcolumn, but there is no amazing way to get the
+    -- actual "viewable" width of the editor
+    --
+    -- However, I cannot imagine that many people will render fidgets on the left side of their
+    -- editor as it will more often overlay text
+    width = vim.opt.columns:get()
+
+    -- Applies when the layout is anchored at the top, need to check &tabline height
+    baseheight = 0
+    if options.window.relative == "editor" then
+      local showtabline = vim.opt.showtabline:get()
+      if
+        showtabline == 2
+        or (showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
+      then
+        baseheight = 1
+      end
+    end
+  else
+    height = api.nvim_win_get_height(0)
+    width = api.nvim_win_get_width(0)
+    baseheight = 1
+  end
+
+  return options.align.bottom and (height - offset) or (baseheight + offset),
+    options.align.right and width or 1
 end
 
 local base_fidget = {
@@ -75,21 +126,38 @@ function base_fidget:fmt()
     end
     self.max_line_len = math.max(self.max_line_len, #line)
   end
+
+  -- Never try to output any text wider than the width of the current window
+  -- Also, Lua's string.format does not seem to support any %Ns format specifier
+  -- where n > 99, so we cap it here.
+  self.max_line_len = math.min(self.max_line_len, api.nvim_win_get_width(0), 99)
+
+  local pad = "%" .. tostring(self.max_line_len) .. "s"
+  local trunc = "%." .. tostring(self.max_line_len) - 3 .. "s..."
+
   if options.fmt.leftpad then
-    local pad = "%" .. tostring(self.max_line_len) .. "s"
     for i, _ in ipairs(self.lines) do
-      self.lines[i] = string.format(pad, self.lines[i])
+      if #self.lines[i] > self.max_line_len then
+        self.lines[i] = string.format(trunc, self.lines[i])
+      else
+        self.lines[i] = string.format(pad, self.lines[i])
+      end
+    end
+  else
+    for i, _ in ipairs(self.lines) do
+      if #self.lines[i] > self.max_line_len then
+        self.lines[i] = string.format(trunc, self.lines[i])
+      end
     end
   end
+
   render_fidgets()
 end
 
 function base_fidget:show(offset)
   local height = #self.lines
   local width = self.max_line_len
-  local col = options.align.right and api.nvim_win_get_width(0) or 1
-  local row = options.align.bottom and (api.nvim_win_get_height(0) - offset)
-    or (1 + offset)
+  local row, col = get_window_position(offset)
   local anchor = (options.align.bottom and "S" or "N")
     .. (options.align.right and "E" or "W")
 
@@ -98,7 +166,7 @@ function base_fidget:show(offset)
   end
   if self.winid == nil or not api.nvim_win_is_valid(self.winid) then
     self.winid = api.nvim_open_win(self.bufid, false, {
-      relative = "win",
+      relative = options.window.relative,
       width = width,
       height = height,
       row = row,
@@ -106,21 +174,24 @@ function base_fidget:show(offset)
       anchor = anchor,
       focusable = false,
       style = "minimal",
+      zindex = options.window.zindex,
       noautocmd = true,
     })
   else
     api.nvim_win_set_config(self.winid, {
-      win = api.nvim_get_current_win(),
-      relative = "win",
+      win = options.window.relative == "win" and api.nvim_get_current_win()
+        or nil,
+      relative = options.window.relative,
       width = width,
       height = height,
       row = row,
       col = col,
       anchor = anchor,
+      zindex = options.window.zindex,
     })
   end
 
-  -- api.nvim_win_set_option(self.winid, "winblend", 100) -- Make transparent
+  -- api.nvim_win_set_option(self.winid, "winblend", options.window.blend)
   api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetTask")
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
   if options.fmt.stack_upwards then
@@ -138,43 +209,54 @@ function base_fidget:kill_task(task)
 end
 
 function base_fidget:has_tasks()
-  for _, _ in pairs(self.tasks) do
-    return true
+  return next(self.tasks)
+end
+
+function base_fidget:close()
+  if self.winid ~= nil and api.nvim_win_is_valid(self.winid) then
+    api.nvim_win_close(self.winid, true)
+    self.winid = nil
   end
-  return false
+  if self.bufid ~= nil and api.nvim_buf_is_valid(self.bufid) then
+    api.nvim_buf_delete(self.bufid, { force = true })
+    self.bufid = nil
+  end
 end
 
 function base_fidget:spin()
-  if options.timer.spinner_rate > 0 then
-    vim.defer_fn(function()
-      if self:has_tasks() then
-        self.spinner_idx = (self.spinner_idx + 1) % #options.text.spinner
-        self:spin()
-      else
-        self.spinner_idx = -1
-        self:kill()
-      end
-      self:fmt()
-    end, options.timer.spinner_rate)
+  local function do_spin(idx, continuation, delay)
+    self.spinner_idx = idx
+    self:fmt()
+    vim.defer_fn(continuation, delay)
   end
-end
 
-function base_fidget:kill()
   local function do_kill()
-    if self:has_tasks() then -- double check, in case new tasks have started
-      self:spin()
-    else
-      fidgets[self.key] = nil
-      api.nvim_win_close(self.winid, true)
-      api.nvim_buf_delete(self.bufid, { force = true })
-      render_fidgets()
-    end
+    self:close()
+    fidgets[self.key] = nil
+    render_fidgets()
   end
 
-  if options.timer.fidget_decay > 0 then
-    vim.defer_fn(do_kill, options.timer.fidget_decay)
-  elseif options.timer.fidget_decay == 0 then
-    do_kill()
+  local function spin_again()
+    self:spin()
+  end
+
+  if self:has_tasks() then
+    local next_idx = (self.spinner_idx + 1) % #options.text.spinner
+    do_spin(next_idx, spin_again, options.timer.spinner_rate)
+  else
+    if options.timer.fidget_decay > 0 then
+      -- kill later; indicate done for now
+      do_spin(-1, function()
+        if self:has_tasks() then
+          do_spin(0, spin_again, options.timer.spinner_rate)
+        else
+          do_kill()
+        end
+      end, options.timer.fidget_decay)
+    else
+      -- kill now
+      do_kill()
+    end
   end
 end
 
@@ -184,7 +266,11 @@ local function new_fidget(key, name)
     base_fidget,
     { key = key, name = name }
   )
-  fidget:spin()
+  if options.timer.spinner_rate > 0 then
+    vim.defer_fn(function()
+      fidget:spin()
+    end, options.timer.spinner_rate)
+  end
   return fidget
 end
 
@@ -202,7 +288,7 @@ local function handle_progress(err, msg, info)
 
   local task = msg.token
   local val = msg.value
-  local client_key = tostring(info.client_id)
+  local client_key = info.client_id
 
   if not task then
     return

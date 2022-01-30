@@ -82,6 +82,11 @@ The following table shows the default options for this plugin:
     fidget_decay = 2000,      -- how long to keep around empty fidget, in ms
     task_decay = 1000,        -- how long to keep around completed task, in ms
   },
+  window = {
+    relative = "win",         -- where to anchor, either "win" or "editor"
+    blend = 100,              -- &winblend for the window
+    zindex = nil,             -- the zindex value for the window
+  },
   fmt = {
     leftpad = true,           -- right-justify text in fidget box
     stack_upwards = true,     -- list of tasks grows upwards
@@ -108,8 +113,8 @@ The following table shows the default options for this plugin:
 #### text.spinner
 
 Animation shown in fidget title when its tasks are ongoing. Can either be the
-name of one of the predefined [fidet-spinners](#fidget-spinners), or an array
-of strings representing each frame of the animation.
+name of one of the predefined [fidget-spinners](#spinners), or an array of
+strings representing each frame of the animation.
 
 Type: `string` or `[string]` (default: `"pipe"`)
 
@@ -146,12 +151,31 @@ regularly overlaid on top of buffer text (which is supported but unsightly).
 
 Type: `bool` (default: `true`)
 
+#### window.relative
+
+Whether to position the window relative to the current window, or the editor.
+Valid values are `"win"` or `"editor"`.
+
+Type: `string` (default: `"win"`)
+
+#### window.winblend
+
+The value to use for `&winblend` for the window.
+
+Type: `number` (default: `100`)
+
+#### window.zindex
+
+The value to use for `zindex` (see `:h nvim_win_open`) for the window.
+
+Type: `number` (default: `nil`)
+
 #### timer.spinner_rate
 
 Duration of each frame of the spinner animation, in ms. Set to `0` to only use
 the first frame of the spinner animation.
 
-Type: `int` (default: `125`)
+Type: `number` (default: `125`)
 
 #### timer.fidget_decay
 
@@ -159,7 +183,7 @@ How long to continue showing a fidget after all its tasks are completed, in ms.
 Set to `0` to clear each fidget as soon as all its tasks are completed; set
 to any negative number to keep it around indefinitely (not recommended).
 
-Type: `int` (default: `2000`)
+Type: `number` (default: `2000`)
 
 #### timer.task_decay
 
@@ -167,7 +191,7 @@ How long to continue showing a task after it is complete, in ms. Set to `0` to
 clear each task as soon as it is completed; set to any negative number to keep
 it around until its fidget is cleared.
 
-Type: `int` (default: `1000`)
+Type: `number` (default: `1000`)
 
 #### fmt.leftpad
 
@@ -237,8 +261,8 @@ Default: linked to [hl-LineNr](hl-LineNr)
 
 ## Spinners
 
-The [text.spinner](#fidget-text.spinner) option recognizes the following
-spinner pattern names:
+The [text.spinner](#text.spinner) option recognizes the following spinner
+pattern names:
 
 ```
 dots
@@ -310,10 +334,49 @@ If that works, then you need to make sure other plugins aren't clashing with
 this one, or at least call Fidget's `setup` function after the other plugins
 are done setting up.
 
+### My progress notifications are being cut short.
+
+Some language servers may send long progress messages that cannot be nicely
+displayed on a single line. These messages are forcibly truncated to the width
+of the focused editor window or 99 characters, whichever is shorter.
+
+The way truncation is implemented is not sensitive to the format of each line,
+potentially leading to lines with unmatched brackets:
+
+```
+Message [long title...
+```
+
+If you would like to to avoid this behavior, you can override the
+[fmt.task](#fmt.task) handler with one that truncates the message/title before
+formatting:
+
+```lua
+{
+  fmt = {
+    task =
+      function(task_name, message, percentage)
+        if #message > 42 then
+          message = string.format("%.39s...", message)
+        end
+        if #task_name > 42 then
+          task_name = string.format("%.39s...", task_name)
+        end
+        return string.format(
+          "%s%s [%s]",
+          message,
+          percentage and string.format(" (%s%%)", percentage) or "",
+          task_name
+        )
+      end,
+  },
+}
+```
+
 ## Acknowledgements
 
 This plugin takes inspiration and borrows code from
 [arkav/lualine-lsp-progress](https://github.com/arkav/lualine-lsp-progress).
 
-[fidget-spinner](#fidget-spinner) designs adapted from the npm package
+[fidget-spinner](#spinner) designs adapted from the npm package
 [sindresorhus/cli-spinners](https://github.com/sindresorhus/cli-spinners).
