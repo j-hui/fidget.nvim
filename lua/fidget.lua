@@ -26,6 +26,7 @@ local options = {
   fmt = {
     leftpad = true,
     stack_upwards = true,
+    max_width = 0,
     fidget = function(fidget_name, spinner)
       return string.format("%s %s", spinner, fidget_name)
     end,
@@ -127,7 +128,7 @@ function base_fidget:fmt()
     line = options.fmt.task(
       subtab(task.title),
       subtab(task.message),
-      subtab(task.percentage)
+      task.percentage
     )
     if options.fmt.stack_upwards then
       table.insert(self.lines, 1, line)
@@ -137,13 +138,21 @@ function base_fidget:fmt()
     self.max_line_len = math.max(self.max_line_len, strlen(line))
   end
 
-  -- Never try to output any text wider than the width of the current window.
-  self.max_line_len = math.min(self.max_line_len, api.nvim_win_get_width(0))
+  -- Never try to output any text wider than what we are aligning to.
+  self.max_line_len = math.min(
+    self.max_line_len,
+    options.window.relative == "editor" and vim.opt.columns:get()
+      or api.nvim_win_get_width(0)
+  )
+
+  if options.fmt.max_width > 0 then
+    self.max_line_len = math.min(self.max_line_len, options.fmt.max_width)
+  end
 
   for i, s in ipairs(self.lines) do
     if strlen(s) > self.max_line_len then
       -- truncate
-      self.lines[i] = vim.fn.strcharpart(s, 0, self.max_line_len - 3) .. "..."
+      self.lines[i] = vim.fn.strcharpart(s, 0, self.max_line_len - 1) .. "…"
     elseif options.fmt.leftpad then
       -- pad
       self.lines[i] = string.rep(" ", self.max_line_len - strlen(s)) .. s
