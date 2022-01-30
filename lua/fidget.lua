@@ -319,7 +319,7 @@ local function handle_progress(err, msg, info)
     if val.message then
       progress.message = val.message
     end
-  elseif val.kind == "end" then
+  elseif val.kind == "end" or val.kind == nil then
     if progress.percentage then
       progress.percentage = 100
     end
