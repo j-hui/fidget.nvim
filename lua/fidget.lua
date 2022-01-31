@@ -263,7 +263,7 @@ end
 local function new_fidget(key, name)
   local fidget = vim.tbl_extend(
     "force",
-    base_fidget,
+    vim.deepcopy(base_fidget),
     { key = key, name = name }
   )
   if options.timer.spinner_rate > 0 then
