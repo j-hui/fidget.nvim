@@ -41,6 +41,7 @@ local options = {
   debug = {
     logging = false,
   },
+  ignored = {},
 }
 
 local fidgets = {}
@@ -289,6 +290,13 @@ local function handle_progress(err, msg, info)
   local task = msg.token
   local val = msg.value
   local client_key = info.client_id
+  local client_name = vim.lsp.get_client_by_id(info.client_id).name
+
+  for _, ignored in ipairs(options.ignored) do
+    if client_name == ignored then
+      return
+    end
+  end
 
   if not task then
     return
@@ -296,10 +304,7 @@ local function handle_progress(err, msg, info)
 
   -- Create entry if missing
   if fidgets[client_key] == nil then
-    fidgets[client_key] = new_fidget(
-      client_key,
-      vim.lsp.get_client_by_id(info.client_id).name
-    )
+    fidgets[client_key] = new_fidget(client_key, client_name)
   end
   local fidget = fidgets[client_key]
   if fidget.tasks[task] == nil then

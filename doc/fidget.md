@@ -107,6 +107,7 @@ The following table shows the default options for this plugin:
   debug = {
     logging = false,          -- whether to enable logging, for debugging
   },
+  ignored = {}                -- A table of LSP client names to ignore, such as null-ls.
 }
 ```
 
@@ -229,6 +230,12 @@ Whether to enable logging, for debugging. The log is written to
 `~/.local/share/fidget.nvim.log`.
 
 Type: `bool` (default: `false`)
+
+#### ignored
+
+Type: `table` (default: `{}`)
+
+A table of LSP client names to ignore when showing status.
 
 ## Highlights
 
