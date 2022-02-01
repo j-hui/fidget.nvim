@@ -116,10 +116,14 @@ The following table shows the default options for this plugin:
             )
           end,
       },
+      sources = {                 -- Sources to configure
+        * = {                     -- Name of source
+          ignore = false,         -- Ignore notifications from this source
+        },
+      },
       debug = {
         logging = false,          -- whether to enable logging, for debugging
       },
-      ignored = {}                -- A table of LSP client names to ignore, such as null-ls.
     }
 <
 
@@ -292,6 +296,21 @@ fmt.task                               Function used to format the status of
 
 Type: `(string, string, string) -> string` (default: something sane)
 
+                                                  *fidget-sources.SOURCE_NAME*
+
+sources.SOURCE_NAME                    Options for fidget source with name
+                                       `SOURCE_NAME`.
+
+
+Type: `{options}` (default: see individual per-source options)
+
+                                           *fidget-sources.SOURCE_NAME.ignore*
+
+sources.SOURCE_NAME.ignore             Disable fidgets from `SOURCE_NAME`.
+
+
+Type: `bool` (default: `false`)
+
                                                         *fidget-debug.logging*
 
 debug.logging                          Whether to enable logging, for
@@ -300,15 +319,6 @@ debug.logging                          Whether to enable logging, for
 
 
 Type: `bool` (default: `false`)
-
-
-                                                        *fidget-ignored*
-
-ignored                                A table of LSP client names to ignore,
-                                       such as null-ls.
-
-
-Type: `table` (default: `{}`)
 
 HIGHLIGHTS                                                 *fidget-highlights*
 
