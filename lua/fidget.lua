@@ -113,7 +113,7 @@ local base_fidget = {
 function base_fidget:fmt()
   -- Substitute tabs into spaces, to make strlen easier to count.
   local function subtab(s)
-    return s:gsub("\t", "  ")
+    return s and s:gsub("\t", "  ") or nil
   end
   local strlen = vim.fn.strdisplaywidth
 
