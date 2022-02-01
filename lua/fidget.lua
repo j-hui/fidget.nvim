@@ -38,10 +38,10 @@ local options = {
       )
     end,
   },
+  sources = {},
   debug = {
     logging = false,
   },
-  ignored = {},
 }
 
 local fidgets = {}
@@ -289,16 +289,16 @@ local function handle_progress(err, msg, info)
 
   local task = msg.token
   local val = msg.value
+
+  if not task then
+    -- Notification missing required token??
+    return
+  end
+
   local client_key = info.client_id
   local client_name = vim.lsp.get_client_by_id(info.client_id).name
 
-  for _, ignored in ipairs(options.ignored) do
-    if client_name == ignored then
-      return
-    end
-  end
-
-  if not task then
+  if options.sources[client_name] and options.sources[client_name].ignore then
     return
   end
 

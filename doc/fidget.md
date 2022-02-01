@@ -104,10 +104,14 @@ The following table shows the default options for this plugin:
         )
       end,
   },
+  sources = {                 -- Sources to configure
+    * = {                     -- Name of source
+      ignore = false,         -- Ignore notifications from this source
+    },
+  },
   debug = {
     logging = false,          -- whether to enable logging, for debugging
   },
-  ignored = {}                -- A table of LSP client names to ignore, such as null-ls.
 }
 ```
 
@@ -224,18 +228,24 @@ the formatted task status.
 
 Type: `(string, string, string) -> string` (default: something sane)
 
+#### sources.SOURCE_NAME
+
+Options for fidget source with name `SOURCE_NAME`.
+
+Type: `{options}` (default: see individual per-source options)
+
+#### sources.SOURCE_NAME.ignore
+
+Disable fidgets from `SOURCE_NAME`.
+
+Type: `bool` (default: `false`)
+
 #### debug.logging
 
 Whether to enable logging, for debugging. The log is written to
 `~/.local/share/fidget.nvim.log`.
 
 Type: `bool` (default: `false`)
-
-#### ignored
-
-Type: `table` (default: `{}`)
-
-A table of LSP client names to ignore when showing status.
 
 ## Highlights
 
