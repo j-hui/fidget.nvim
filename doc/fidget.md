@@ -105,6 +105,11 @@ The following table shows the default options for this plugin:
         )
       end,
   },
+  sources = {                 -- Sources to configure
+    * = {                     -- Name of source
+      ignore = false,         -- Ignore notifications from this source
+    },
+  },
   debug = {
     logging = false,          -- whether to enable logging, for debugging
   },
@@ -231,6 +236,18 @@ the name of the task, its message, and its progress as a percentage. Returns
 the formatted task status.
 
 Type: `(string, string, string) -> string` (default: something sane)
+
+#### sources.SOURCE_NAME
+
+Options for fidget source with name `SOURCE_NAME`.
+
+Type: `{options}` (default: see individual per-source options)
+
+#### sources.SOURCE_NAME.ignore
+
+Disable fidgets from `SOURCE_NAME`.
+
+Type: `bool` (default: `false`)
 
 #### debug.logging
 

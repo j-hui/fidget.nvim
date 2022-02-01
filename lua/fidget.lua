@@ -39,6 +39,7 @@ local options = {
       )
     end,
   },
+  sources = {},
   debug = {
     logging = false,
   },
@@ -296,18 +297,22 @@ local function handle_progress(err, msg, info)
 
   local task = msg.token
   local val = msg.value
-  local client_key = info.client_id
 
   if not task then
+    -- Notification missing required token??
+    return
+  end
+
+  local client_key = info.client_id
+  local client_name = vim.lsp.get_client_by_id(info.client_id).name
+
+  if options.sources[client_name] and options.sources[client_name].ignore then
     return
   end
 
   -- Create entry if missing
   if fidgets[client_key] == nil then
-    fidgets[client_key] = new_fidget(
-      client_key,
-      vim.lsp.get_client_by_id(info.client_id).name
-    )
+    fidgets[client_key] = new_fidget(client_key, client_name)
   end
   local fidget = fidgets[client_key]
   if fidget.tasks[task] == nil then

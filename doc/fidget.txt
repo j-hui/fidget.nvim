@@ -119,6 +119,7 @@ The following table shows the default options for this plugin:
       debug = {
         logging = false,          -- whether to enable logging, for debugging
       },
+      ignored = {}                -- A table of LSP client names to ignore, such as null-ls.
     }
 <
 
@@ -299,6 +300,15 @@ debug.logging                          Whether to enable logging, for
 
 
 Type: `bool` (default: `false`)
+
+
+                                                        *fidget-ignored*
+
+ignored                                A table of LSP client names to ignore,
+                                       such as null-ls.
+
+
+Type: `table` (default: `{}`)
 
 HIGHLIGHTS                                                 *fidget-highlights*
 
