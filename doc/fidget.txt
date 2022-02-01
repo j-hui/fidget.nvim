@@ -101,6 +101,7 @@ The following table shows the default options for this plugin:
       fmt = {
         leftpad = true,           -- right-justify text in fidget box
         stack_upwards = true,     -- list of tasks grows upwards
+        max_width = 0,            -- maximum width of the fidget box
         fidget =                  -- function to format fidget title
           function(fidget_name, spinner)
             return string.format("%s %s", spinner, fidget_name)
@@ -255,6 +256,18 @@ fmt.stack_upwards                      Whether the list of tasks should grow
 
 
 Type: `bool` (default: `true`)
+
+                                                        *fidget-fmt.max_width*
+
+fmt.max_width                          Maximum width of the fidget box; longer
+                                       lines are truncated. If this option is
+                                       set to `0`, then the width of the fidget
+                                       box will be limited only by that of the
+                                       focused window/editor (depending on
+                                       |fidget-window.relative|).
+
+
+Type: `number` (default: `0`)
 
                                                            *fidget-fmt.fidget*
 
