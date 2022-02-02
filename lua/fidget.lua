@@ -319,7 +319,7 @@ local function handle_progress(err, msg, info)
     if val.message then
       progress.message = val.message
     end
-  elseif val.kind == "end" or val.kind == nil then
+  elseif val.kind == "end" then
     if progress.percentage then
       progress.percentage = 100
     end
@@ -331,6 +331,9 @@ local function handle_progress(err, msg, info)
     elseif options.timer.task_decay == 0 then
       fidget:kill_task(task)
     end
+  else
+    log.warn("Invalid progress notification received:", msg)
+    fidget:kill_task(task)
   end
 
   fidget:fmt()
