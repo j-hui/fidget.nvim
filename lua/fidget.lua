@@ -202,6 +202,7 @@ function base_fidget:show(offset)
 
   api.nvim_win_set_option(self.winid, "winblend", options.window.blend)
   api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetTask")
+  api.nvim_win_set_option(self.winid, "foldenable", false)
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
   if options.fmt.stack_upwards then
     api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", height - 1, 0, -1)
