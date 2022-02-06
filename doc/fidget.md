@@ -256,6 +256,24 @@ Whether to enable logging, for debugging. The log is written to
 
 Type: `bool` (default: `false`)
 
+## Commands
+
+#### FidgetClose
+
+Closes ongoing fidget(s) (i.e., it has incomplete tasks), removing its spinner.
+Arguments can be given to close specific fidgets, e.g.,:
+
+```
+:FidgetClose null-ls rust-analyzer
+```
+
+If no arguments are provided, all sources will be closed.
+
+This command is primarily useful for clearing the UI when tasks appear to
+be unresponsive (see https://github.com/j-hui/fidget.nvim/issues/28).
+Note that this command does not silence a source: subsequent notifications will
+restart the fidget.
+
 ## Highlights
 
 This plugin uses the following highlights to display the fidgets, and can be

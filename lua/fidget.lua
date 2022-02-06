@@ -65,7 +65,7 @@ local function get_window_position(offset)
     local laststatus = vim.opt.laststatus:get()
     if
       laststatus == 2
-      or (laststatus == 1 and #vim.api.nvim_tabpage_list_wins() > 1)
+      or (laststatus == 1 and #api.nvim_tabpage_list_wins() > 1)
     then
       statusline_height = 1
     end
@@ -85,7 +85,7 @@ local function get_window_position(offset)
       local showtabline = vim.opt.showtabline:get()
       if
         showtabline == 2
-        or (showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
+        or (showtabline == 1 and #api.nvim_list_tabpages() > 1)
       then
         baseheight = 1
       end
@@ -109,6 +109,7 @@ local base_fidget = {
   lines = {},
   spinner_idx = 0,
   max_line_len = 0,
+  closed = false,
 }
 
 function base_fidget:fmt()
@@ -249,6 +250,10 @@ function base_fidget:spin()
     self:spin()
   end
 
+  if self.closed then
+    return
+  end
+
   if self:has_tasks() then
     local next_idx = (self.spinner_idx + 1) % #options.text.spinner
     do_spin(next_idx, spin_again, options.timer.spinner_rate)
@@ -353,6 +358,36 @@ function M.is_installed()
   return vim.lsp.handlers["$/progress"] == handle_progress
 end
 
+function M.get_fidgets()
+  local clients = {}
+  for _, client in ipairs(vim.lsp.get_active_clients()) do
+    table.insert(clients, client.name)
+  end
+  return clients
+end
+
+function M.close(...)
+  local args = { n = select("#", ...), ... }
+  local function do_close(client_id)
+    if fidgets[client_id] ~= nil then
+      fidgets[client_id]:close()
+      fidgets[client_id].closed = true
+      fidgets[client_id] = nil
+    end
+  end
+
+  if args.n == 0 then
+    for client_id, _ in pairs(fidgets) do
+      do_close(client_id)
+    end
+    for i = 1, args.n do
+      do_close(args[i])
+    end
+  end
+
+  render_fidgets()
+end
+
 function M.setup(opts)
   options = vim.tbl_deep_extend("force", options, opts or {})
 
@@ -371,6 +406,13 @@ function M.setup(opts)
   vim.lsp.handlers["$/progress"] = handle_progress
   vim.cmd([[highlight default link FidgetTitle Title]])
   vim.cmd([[highlight default link FidgetTask NonText]])
+
+  vim.cmd([[
+    function FidgetComplete(lead, cmd, cursor)
+      return luaeval('require"fidget".get_fidgets()')
+    endfunction
+    command -nargs=* -complete=customlist,FidgetComplete FidgetClose lua require'fidget'.close(<f-args>)
+  ]])
 end
 
 return M
