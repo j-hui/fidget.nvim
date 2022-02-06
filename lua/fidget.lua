@@ -408,10 +408,10 @@ function M.setup(opts)
   vim.cmd([[highlight default link FidgetTask NonText]])
 
   vim.cmd([[
-    function FidgetComplete(lead, cmd, cursor)
+    function! FidgetComplete(lead, cmd, cursor)
       return luaeval('require"fidget".get_fidgets()')
     endfunction
-    command -nargs=* -complete=customlist,FidgetComplete FidgetClose lua require'fidget'.close(<f-args>)
+    command! -nargs=* -complete=customlist,FidgetComplete FidgetClose lua require'fidget'.close(<f-args>)
   ]])
 end
 
