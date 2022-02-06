@@ -258,16 +258,16 @@ Type: `bool` (default: `false`)
 
 ## Commands
 
-#### FidgetKill
+#### FidgetClose
 
 Closes ongoing fidget(s) (i.e., it has incomplete tasks), removing its spinner.
-Arguments can be given to kill specific fidgets, e.g.,:
+Arguments can be given to close specific fidgets, e.g.,:
 
 ```
-:FidgetKill null-ls rust-analyzer
+:FidgetClose null-ls rust-analyzer
 ```
 
-If no arguments are provided, all sources will be killed.
+If no arguments are provided, all sources will be closed.
 
 This command is primarily useful for clearing the UI when tasks appear to
 be unresponsive (see https://github.com/j-hui/fidget.nvim/issues/28).
