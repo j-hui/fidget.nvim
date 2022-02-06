@@ -7,6 +7,7 @@ Table of Contents                                   *fidget-table-of-contents*
   - Installation                                         |fidget-installation|
   - Concepts                                                 |fidget-concepts|
   - Options                                                   |fidget-options|
+  - Commands                                                 |fidget-commands|
   - Highlights                                             |fidget-highlights|
   - Spinners                                                 |fidget-spinners|
   - Troubleshooting                                   |fidget-troubleshooting|
@@ -319,6 +320,28 @@ debug.logging                          Whether to enable logging, for
 
 
 Type: `bool` (default: `false`)
+
+COMMANDS                                                     *fidget-commands*
+
+                                                          *fidget-FidgetClose*
+
+FidgetClose                            Closes ongoing fidget(s) (i.e., it has
+                                       incomplete tasks), removing its spinner.
+                                       Arguments can be given to close specific
+                                       fidgets, e.g.,:
+
+
+>
+    :FidgetClose null-ls rust-analyzer
+<
+
+
+If no arguments are provided, all sources will be closed.
+
+This command is primarily useful for clearing the UI when tasks appear to be
+unresponsive (see https://github.com/j-hui/fidget.nvim/issues/28). Note that
+this command does not silence a source: subsequent notifications will restart
+the fidget.
 
 HIGHLIGHTS                                                 *fidget-highlights*
 
