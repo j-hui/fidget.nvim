@@ -109,7 +109,7 @@ local base_fidget = {
   lines = {},
   spinner_idx = 0,
   max_line_len = 0,
-  is_kill = false,
+  closed = false,
 }
 
 function base_fidget:fmt()
@@ -250,7 +250,7 @@ function base_fidget:spin()
     self:spin()
   end
 
-  if self.is_kill then
+  if self.closed then
     return
   end
 
@@ -366,22 +366,22 @@ function M.get_fidgets()
   return clients
 end
 
-function M.kill(...)
+function M.close(...)
   local args = { n = select("#", ...), ... }
-  local function do_kill(client_id)
+  local function do_close(client_id)
     if fidgets[client_id] ~= nil then
       fidgets[client_id]:close()
-      fidgets[client_id].is_kill = true
+      fidgets[client_id].closed = true
       fidgets[client_id] = nil
     end
   end
 
   if args.n == 0 then
     for client_id, _ in pairs(fidgets) do
-      do_kill(client_id)
+      do_close(client_id)
     end
     for i = 1, args.n do
-      do_kill(args[i])
+      do_close(args[i])
     end
   end
 
@@ -411,7 +411,7 @@ function M.setup(opts)
     function FidgetComplete(lead, cmd, cursor)
       return luaeval('require"fidget".get_fidgets()')
     endfunction
-    command -nargs=* -complete=customlist,FidgetComplete FidgetKill lua require'fidget'.kill(<f-args>)
+    command -nargs=* -complete=customlist,FidgetComplete FidgetClose lua require'fidget'.close(<f-args>)
   ]])
 end
 
