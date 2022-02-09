@@ -193,10 +193,10 @@ window.relative                        Whether to position the window relative
 
 Type: `string` (default: `"win"`)
 
-                                                      *fidget-window.winblend*
+                                                         *fidget-window.blend*
 
-window.winblend                        The value to use for `&winblend` for the
-                                       window.
+window.blend                           The value to use for `&winblend` for the
+                                       window, to adjust transparency.
 
 
 Type: `number` (default: `100`)
