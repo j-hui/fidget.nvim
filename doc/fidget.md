@@ -164,9 +164,9 @@ Valid values are `"win"` or `"editor"`.
 
 Type: `string` (default: `"win"`)
 
-#### window.winblend
+#### window.blend
 
-The value to use for `&winblend` for the window.
+The value to use for `&winblend` for the window, to adjust transparency.
 
 Type: `number` (default: `100`)
 
