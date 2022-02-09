@@ -42,6 +42,7 @@ local options = {
   sources = {},
   debug = {
     logging = false,
+    strict = false,
   },
 }
 
@@ -347,6 +348,18 @@ local function handle_progress(err, msg, info)
         fidget:kill_task(task)
       end, options.timer.task_decay)
     elseif options.timer.task_decay == 0 then
+      fidget:kill_task(task)
+    end
+  else
+    if options.debug.strict then
+      log.warn(
+        string.format(
+          "Invalid progress notification from %s, unrecognized 'kind': %s",
+          client_name,
+          msg
+        )
+      )
+    else
       fidget:kill_task(task)
     end
   end
