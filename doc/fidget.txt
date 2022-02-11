@@ -124,6 +124,7 @@ The following table shows the default options for this plugin:
       },
       debug = {
         logging = false,          -- whether to enable logging, for debugging
+        strict = false,           -- whether to interpret LSP strictly
       },
     }
 <
@@ -318,6 +319,19 @@ debug.logging                          Whether to enable logging, for
                                        debugging. The log is written to
                                        `~/.local/share/fidget.nvim.log`.
 
+
+Type: `bool` (default: `false`)
+
+                                                         *fidget-debug.strict*
+
+debug.strict                           Whether this plugin should follow a
+                                       strict interpretation of the LSP
+                                       protocol, e.g., notifications missing
+                                       the `kind` field.
+
+
+Setting this to `false` (the default) will likely lead to more sensible
+behavior with non-conforming language servers, but may mask server misbehavior.
 
 Type: `bool` (default: `false`)
 
