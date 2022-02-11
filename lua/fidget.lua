@@ -225,7 +225,7 @@ end
 
 function base_fidget:close()
   if self.winid ~= nil and api.nvim_win_is_valid(self.winid) then
-    api.nvim_win_close(self.winid, true)
+    api.nvim_win_hide(self.winid)
     self.winid = nil
   end
   if self.bufid ~= nil and api.nvim_buf_is_valid(self.bufid) then
