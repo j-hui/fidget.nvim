@@ -364,7 +364,7 @@ local function handle_progress(err, msg, info)
     end
   end
 
-  fidget:fmt()
+  vim.schedule(function() fidget:fmt() end)
 end
 
 function M.is_installed()
