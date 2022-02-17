@@ -34,7 +34,7 @@ local options = {
       return string.format(
         "%s%s [%s]",
         message,
-        percentage and string.format(" (%s%%)", percentage) or "",
+        percentage and string.format(" (%.0f%%)", percentage) or "",
         task_name
       )
     end,
