@@ -65,7 +65,7 @@ local function get_window_position(offset)
     local statusline_height = 0
     local laststatus = vim.opt.laststatus:get()
     if
-      laststatus == 2
+      laststatus == 2 or laststatus == 3
       or (laststatus == 1 and #api.nvim_tabpage_list_wins() > 1)
     then
       statusline_height = 1
