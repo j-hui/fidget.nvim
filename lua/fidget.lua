@@ -168,6 +168,13 @@ end
 function base_fidget:show(offset)
   local height = #self.lines
   local width = self.max_line_len
+
+  if height == 0 or width == 0 then
+    -- Nothing to show
+    self:close()
+    return offset
+  end
+
   local row, col = get_window_position(offset)
   local anchor = (options.align.bottom and "S" or "N")
     .. (options.align.right and "E" or "W")
@@ -224,6 +231,11 @@ function base_fidget:has_tasks()
 end
 
 function base_fidget:close()
+  -- NOTE: this function is not reentrant, and may be the source of silly races.
+  -- Time will tell.
+  fidgets[self.key] = nil
+  self.closed = true
+
   if self.winid ~= nil and api.nvim_win_is_valid(self.winid) then
     api.nvim_win_hide(self.winid)
     self.winid = nil
@@ -243,7 +255,6 @@ function base_fidget:spin()
 
   local function do_kill()
     self:close()
-    fidgets[self.key] = nil
     render_fidgets()
   end
 
@@ -364,7 +375,9 @@ local function handle_progress(err, msg, info)
     end
   end
 
-  vim.schedule(function() fidget:fmt() end)
+  vim.schedule(function()
+    fidget:fmt()
+  end)
 end
 
 function M.is_installed()
@@ -384,8 +397,6 @@ function M.close(...)
   local function do_close(client_id)
     if fidgets[client_id] ~= nil then
       fidgets[client_id]:close()
-      fidgets[client_id].closed = true
-      fidgets[client_id] = nil
     end
   end
 
@@ -393,6 +404,7 @@ function M.close(...)
     for client_id, _ in pairs(fidgets) do
       do_close(client_id)
     end
+  else
     for i = 1, args.n do
       do_close(args[i])
     end
