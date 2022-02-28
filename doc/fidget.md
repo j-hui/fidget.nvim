@@ -234,7 +234,7 @@ Type: `(string, string) -> string` (default: something sane)
 
 Function used to format the status of each task. Given three arguments:
 the name of the task, its message, and its progress as a percentage. Returns
-the formatted task status.
+the formatted task status. If this value is false, don't show tasks at all.
 
 Type: `(string, string, string) -> string` (default: something sane)
 
