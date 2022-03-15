@@ -321,7 +321,12 @@ local function handle_progress(err, msg, info)
   end
 
   local client_key = info.client_id
-  local client_name = vim.lsp.get_client_by_id(info.client_id).name
+  local client = vim.lsp.get_client_by_id(info.client_id)
+  -- Client was closed and sent a good-bye message
+  if client == nil then
+    return
+  end
+  local client_name = client.name
 
   if options.sources[client_name] and options.sources[client_name].ignore then
     return
