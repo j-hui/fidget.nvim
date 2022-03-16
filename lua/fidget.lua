@@ -2,6 +2,8 @@ local M = {}
 local api = vim.api
 local log = require("fidget.log")
 
+FidgetProgress = {}
+
 local options = {
   text = {
     spinner = "pipe",
@@ -337,6 +339,7 @@ local function handle_progress(err, msg, info)
   end
 
   local progress = fidget.tasks[task]
+  FidgetProgress[client_name] = val.kind
 
   -- Update progress state
   if val.kind == "begin" then
