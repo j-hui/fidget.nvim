@@ -128,11 +128,12 @@ function base_fidget:fmt()
   self.lines = { line }
   self.max_line_len = strlen(line)
   for _, task in pairs(self.tasks) do
-    line = options.fmt.task and options.fmt.task(
-      subtab(task.title),
-      subtab(task.message),
-      task.percentage
-    )
+    line = options.fmt.task
+      and options.fmt.task(
+        subtab(task.title),
+        subtab(task.message),
+        task.percentage
+      )
     if line then
       if options.fmt.stack_upwards then
         table.insert(self.lines, 1, line)
