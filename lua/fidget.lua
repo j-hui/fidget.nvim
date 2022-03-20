@@ -129,17 +129,20 @@ function base_fidget:fmt()
   self.lines = { line }
   self.max_line_len = strlen(line)
   for _, task in pairs(self.tasks) do
-    line = options.fmt.task(
-      subtab(task.title),
-      subtab(task.message),
-      task.percentage
-    )
-    if options.fmt.stack_upwards then
-      table.insert(self.lines, 1, line)
-    else
-      table.insert(self.lines, line)
+    line = options.fmt.task
+      and options.fmt.task(
+        subtab(task.title),
+        subtab(task.message),
+        task.percentage
+      )
+    if line then
+      if options.fmt.stack_upwards then
+        table.insert(self.lines, 1, line)
+      else
+        table.insert(self.lines, line)
+      end
+      self.max_line_len = math.max(self.max_line_len, strlen(line))
     end
-    self.max_line_len = math.max(self.max_line_len, strlen(line))
   end
 
   -- Never try to output any text wider than what we are aligning to.
