@@ -421,6 +421,24 @@ function M.close(...)
   render_fidgets()
 end
 
+local function metals_status_handler(err, status, ctx)
+  local val = {}
+  -- trim and remove spinner
+  local text = status.text:gsub('[⠇⠋⠙⠸⠴⠦]', ''):gsub("^%s*(.-)%s*$", "%1")
+  if status.hide then
+    val = {kind = "end"}
+  elseif status.show then
+    val = {kind = "begin", title = text}
+  elseif status.text then
+    val = {kind = "report", message = text}
+  else
+    return
+  end
+  local info = {client_id = ctx.client_id}
+  local msg = {token = "metals", value = val}
+  handle_progress(err, msg, ctx)
+end
+
 function M.setup(opts)
   options = vim.tbl_deep_extend("force", options, opts or {})
 
@@ -437,6 +455,12 @@ function M.setup(opts)
   end
 
   vim.lsp.handlers["$/progress"] = handle_progress
+
+  -- metals handling
+  local metals_config = require('lspconfig.server_configurations.metals').default_config
+  metals_config.init_options.statusBarProvider = "on"
+  metals_config.handlers = {['metals/status'] = metals_status_handler}
+
   vim.cmd([[highlight default link FidgetTitle Title]])
   vim.cmd([[highlight default link FidgetTask NonText]])
 
