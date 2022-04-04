@@ -386,6 +386,7 @@ local function handle_progress(err, msg, info)
   vim.schedule(function()
     fidget:fmt()
   end)
+  vim.api.nvim_command("doautocmd <nomodeline> User LspProgressUpdate")
 end
 
 function M.is_installed()
