@@ -48,7 +48,31 @@ local options = {
 
 local fidgets = {}
 
-local function render_fidgets()
+
+local function ignore_E523(callable)
+  -- Wrap a function and suppress the E523 error.
+  --
+  -- The E523 error (Not allowed here) happens when 'secure' operations
+  -- (including buffer or window management) are invoked while textlock is held
+  -- or the neovim UI is blocking. They are not easily avoidable despite
+  -- the use of vim.schedule (see #68 for more details).
+  --
+  -- This utility provides a workaround to simply supress the error.
+  -- All other errors will be re-thrown.
+
+  return function()
+    status, ex = pcall(callable)
+    if not status then  -- exception!
+      if string.find(ex, "E523: Not allowed here") then
+        -- Ignore E523 error (not allowed here): see #68
+      else
+        error("Error occured:\n" .. ex)
+      end
+    end
+  end
+end
+
+local render_fidgets = ignore_E523(function()
   local offset = 0
   for client_id, fidget in pairs(fidgets) do
     if vim.lsp.buf_is_attached(0, client_id) then
@@ -57,7 +81,7 @@ local function render_fidgets()
       fidget:close()
     end
   end
-end
+end)
 
 local function get_window_position(offset)
   local width, height, baseheight
@@ -237,8 +261,6 @@ end
 function base_fidget:close()
   -- NOTE: this function is not reentrant, and may be the source of silly races.
   -- Time will tell.
-  fidgets[self.key] = nil
-  self.closed = true
 
   if self.winid ~= nil and api.nvim_win_is_valid(self.winid) then
     api.nvim_win_hide(self.winid)
@@ -248,6 +270,10 @@ function base_fidget:close()
     api.nvim_buf_delete(self.bufid, { force = true })
     self.bufid = nil
   end
+
+  -- Remove a fidget after window/buffer deletion is successful (see #68)
+  fidgets[self.key] = nil
+  self.closed = true
 end
 
 function base_fidget:spin()
@@ -258,8 +284,10 @@ function base_fidget:spin()
   end
 
   local function do_kill()
-    self:close()
-    render_fidgets()
+    ignore_E523(function()
+      self:close()
+      render_fidgets()
+    end)()
   end
 
   local function spin_again()
