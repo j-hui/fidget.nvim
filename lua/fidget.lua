@@ -2,6 +2,27 @@ local M = {}
 local api = vim.api
 local log = require("fidget.log")
 
+-- NOTE:
+-- Workaround for nvim bug where nvim_win_set_option "leaks" local
+-- options to windows created afterwards (thanks @sindrets!)
+-- SEE:
+-- https://github.com/b0o/incline.nvim/issues/4
+-- https://github.com/neovim/neovim/issues/18283
+-- https://github.com/neovim/neovim/issues/14670
+local win_set_local_options = function(win, opts)
+  api.nvim_win_call(win, function()
+    for opt, val in pairs(opts) do
+      local arg
+      if type(val) == "boolean" then
+        arg = (val and "" or "no") .. opt
+      else
+        arg = opt .. "=" .. val
+      end
+      vim.cmd("setlocal " .. arg)
+    end
+  end)
+end
+
 local options = {
   text = {
     spinner = "pipe",
@@ -237,8 +258,10 @@ function base_fidget:show(offset)
     })
   end
 
-  api.nvim_win_set_option(self.winid, "winblend", options.window.blend)
-  api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetTask")
+  win_set_local_options(self.winid, {
+    winblend = options.window.blend,
+    winhighlight = "Normal:FidgetTask",
+  })
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
   if options.fmt.stack_upwards then
     api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", height - 1, 0, -1)
