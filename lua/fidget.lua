@@ -193,6 +193,20 @@ function base_fidget:fmt()
   render_fidgets()
 end
 
+local function splits_on_newlines(lines)
+  local result = {}
+  for _, line in ipairs(lines) do
+    if line:match("\n") then
+      for _, subline in ipairs(vim.split(line, "\n")) do
+        table.insert(result, subline)
+      end
+    else
+      table.insert(result, line)
+    end
+  end
+  return result
+end
+
 function base_fidget:show(offset)
   local height = #self.lines
   local width = self.max_line_len
@@ -239,6 +253,7 @@ function base_fidget:show(offset)
 
   api.nvim_win_set_option(self.winid, "winblend", options.window.blend)
   api.nvim_win_set_option(self.winid, "winhighlight", "Normal:FidgetTask")
+  self.lines = splits_on_newlines(self.lines) -- handle lines that might contain a "\n" character
   api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
   if options.fmt.stack_upwards then
     api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", height - 1, 0, -1)
