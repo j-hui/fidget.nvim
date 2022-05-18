@@ -1,6 +1,7 @@
 local M = {}
 local api = vim.api
 local log = require("fidget.log")
+local is_installed = false
 
 -- NOTE:
 -- Workaround for nvim bug where nvim_win_set_option "leaks" local
@@ -82,7 +83,7 @@ local function ignore_E523(callable)
   -- All other errors will be re-thrown.
 
   return function()
-    status, ex = pcall(callable)
+    local status, ex = pcall(callable)
     if not status then  -- exception!
       if string.find(ex, "E523: Not allowed here") then
         -- Ignore E523 error (not allowed here): see #68
@@ -371,91 +372,67 @@ local function new_fidget(key, name)
 end
 
 local function new_task()
-  return { title = nil, message = nil, percentage = nil }
+  return { title = nil, message = nil, percentage = nil, started = false }
 end
 
-local function handle_progress(err, msg, info)
+local function handle_progress()
   -- See: https://microsoft.github.io/language-server-protocol/specifications/specification-current/#progress
+  for _, client in ipairs(vim.lsp.get_active_clients()) do
+    local messages = client.messages
+    for task, val in pairs(messages.progress) do
+      local client_key = client.id
+      local client_name = client.name
 
-  log.debug(
-    "Received progress notification:",
-    { err = err, msg = msg, info = info }
-  )
+      if options.sources[client_name] and options.sources[client_name].ignore then
+        return
+      end
 
-  local task = msg.token
-  local val = msg.value
+      -- Create entry if missing
+      if fidgets[client_key] == nil then
+        fidgets[client_key] = new_fidget(client_key, client_name)
+      end
+      local fidget = fidgets[client_key]
+      if fidget.tasks[task] == nil then
+        fidget.tasks[task] = new_task()
+      end
 
-  if not task then
-    -- Notification missing required token??
-    return
-  end
+      local progress = fidget.tasks[task]
 
-  local client_key = info.client_id
-  local client = vim.lsp.get_client_by_id(info.client_id)
-  if not client then
-    return
-  end
-  local client_name = client.name
+      -- Update progress state
+      if not progress.started then
+        progress.started = true
+        progress.title = val.title
+        progress.message = options.text.commenced
+      elseif not val.done then
+        if val.percentage then
+          progress.percentage = val.percentage
+        end
+        if val.message then
+          progress.message = val.message
+        end
+      else
+        if progress.percentage then
+          progress.percentage = 100
+        end
+        progress.message = options.text.completed
+        if options.timer.task_decay > 0 then
+          vim.defer_fn(function()
+            fidget:kill_task(task)
+          end, options.timer.task_decay)
+        elseif options.timer.task_decay == 0 then
+          fidget:kill_task(task)
+        end
+      end
 
-  if options.sources[client_name] and options.sources[client_name].ignore then
-    return
-  end
-
-  -- Create entry if missing
-  if fidgets[client_key] == nil then
-    fidgets[client_key] = new_fidget(client_key, client_name)
-  end
-  local fidget = fidgets[client_key]
-  if fidget.tasks[task] == nil then
-    fidget.tasks[task] = new_task()
-  end
-
-  local progress = fidget.tasks[task]
-
-  -- Update progress state
-  if val.kind == "begin" then
-    progress.title = val.title
-    progress.message = options.text.commenced
-  elseif val.kind == "report" then
-    if val.percentage then
-      progress.percentage = val.percentage
-    end
-    if val.message then
-      progress.message = val.message
-    end
-  elseif val.kind == "end" then
-    if progress.percentage then
-      progress.percentage = 100
-    end
-    progress.message = options.text.completed
-    if options.timer.task_decay > 0 then
-      vim.defer_fn(function()
-        fidget:kill_task(task)
-      end, options.timer.task_decay)
-    elseif options.timer.task_decay == 0 then
-      fidget:kill_task(task)
-    end
-  else
-    if options.debug.strict then
-      log.warn(
-        string.format(
-          "Invalid progress notification from %s, unrecognized 'kind': %s",
-          client_name,
-          msg
-        )
-      )
-    else
-      fidget:kill_task(task)
+      vim.schedule(function()
+        fidget:fmt()
+      end)
     end
   end
-
-  vim.schedule(function()
-    fidget:fmt()
-  end)
 end
 
 function M.is_installed()
-  return vim.lsp.handlers["$/progress"] == handle_progress
+  return is_installed or false
 end
 
 function M.get_fidgets()
@@ -502,15 +479,17 @@ function M.setup(opts)
     options.text.spinner = spinner
   end
 
-  if vim.lsp.handlers["$/progress"] then
-     local old_handler = vim.lsp.handlers["$/progress"]
-     vim.lsp.handlers["$/progress"] = function(...)
-       old_handler(...)
-       handle_progress(...)
-     end
-  else
-     vim.lsp.handlers["$/progress"] = handle_progress
-  end
+
+  vim.api.nvim_create_augroup("fidget", { clear = true })
+  vim.api.nvim_create_autocmd(
+    { "User" },
+    {
+        pattern = { "LspProgressUpdate" },
+        group = "fidget",
+        desc = "fidget progress update",
+        callback = handle_progress,
+    }
+  )
 
   vim.cmd([[highlight default link FidgetTitle Title]])
   vim.cmd([[highlight default link FidgetTask NonText]])
@@ -521,6 +500,8 @@ function M.setup(opts)
     endfunction
     command! -nargs=* -complete=customlist,FidgetComplete FidgetClose lua require'fidget'.close(<f-args>)
   ]])
+
+  is_installed = true
 end
 
 return M
