@@ -137,12 +137,20 @@ local function get_window_position(offset)
         baseheight = 1
       end
     end
-  else
+  else -- fidget relative to window.
     height = api.nvim_win_get_height(0)
     width = api.nvim_win_get_width(0)
+
+    if vim.fn.has('nvim-0.8.0') > 0 and vim.opt.winbar:get() ~= '' then
+      -- When winbar is enabled, the effective window height should be
+      -- decreased by 1. (see :help winbar)
+      height = height - 1
+    end
+
     baseheight = 1
   end
 
+  -- returns row, col
   return options.align.bottom and (height - offset) or (baseheight + offset),
     options.align.right and width or 1
 end
