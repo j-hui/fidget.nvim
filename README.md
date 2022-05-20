@@ -29,7 +29,7 @@ Who doesn't love a little bit of eye candy?
 
 ## Requirements
 
-- Neovim 0.6.0+
+- Neovim v0.7.0+
 - [nvim-lsp](https://github.com/neovim/nvim-lspconfig)
 - An LSP server that implements LSP's [progress][lsp-progress] endpoint
 
