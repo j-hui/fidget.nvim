@@ -252,6 +252,7 @@ function base_fidget:show(offset)
 
   if self.bufid == nil or not api.nvim_buf_is_valid(self.bufid) then
     self.bufid = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_option(self.bufid, "filetype", "fidget")
   end
   if self.winid == nil or not api.nvim_win_is_valid(self.winid) then
     self.winid = api.nvim_open_win(self.bufid, false, {
