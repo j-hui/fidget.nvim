@@ -38,6 +38,7 @@ local options = {
     relative = "win",
     blend = 100,
     zindex = nil,
+    border = "none",
   },
   timer = {
     spinner_rate = 125,
@@ -266,6 +267,7 @@ function base_fidget:show(offset)
       style = "minimal",
       zindex = options.window.zindex,
       noautocmd = true,
+      border = options.window.border,
     })
   else
     api.nvim_win_set_config(self.winid, {
