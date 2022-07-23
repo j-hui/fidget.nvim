@@ -25,7 +25,7 @@ I wanted be able to see the progress reported by LSP servers without involving
 the status line.
 Who doesn't love a little bit of eye candy?
 
-[lsp-progress]: https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#progress
+[lsp-progress]: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#progress
 
 ## Requirements
 
