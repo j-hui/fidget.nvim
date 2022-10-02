@@ -98,6 +98,7 @@ The following table shows the default options for this plugin:
         relative = "win",         -- where to anchor, either "win" or "editor"
         blend = 100,              -- &winblend for the window
         zindex = nil,             -- the zindex value for the window
+        border = "none",          -- style of border for the fidget window
       },
       fmt = {
         leftpad = true,           -- right-justify text in fidget box
@@ -209,6 +210,15 @@ window.zindex                          The value to use for `zindex` (see `:h
 
 
 Type: `number` (default: `nil`)
+
+                                                        *fidget-window.border*
+
+window.border                          The value to use for the window `border`
+                                       (see `:h nvim_win_open`), to adjust the
+                                       Fidget window border style.
+
+
+Type: `string` (default: `"none"`)
 
                                                    *fidget-timer.spinner_rate*
 
