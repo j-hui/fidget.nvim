@@ -288,7 +288,7 @@ function base_fidget:show(offset)
     winhighlight = "Normal:FidgetTask",
   })
   self.lines = splits_on_newlines(self.lines) -- handle lines that might contain a "\n" character
-  api.nvim_buf_set_lines(self.bufid, 0, height, false, self.lines)
+  pcall(api.nvim_buf_set_lines, self.bufid, 0, height, false, self.lines)
   if options.fmt.stack_upwards then
     api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", height - 1, 0, -1)
   else
