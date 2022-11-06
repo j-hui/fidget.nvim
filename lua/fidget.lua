@@ -316,7 +316,14 @@ function base_fidget:close()
     self.winid = nil
   end
   if self.bufid ~= nil and api.nvim_buf_is_valid(self.bufid) then
-    api.nvim_buf_delete(self.bufid, { force = true })
+    -- If the fidget buffer becomes the current one after closing the fidget
+    -- window, this most likely means that vim is exiting, although VimLeavePre
+    -- autocmd was not executed yet.
+    -- Deleting the buffer at this point causes a Neovim crash.
+    -- We let the buffer be - it will be deleted automatically on vim exit.
+    if self.bufid ~= api.nvim_get_current_buf() then
+      api.nvim_buf_delete(self.bufid, { force = true })
+    end
     self.bufid = nil
   end
 
