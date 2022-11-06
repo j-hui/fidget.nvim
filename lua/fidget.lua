@@ -385,8 +385,13 @@ local function new_task()
   return { title = nil, message = nil, percentage = nil }
 end
 
+local vim_closing = false
+
 local function handle_progress(err, msg, info)
   -- See: https://microsoft.github.io/language-server-protocol/specifications/specification-current/#progress
+  if vim_closing then
+    return
+  end
 
   log.debug(
     "Received progress notification:",
@@ -522,6 +527,14 @@ function M.setup(opts)
   else
      vim.lsp.handlers["$/progress"] = handle_progress
   end
+
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    callback = function()
+      log.debug("VimLeavePre")
+      vim_closing = true
+      M.close()
+    end
+  })
 
   vim.cmd([[highlight default link FidgetTitle Title]])
   vim.cmd([[highlight default link FidgetTask NonText]])
