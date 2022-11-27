@@ -316,7 +316,14 @@ function base_fidget:close()
     self.winid = nil
   end
   if self.bufid ~= nil and api.nvim_buf_is_valid(self.bufid) then
-    api.nvim_buf_delete(self.bufid, { force = true })
+    -- If the fidget buffer becomes the current one after closing the fidget
+    -- window, this most likely means that vim is exiting, although VimLeavePre
+    -- autocmd was not executed yet.
+    -- Deleting the buffer at this point causes a Neovim crash.
+    -- We let the buffer be - it will be deleted automatically on vim exit.
+    if self.bufid ~= api.nvim_get_current_buf() then
+      api.nvim_buf_delete(self.bufid, { force = true })
+    end
     self.bufid = nil
   end
 
@@ -385,8 +392,13 @@ local function new_task()
   return { title = nil, message = nil, percentage = nil }
 end
 
+local vim_closing = false
+
 local function handle_progress(err, msg, info)
   -- See: https://microsoft.github.io/language-server-protocol/specifications/specification-current/#progress
+  if vim_closing then
+    return
+  end
 
   log.debug(
     "Received progress notification:",
@@ -522,6 +534,14 @@ function M.setup(opts)
   else
      vim.lsp.handlers["$/progress"] = handle_progress
   end
+
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    callback = function()
+      log.debug("VimLeavePre")
+      vim_closing = true
+      M.close()
+    end
+  })
 
   vim.cmd([[highlight default link FidgetTitle Title]])
   vim.cmd([[highlight default link FidgetTask NonText]])
