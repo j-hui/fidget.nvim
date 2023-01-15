@@ -295,7 +295,11 @@ function base_fidget:show(offset)
     api.nvim_buf_add_highlight(self.bufid, -1, "FidgetTitle", 0, 0, -1)
   end
 
-  return #self.lines + offset
+  local next_offset = #self.lines + offset
+  if options.window.border ~= "none" then
+    next_offset = next_offset + 2
+  end
+  return next_offset
 end
 
 function base_fidget:kill_task(task)
