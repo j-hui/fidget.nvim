@@ -328,7 +328,7 @@ Type: `bool` (default: `false`)
 
 debug.logging                          Whether to enable logging, for
                                        debugging. The log is written to
-                                       `~/.local/share/fidget.nvim.log`.
+                                       `~/.local/share/nvim/fidget.nvim.log`.
 
 
 Type: `bool` (default: `false`)
