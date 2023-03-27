@@ -174,13 +174,13 @@ Type: `number` (default: `100`)
 
 #### window.zindex
 
-The value to use for `zindex` (see `:h nvim_win_open`) for the window.
+The value to use for `zindex` (see `:h nvim_open_win`) for the window.
 
 Type: `number` (default: `nil`)
 
 #### window.border
 
-The value to use for the window `border` (see `:h nvim_win_open`), to adjust
+The value to use for the window `border` (see `:h nvim_open_win`), to adjust
 the Fidget window border style.
 
 Type: `string` (default: `"none"`)
