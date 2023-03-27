@@ -4,41 +4,41 @@
 Table of Contents                                   *fidget-table-of-contents*
 
 1. fidget.nvim                                            |fidget-fidget.nvim|
-  - Installation                                         |fidget-installation|
-  - Concepts                                                 |fidget-concepts|
-  - Options                                                   |fidget-options|
-  - Commands                                                 |fidget-commands|
-  - Highlights                                             |fidget-highlights|
-  - Spinners                                                 |fidget-spinners|
-  - Troubleshooting                                   |fidget-troubleshooting|
-  - Acknowledgements                                 |fidget-acknowledgements|
+  - Installation                             |fidget-fidget.nvim-installation|
+  - Concepts                                     |fidget-fidget.nvim-concepts|
+  - Options                                       |fidget-fidget.nvim-options|
+  - Commands                                     |fidget-fidget.nvim-commands|
+  - Highlights                                 |fidget-fidget.nvim-highlights|
+  - Spinners                                     |fidget-fidget.nvim-spinners|
+  - Troubleshooting                       |fidget-fidget.nvim-troubleshooting|
+  - Acknowledgements                     |fidget-fidget.nvim-acknowledgements|
 
 ==============================================================================
 1. fidget.nvim                                            *fidget-fidget.nvim*
 
-INSTALLATION                                             *fidget-installation*
+
+INSTALLATION                                 *fidget-fidget.nvim-installation*
 
 Install this plugin using your favorite plugin manager. For example, using
 vim-plug <https://github.com/junegunn/vim-plug>:
 
->
+>vim
     Plug 'j-hui/fidget.nvim'
 <
-
 
 Make sure the plugin installed (e.g., run `:PlugInstall` if using vim-plug).
 After the plugin is loaded (e.g., after `plug#end()` for vim-plug), call its
 `setup` function (in Lua):
 
->
+>lua
     require"fidget".setup{}
 <
-
 
 `setup` takes a table of |fidget-options| as its parameter, used to configure
 the plugin.
 
-CONCEPTS                                                     *fidget-concepts*
+
+CONCEPTS                                         *fidget-fidget.nvim-concepts*
 
 This section summarizes the vocabulary used by this plugin and its
 documentation to describe relevant concepts, and clarifies the relationship
@@ -69,15 +69,15 @@ and `taskB1`, `taskB2`, respectively, they might be displayed as follows:
     Ongoing [taskB2]
 <
 
-
 Each fidget’s spinner is `...`; the tasks’ messages are `Started`,
 `Ongoing`, and `Completed`.
 
-OPTIONS                                                       *fidget-options*
+
+OPTIONS                                           *fidget-fidget.nvim-options*
 
 The following table shows the default options for this plugin:
 
->
+>lua
     {
       text = {
         spinner = "pipe",         -- animation shown when tasks are ongoing
@@ -131,235 +131,196 @@ The following table shows the default options for this plugin:
 <
 
 
-                                                         *fidget-text.spinner*
+TEXT.SPINNER
 
-text.spinner                           Animation shown in fidget title when its
-                                       tasks are ongoing. Can either be the
-                                       name of one of the predefined
-                                       |fidget-fidget-spinners|, or an array of
-                                       strings representing each frame of the
-                                       animation.
-
+Animation shown in fidget title when its tasks are ongoing. Can either be the
+name of one of the predefined |fidget-fidget-spinners|, or an array of strings
+representing each frame of the animation.
 
 Type: `string` or `[string]` (default: `"pipe"`)
 
-                                                            *fidget-text.done*
 
-text.done                              Text shown in fidget title when all its
-                                       tasks are completed, i.e., it has no
-                                       more tasks.
+TEXT.DONE
 
+Text shown in fidget title when all its tasks are completed, i.e., it has no
+more tasks.
 
 Type: `string` (default: `"✔"`)
 
-                                                       *fidget-text.commenced*
 
-text.commenced                         Message shown when a task starts.
+TEXT.COMMENCED
 
+Message shown when a task starts.
 
 Type: `string` (default: `"Started"`)
 
-                                                       *fidget-text.completed*
 
-text.completed                         Message shown when a task completes.
+TEXT.COMPLETED
 
+Message shown when a task completes.
 
 Type: `string` (default: `"Completed"`)
 
-                                                         *fidget-align.bottom*
 
-align.bottom                           Whether to align fidgets along the
-                                       bottom edge of each buffer.
+ALIGN.BOTTOM
 
-
-Type: `bool` (default: `true`)
-
-                                                          *fidget-align.right*
-
-align.right                            Whether to align fidgets along the right
-                                       edge of each buffer. Setting this to
-                                       `false` is not recommended, since that
-                                       will lead to the fidget text being
-                                       regularly overlaid on top of buffer text
-                                       (which is supported but unsightly).
-
+Whether to align fidgets along the bottom edge of each buffer.
 
 Type: `bool` (default: `true`)
 
-                                                      *fidget-window.relative*
 
-window.relative                        Whether to position the window relative
-                                       to the current window, or the editor.
-                                       Valid values are `"win"` or `"editor"`.
+ALIGN.RIGHT
 
+Whether to align fidgets along the right edge of each buffer. Setting this to
+`false` is not recommended, since that will lead to the fidget text being
+regularly overlaid on top of buffer text (which is supported but unsightly).
+
+Type: `bool` (default: `true`)
+
+
+WINDOW.RELATIVE
+
+Whether to position the window relative to the current window, or the editor.
+Valid values are `"win"` or `"editor"`.
 
 Type: `string` (default: `"win"`)
 
-                                                         *fidget-window.blend*
 
-window.blend                           The value to use for `&winblend` for the
-                                       window, to adjust transparency.
+WINDOW.BLEND
 
+The value to use for `&winblend` for the window, to adjust transparency.
 
 Type: `number` (default: `100`)
 
-                                                        *fidget-window.zindex*
 
-window.zindex                          The value to use for `zindex` (see `:h
-                                       nvim_win_open`) for the window.
+WINDOW.ZINDEX
 
+The value to use for `zindex` (see `:h nvim_open_win`) for the window.
 
 Type: `number` (default: `nil`)
 
-                                                        *fidget-window.border*
 
-window.border                          The value to use for the window `border`
-                                       (see `:h nvim_win_open`), to adjust the
-                                       Fidget window border style.
+WINDOW.BORDER
 
+The value to use for the window `border` (see `:h nvim_open_win`), to adjust
+the Fidget window border style.
 
 Type: `string` (default: `"none"`)
 
-                                                   *fidget-timer.spinner_rate*
 
-timer.spinner_rate                     Duration of each frame of the spinner
-                                       animation, in ms. Set to `0` to only use
-                                       the first frame of the spinner
-                                       animation.
+TIMER.SPINNER_RATE
 
+Duration of each frame of the spinner animation, in ms. Set to `0` to only use
+the first frame of the spinner animation.
 
 Type: `number` (default: `125`)
 
-                                                   *fidget-timer.fidget_decay*
 
-timer.fidget_decay                     How long to continue showing a fidget
-                                       after all its tasks are completed, in
-                                       ms. Set to `0` to clear each fidget as
-                                       soon as all its tasks are completed; set
-                                       to any negative number to keep it around
-                                       indefinitely (not recommended).
+TIMER.FIDGET_DECAY
 
+How long to continue showing a fidget after all its tasks are completed, in ms.
+Set to `0` to clear each fidget as soon as all its tasks are completed; set to
+any negative number to keep it around indefinitely (not recommended).
 
 Type: `number` (default: `2000`)
 
-                                                     *fidget-timer.task_decay*
 
-timer.task_decay                       How long to continue showing a task
-                                       after it is complete, in ms. Set to `0`
-                                       to clear each task as soon as it is
-                                       completed; set to any negative number to
-                                       keep it around until its fidget is
-                                       cleared.
+TIMER.TASK_DECAY
 
+How long to continue showing a task after it is complete, in ms. Set to `0` to
+clear each task as soon as it is completed; set to any negative number to keep
+it around until its fidget is cleared.
 
 Type: `number` (default: `1000`)
 
-                                                          *fidget-fmt.leftpad*
 
-fmt.leftpad                            Whether to right-justify the text in a
-                                       fidget box by left-padding it with
-                                       spaces. Recommended when
-                                       |fidget-align.right| is `true`.
+FMT.LEFTPAD
 
+Whether to right-justify the text in a fidget box by left-padding it with
+spaces. Recommended when |fidget-align.right| is `true`.
 
 Type: `bool` (default: `true`)
 
-                                                    *fidget-fmt.stack_upwards*
 
-fmt.stack_upwards                      Whether the list of tasks should grow
-                                       upward in a fidget box. With this set to
-                                       `true`, fidget titles tend to jump
-                                       around less.
+FMT.STACK_UPWARDS
 
+Whether the list of tasks should grow upward in a fidget box. With this set to
+`true`, fidget titles tend to jump around less.
 
 Type: `bool` (default: `true`)
 
-                                                        *fidget-fmt.max_width*
 
-fmt.max_width                          Maximum width of the fidget box; longer
-                                       lines are truncated. If this option is
-                                       set to `0`, then the width of the fidget
-                                       box will be limited only by that of the
-                                       focused window/editor (depending on
-                                       |fidget-window.relative|).
+FMT.MAX_WIDTH
 
+Maximum width of the fidget box; longer lines are truncated. If this option is
+set to `0`, then the width of the fidget box will be limited only by that of
+the focused window/editor (depending on |fidget-window.relative|).
 
 Type: `number` (default: `0`)
 
-                                                           *fidget-fmt.fidget*
 
-fmt.fidget                             Function used to format the title of a
-                                       fidget. Given two arguments: the name of
-                                       the fidget, and the current frame of the
-                                       spinner. Returns the formatted fidget
-                                       title.
+FMT.FIDGET
 
+Function used to format the title of a fidget. Given two arguments: the name of
+the fidget, and the current frame of the spinner. Returns the formatted fidget
+title.
 
 Type: `(string, string) -> string` (default: something sane)
 
-                                                             *fidget-fmt.task*
 
-fmt.task                               Function used to format the status of
-                                       each task. Given three arguments: the
-                                       name of the task, its message, and its
-                                       progress as a percentage. Returns the
-                                       formatted task status. If this value is
-                                       false, don’t show tasks at all.
+FMT.TASK
 
+Function used to format the status of each task. Given three arguments: the
+name of the task, its message, and its progress as a percentage. Returns the
+formatted task status. If this value is false, don’t show tasks at all.
 
 Type: `(string, string, string) -> string` (default: something sane)
 
-                                                  *fidget-sources.SOURCE_NAME*
 
-sources.SOURCE_NAME                    Options for fidget source with name
-                                       `SOURCE_NAME`.
+SOURCES.SOURCE_NAME
 
+Options for fidget source with name `SOURCE_NAME`.
 
 Type: `{options}` (default: see individual per-source options)
 
-                                           *fidget-sources.SOURCE_NAME.ignore*
 
-sources.SOURCE_NAME.ignore             Disable fidgets from `SOURCE_NAME`.
+SOURCES.SOURCE_NAME.IGNORE
 
-
-Type: `bool` (default: `false`)
-
-                                                        *fidget-debug.logging*
-
-debug.logging                          Whether to enable logging, for
-                                       debugging. The log is written to
-                                       `~/.local/share/nvim/fidget.nvim.log`.
-
+Disable fidgets from `SOURCE_NAME`.
 
 Type: `bool` (default: `false`)
 
-                                                         *fidget-debug.strict*
 
-debug.strict                           Whether this plugin should follow a
-                                       strict interpretation of the LSP
-                                       protocol, e.g., notifications missing
-                                       the `kind` field.
+DEBUG.LOGGING
 
+Whether to enable logging, for debugging. The log is written to
+`~/.local/share/nvim/fidget.nvim.log`.
+
+Type: `bool` (default: `false`)
+
+
+DEBUG.STRICT
+
+Whether this plugin should follow a strict interpretation of the LSP protocol,
+e.g., notifications missing the `kind` field.
 
 Setting this to `false` (the default) will likely lead to more sensible
 behavior with non-conforming language servers, but may mask server misbehavior.
 
 Type: `bool` (default: `false`)
 
-COMMANDS                                                     *fidget-commands*
 
-                                                          *fidget-FidgetClose*
+COMMANDS                                         *fidget-fidget.nvim-commands*
 
-FidgetClose                            Closes ongoing fidget(s) (i.e., it has
-                                       incomplete tasks), removing its spinner.
-                                       Arguments can be given to close specific
-                                       fidgets, e.g.,:
 
+FIDGETCLOSE
+
+Closes ongoing fidget(s) (i.e., it has incomplete tasks), removing its spinner.
+Arguments can be given to close specific fidgets, e.g.,:
 
 >
     :FidgetClose null-ls rust-analyzer
 <
-
 
 If no arguments are provided, all sources will be closed.
 
@@ -368,42 +329,40 @@ unresponsive (see https://github.com/j-hui/fidget.nvim/issues/28). Note that
 this command does not silence a source: subsequent notifications will restart
 the fidget.
 
-HIGHLIGHTS                                                 *fidget-highlights*
+
+HIGHLIGHTS                                     *fidget-fidget.nvim-highlights*
 
 This plugin uses the following highlights to display the fidgets, and can be
 overridden to customize how fidgets look.
 
 For example, to make the `FidgetTitle` blue, add the following to your .vimrc:
 
->
+>vim
     highlight FidgetTitle ctermfg=110 guifg=#6cb6eb
 <
 
-
 Or to link <hi-link> it to the `Variable` highlight group:
 
->
+>vim
     highlight link FidgetTitle Variable
 <
 
 
-                                                          *fidget-FidgetTitle*
+FIDGETTITLE
 
-FidgetTitle                            Highlight used for the title of a
-                                       fidget.
-
+Highlight used for the title of a fidget.
 
 Default: linked to hl-Title <hl-Title>
 
-                                                           *fidget-FidgetTask*
 
-FidgetTask                             Highlight used for the body (the tasks)
-                                       of a fidget.
+FIDGETTASK
 
+Highlight used for the body (the tasks) of a fidget.
 
 Default: linked to hl-LineNr <hl-LineNr>
 
-SPINNERS                                                     *fidget-spinners*
+
+SPINNERS                                         *fidget-fidget.nvim-spinners*
 
 The |fidget-text.spinner| option recognizes the following spinner pattern
 names:
@@ -444,13 +403,14 @@ names:
     meter
 <
 
-
 See <lua/fidget/spinners.lua> of this plugin’s source code to see how each
 animation is defined.
 
-TROUBLESHOOTING                                       *fidget-troubleshooting*
 
-If in doubt, file an issue on https://github.com/j-hui/fidget.nvim/issues.
+TROUBLESHOOTING                           *fidget-fidget.nvim-troubleshooting*
+
+If in doubt, file an issue on <https://github.com/j-hui/fidget.nvim/issues>.
+
 
 I SET UP THIS PLUGIN BUT NOTHING APPEARS! ~
 
@@ -464,22 +424,21 @@ You can check whether Fidget’s progress handler is correctly installed using
 `is_installed`. For example, to do this interactively, run the following Vim
 command:
 
->
+>vim
     :lua print(require"fidget".is_installed())
 <
-
 
 If it isn’t installed, make sure that it works by manually calling `setup`,
 e.g.,:
 
->
+>vim
     :lua require"fidget".setup{}
 <
-
 
 If that works, then you need to make sure other plugins aren’t clashing with
 this one, or at least call Fidget’s `setup` function after the other plugins
 are done setting up.
+
 
 MY PROGRESS NOTIFICATIONS ARE BEING CUT SHORT. ~
 
@@ -494,12 +453,11 @@ potentially leading to lines with unmatched brackets:
     Message [long title...
 <
 
-
 If you would like to to avoid this behavior, you can override the
 |fidget-fmt.task| handler with one that truncates the message/title before
 formatting:
 
->
+>lua
     {
       fmt = {
         task =
@@ -522,7 +480,7 @@ formatting:
 <
 
 
-ACKNOWLEDGEMENTS                                     *fidget-acknowledgements*
+ACKNOWLEDGEMENTS                         *fidget-fidget.nvim-acknowledgements*
 
 This plugin takes inspiration and borrows code from arkav/lualine-lsp-progress
 <https://github.com/arkav/lualine-lsp-progress>.
