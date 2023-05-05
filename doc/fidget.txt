@@ -101,6 +101,7 @@ The following table shows the default options for this plugin:
         border = "none",          -- style of border for the fidget window
       },
       fmt = {
+        max_messages = 2,         -- The maximum number of messages stacked at any give time
         leftpad = true,           -- right-justify text in fidget box
         stack_upwards = true,     -- list of tasks grows upwards
         max_width = 0,            -- maximum width of the fidget box
@@ -233,6 +234,14 @@ it around until its fidget is cleared.
 
 Type: `number` (default: `1000`)
 
+
+FMT.MAX_MESSAGES
+
+The maximum number of messages you want stacked at any given time.  
+Set this to a higher number if you want to display more messages, for chatty lsp
+servers this might cover up a large area of the window.
+
+Type: `number` (default: `2`)
 
 FMT.LEFTPAD
 
