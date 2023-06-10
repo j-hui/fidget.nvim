@@ -1,7 +1,7 @@
 # fidget.nvim
 
 > **NOTE**: fidget.nvim will soon be completely rewritten. In the meantime,
-> please pin your plugin config to the `legacy` tag to avoid breaking changes
+> please pin your plugin config to the `legacy` tag to avoid breaking changes.
 
 Standalone UI for nvim-lsp progress. Eye candy for the impatient.
 
