@@ -84,7 +84,7 @@ local function ignore_E523(callable)
 
   return function()
     status, ex = pcall(callable)
-    if not status then  -- exception!
+    if not status then -- exception!
       if string.find(ex, "E523: Not allowed here") then
         -- Ignore E523 error (not allowed here): see #68
       else
@@ -111,9 +111,9 @@ local function get_window_position(offset)
     local statusline_height = 0
     local laststatus = vim.opt.laststatus:get()
     if
-      laststatus == 2
-      or laststatus == 3
-      or (laststatus == 1 and #api.nvim_tabpage_list_wins() > 1)
+        laststatus == 2
+        or laststatus == 3
+        or (laststatus == 1 and #api.nvim_tabpage_list_wins() > 1)
     then
       statusline_height = 1
     end
@@ -132,8 +132,8 @@ local function get_window_position(offset)
     if options.window.relative == "editor" then
       local showtabline = vim.opt.showtabline:get()
       if
-        showtabline == 2
-        or (showtabline == 1 and #api.nvim_list_tabpages() > 1)
+          showtabline == 2
+          or (showtabline == 1 and #api.nvim_list_tabpages() > 1)
       then
         baseheight = 1
       end
@@ -153,7 +153,7 @@ local function get_window_position(offset)
 
   -- returns row, col
   return options.align.bottom and (height - offset) or (baseheight + offset),
-    options.align.right and width or 1
+      options.align.right and width or 1
 end
 
 local base_fidget = {
@@ -178,17 +178,17 @@ function base_fidget:fmt()
   local line = options.fmt.fidget(
     self.name,
     self.spinner_idx == -1 and options.text.done
-      or options.text.spinner[self.spinner_idx + 1]
+    or options.text.spinner[self.spinner_idx + 1]
   )
   self.lines = { line }
   self.max_line_len = strlen(line)
   for _, task in pairs(self.tasks) do
     line = options.fmt.task
-      and options.fmt.task(
-        subtab(task.title),
-        subtab(task.message),
-        task.percentage
-      )
+        and options.fmt.task(
+          subtab(task.title),
+          subtab(task.message),
+          task.percentage
+        )
     if line then
       if options.fmt.stack_upwards then
         table.insert(self.lines, 1, line)
@@ -203,7 +203,7 @@ function base_fidget:fmt()
   self.max_line_len = math.min(
     self.max_line_len,
     options.window.relative == "editor" and vim.opt.columns:get()
-      or api.nvim_win_get_width(0)
+    or api.nvim_win_get_width(0)
   )
 
   if options.fmt.max_width > 0 then
@@ -249,7 +249,7 @@ function base_fidget:show(offset)
 
   local row, col = get_window_position(offset)
   local anchor = (options.align.bottom and "S" or "N")
-    .. (options.align.right and "E" or "W")
+      .. (options.align.right and "E" or "W")
 
   if self.bufid == nil or not api.nvim_buf_is_valid(self.bufid) then
     self.bufid = api.nvim_create_buf(false, true)
@@ -272,7 +272,7 @@ function base_fidget:show(offset)
   else
     api.nvim_win_set_config(self.winid, {
       win = options.window.relative == "win" and api.nvim_get_current_win()
-        or nil,
+          or nil,
       relative = options.window.relative,
       width = width,
       height = height,
@@ -515,6 +515,11 @@ function M.close(...)
 end
 
 function M.setup(opts)
+  vim.notify_once(
+    "fidget.nvim will soon be rewritten. Please checkout the 'legacy' tag to avoid breaking changes.",
+    vim.log.levels.WARN
+  )
+
   options = vim.tbl_deep_extend("force", options, opts or {})
 
   if options.debug.logging then
@@ -530,13 +535,13 @@ function M.setup(opts)
   end
 
   if vim.lsp.handlers["$/progress"] then
-     local old_handler = vim.lsp.handlers["$/progress"]
-     vim.lsp.handlers["$/progress"] = function(...)
-       old_handler(...)
-       handle_progress(...)
-     end
+    local old_handler = vim.lsp.handlers["$/progress"]
+    vim.lsp.handlers["$/progress"] = function(...)
+      old_handler(...)
+      handle_progress(...)
+    end
   else
-     vim.lsp.handlers["$/progress"] = handle_progress
+    vim.lsp.handlers["$/progress"] = handle_progress
   end
 
   vim.api.nvim_create_autocmd("VimLeavePre", {

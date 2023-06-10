@@ -45,7 +45,7 @@ Install this plugin using your favorite plugin manager.
 For example, using [vim-plug](https://github.com/junegunn/vim-plug):
 
 ```vim
-Plug 'j-hui/fidget.nvim'
+Plug 'j-hui/fidget.nvim', { 'tag': 'legacy' }
 ```
 
 Make sure the plugin installed (e.g., run `:PlugInstall` if using vim-plug).
