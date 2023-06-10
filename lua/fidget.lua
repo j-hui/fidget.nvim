@@ -46,6 +46,7 @@ local options = {
     task_decay = 1000,
   },
   fmt = {
+    max_messages = 2,
     leftpad = true,
     stack_upwards = true,
     max_width = 0,
@@ -189,11 +190,11 @@ function base_fidget:fmt()
         subtab(task.message),
         task.percentage
       )
-    if line then
+    if line and #self.lines < options.fmt.max_messages then
       if options.fmt.stack_upwards then
-        table.insert(self.lines, 1, line)
+          table.insert(self.lines, 1, line)
       else
-        table.insert(self.lines, line)
+          table.insert(self.lines, line)
       end
       self.max_line_len = math.max(self.max_line_len, strlen(line))
     end
