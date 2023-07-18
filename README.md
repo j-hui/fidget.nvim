@@ -48,6 +48,8 @@ For an up-to-date list of LSP servers this plugin is known to work with, see
 
 Install this plugin using your favorite plugin manager.
 
+See the [documentation](doc/fidget.md) for `setup()` options.
+
 > NOTE: fidget.nvim will soon be completely rewritten.
 > In the meantime, please pin your plugin config to the legacy tag to avoid breaking changes.
 
@@ -59,24 +61,30 @@ Plug 'j-hui/fidget.nvim', { 'tag': 'legacy' }
 
 Make sure the plugin is installed run `:PlugInstall`.
 
-#### [Packer](https://github.com/wbthomason/packer.nvim):
-
-```vim
-use { 'j-hui/fidget.nvim', tag = 'legacy' }
-```
-
-Make sure the plugin is installed run `:PackerSync`.
-
-### Setup
-
 After the plugin is loaded (e.g., after `plug#end()` for vim-plug), call its
 `setup` function (in Lua):
 
 ```lua
-require"fidget".setup{}
+require("fidget").setup {
+  -- options
+}
 ```
 
-See the [documentation](doc/fidget.md) for configuration options.
+#### [Packer](https://github.com/wbthomason/packer.nvim):
+
+```vim
+use {
+  'j-hui/fidget.nvim',
+  tag = 'legacy',
+  config = function()
+    require("fidget").setup {
+      -- options
+    }
+  end,
+}
+```
+
+To ensure the plugin is installed, run `:PackerSync`.
 
 ## Acknowledgements and Alternatives
 
