@@ -65,6 +65,22 @@ See the [documentation](doc/fidget.md) for `setup()` options.
 }
 ```
 
+#### [Packer](https://github.com/wbthomason/packer.nvim):
+
+```vim
+use {
+  'j-hui/fidget.nvim',
+  tag = 'legacy',
+  config = function()
+    require("fidget").setup {
+      -- options
+    }
+  end,
+}
+```
+
+To ensure the plugin is installed, run `:PackerSync`.
+
 #### [vim-plug](https://github.com/junegunn/vim-plug):
 
 ```vim
@@ -81,22 +97,6 @@ require("fidget").setup {
   -- options
 }
 ```
-
-#### [Packer](https://github.com/wbthomason/packer.nvim):
-
-```vim
-use {
-  'j-hui/fidget.nvim',
-  tag = 'legacy',
-  config = function()
-    require("fidget").setup {
-      -- options
-    }
-  end,
-}
-```
-
-To ensure the plugin is installed, run `:PackerSync`.
 
 ## Acknowledgements and Alternatives
 
