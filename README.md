@@ -44,22 +44,59 @@ For an up-to-date list of LSP servers this plugin is known to work with, see
 
 ## Quickstart
 
+### Installation
+
 Install this plugin using your favorite plugin manager.
-For example, using [vim-plug](https://github.com/junegunn/vim-plug):
+
+See the [documentation](doc/fidget.md) for `setup()` options.
+
+> **NOTE**: fidget.nvim will soon be completely rewritten. In the meantime, these instructions will pin your configuration to the `legacy` branch to avoid breaking changes. 
+
+#### [Lazy](https://github.com/folke/lazy.nvim)
+
+```lua
+{
+  "j-hui/fidget.nvim",
+  tag = "legacy",
+  event = "LspAttach",
+  opts = {
+    -- options
+  },
+}
+```
+
+#### [Packer](https://github.com/wbthomason/packer.nvim):
+
+```vim
+use {
+  'j-hui/fidget.nvim',
+  tag = 'legacy',
+  config = function()
+    require("fidget").setup {
+      -- options
+    }
+  end,
+}
+```
+
+To ensure the plugin is installed, run `:PackerSync`.
+
+#### [vim-plug](https://github.com/junegunn/vim-plug):
 
 ```vim
 Plug 'j-hui/fidget.nvim', { 'tag': 'legacy' }
 ```
 
-Make sure the plugin installed (e.g., run `:PlugInstall` if using vim-plug).
+Make sure the plugin is installed run `:PlugInstall`.
+
 After the plugin is loaded (e.g., after `plug#end()` for vim-plug), call its
 `setup` function (in Lua):
 
 ```lua
-require"fidget".setup{}
+require("fidget").setup {
+  -- options
+}
 ```
-
-See the [documentation](doc/fidget.md) for configuration options.
 
 ## Acknowledgements and Alternatives
 
