@@ -57,6 +57,7 @@ See the [documentation](doc/fidget.md) for `setup()` options.
 ```lua
 {
   "j-hui/fidget.nvim",
+  tag = "legacy",
   event = "LspAttach",
   opts = {
     -- options
