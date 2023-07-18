@@ -52,6 +52,18 @@ See the [documentation](doc/fidget.md) for `setup()` options.
 
 > **NOTE**: fidget.nvim will soon be completely rewritten. In the meantime, these instructions will pin your configuration to the `legacy` branch to avoid breaking changes. 
 
+#### [Lazy](https://github.com/folke/lazy.nvim)
+
+```lua
+{
+  "j-hui/fidget.nvim",
+  event = "LspAttach",
+  opts = {
+    -- options
+  },
+}
+```
+
 #### [vim-plug](https://github.com/junegunn/vim-plug):
 
 ```vim
