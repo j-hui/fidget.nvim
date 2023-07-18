@@ -50,8 +50,7 @@ Install this plugin using your favorite plugin manager.
 
 See the [documentation](doc/fidget.md) for `setup()` options.
 
-> NOTE: fidget.nvim will soon be completely rewritten.
-> In the meantime, please pin your plugin config to the legacy tag to avoid breaking changes.
+> **NOTE**: fidget.nvim will soon be completely rewritten. In the meantime, these instructions will pin your configuration to the `legacy` branch to avoid breaking changes. 
 
 #### [vim-plug](https://github.com/junegunn/vim-plug):
 
