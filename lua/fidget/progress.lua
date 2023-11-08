@@ -1,4 +1,6 @@
 local M = {}
+
+local logger = require("fidget.logger")
 local notification = require("fidget.notification")
 
 ---@class ProgressMessage
@@ -199,11 +201,13 @@ end
 --- Start periodically polling for progress messages, until we stop receiving them.
 function M.start_polling()
   if M.is_polling() then return end
+  logger.info("starting progress poller")
   poll_count = poll_count + 1
   local done, timer, delay = false, vim.loop.new_timer(), math.ceil(1000 / M.options.poll_rate)
   timer:start(15, delay, vim.schedule_wrap(function() -- Note: hard-coded 15ms attack
     if done then return end
     if not M.poll() then
+      logger.info("stopping progress poller")
       timer:stop()
       timer:close()
       done = true

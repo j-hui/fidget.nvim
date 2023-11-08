@@ -1,5 +1,6 @@
 local M = {}
 
+local logger = require("fidget.logger")
 local model = require("fidget.notification.model")
 local window = require("fidget.notification.window")
 local render = require("fidget.notification.render")
@@ -70,11 +71,11 @@ function M.poll()
     -- TODO: check for textlock etc, other things that should cause us to skip this frame.
     window.set_lines(view.lines, view.highlights, view.width)
     window.show(view.width, #view.lines)
+    return true
   else
     window.close()
+    return false
   end
-
-  return true
 end
 
 --- Counting semaphore used to guard against starting multiple pollers.
@@ -88,12 +89,14 @@ end
 --- Start periodically polling for progress messages, until we stop receiving them.
 function M.start_polling()
   if M.is_polling() then return end
+  logger.info("starting notification poller")
   poll_count = poll_count + 1
   local done, timer, delay = false, vim.loop.new_timer(), math.ceil(1000 / M.options.poll_rate)
   timer:start(15, delay, vim.schedule_wrap(function() -- Note: hard-coded 15ms attack
     if done then return end
     now_sync = vim.fn.reltimefloat(vim.fn.reltime(origin_time))
     if not M.poll() then
+      logger.info("stopping notification poller")
       timer:stop()
       timer:close()
       done = true
