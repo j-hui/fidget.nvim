@@ -21,7 +21,6 @@ _ = nil
 ---@field ttl               number    how long after a notification item should exist
 ---@field name_style        Style     style used to highlight group name
 ---@field icon_style        Style?    style used to highlight icon; if nil, use name_style
----@field msg_style         Style     style used to highlight item messages
 ---@field annote_style      Style     default style used to highlight item annotes
 ---@field info_style        Style?    style used to highlight info item annotes
 ---@field hint_style        Style?    style used to highlight hint item annotes
@@ -56,7 +55,7 @@ _ = nil
 ---@field highlights  NotificationHighlight[]   buf_add_highlight() params, applied in order
 
 ---@class NotificationHighlight
----@field hl_group    string    what highlight group to add
+---@field hl_group    Style     what highlight group to add
 ---@field line        number    (0-indexed) line number to add highlight
 ---@field col_start   number    (byte-indexed) column to start highlight
 ---@field col_end     number    (byte-indexed) column to end highlight
