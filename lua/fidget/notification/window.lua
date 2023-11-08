@@ -174,7 +174,7 @@ function M.get_window(row, col, anchor, width, height)
       anchor = anchor,
       width = width,
       height = height,
-      -- TODO: Should we care about the following options here??
+      -- NOTE: Should we care about the following options here??
       -- win = options.window.relative == "win" and api.nvim_get_current_win()
       --     or nil, -- only relevant if we support other relative values
       -- zindex = options.window.zindex,
@@ -188,20 +188,59 @@ function M.get_window(row, col, anchor, width, height)
   return M.window_id
 end
 
+--- ID of the namespace on which highlights are created.
+---@type number?
+M.namespace_id = nil
+
+function M.get_namespace()
+  if M.namespace_id == nil then
+    M.namespace_id = vim.api.nvim_create_namespace("fidget-window")
+  end
+  return M.namespace_id
+end
+
 function M.show(width, height)
   local row, col, anchor = M.get_window_position("editor", true, true)
   M.get_window(row, col, anchor, width, height)
 end
 
+--- TODO: document
+---
+---@param lines string[]
+---@param highlights NotificationHighlight[]
+---@param right_justify_col number?
 function M.set_lines(lines, highlights, right_justify_col)
   local buffer_id = M.get_buffer()
+  local namespace_id = M.get_namespace()
+  vim.api.nvim_buf_clear_namespace(buffer_id, namespace_id, 0, -1)
   vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
 
   if right_justify_col then
-    -- TODO: add highlights
     vim.api.nvim_buf_call(buffer_id, function()
       vim.api.nvim_cmd({ cmd = "right", args = { tostring(right_justify_col) }, range = { 1, #lines } }, {})
     end)
+
+    for _, highlight in ipairs(highlights) do
+      -- When adding highlights, we need to add an offset to account for the right-padding.
+      local offset = right_justify_col - vim.fn.strdisplaywidth(lines[highlight.line + 1])
+      vim.api.nvim_buf_add_highlight(
+        buffer_id,
+        namespace_id,
+        highlight.hl_group,
+        highlight.line,
+        highlight.col_start + offset,
+        highlight.col_end < highlight.col_start and -1 or highlight.col_end + offset)
+    end
+  else
+    for _, highlight in ipairs(highlights) do
+      vim.api.nvim_buf_add_highlight(
+        buffer_id,
+        namespace_id,
+        highlight.hl_group,
+        highlight.line,
+        highlight.col_start,
+        highlight.col_end)
+    end
   end
 end
 
