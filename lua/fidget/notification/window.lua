@@ -4,7 +4,10 @@
 --- Not part of the public API (but do what you want with it).
 ---
 --- If this framework were to be expanded to support multiple concurrent
---- instances of the model, this module's contents would need to be cloned.
+--- windows, this module's contents would need to be cloned.
+---
+--- Note that for now, it only supports editor-relative floats, though some code
+--- ported from the legacy version still supports window-relative floats.
 local M = {}
 
 require("fidget.options")(M, {
@@ -15,6 +18,22 @@ require("fidget.options")(M, {
   max_width = 0,
   max_height = 0,
 })
+
+--- Local state maintained by this module.
+---
+--- If this framework were ever extended to support multiple concurrent windows,
+--- this table's contents would need to be cloned.
+local state = {
+  --- ID of the buffer that notifications are rendered to.
+  ---@type number?
+  buffer_id = nil,
+  --- ID of the window that the notification buffer is shown in.
+  ---@type number?
+  window_id = nil,
+  --- ID of the namespace on which highlights are created.
+  ---@type number?
+  namespace_id = nil,
+}
 
 --- Get the current width and height of the editor window.
 ---
@@ -116,26 +135,32 @@ function M.win_set_local_options(window_id, opts)
   end)
 end
 
---- ID of the buffer that notifications are rendered to.
----@type number?
-M.buffer_id = nil
-
---- Get the buffer ID of the notification buffer; create it if it doesn't
---- already exist.
----@return unknown
+--- Get the notification buffer ID; create it if it doesn't already exist.
+---
+---@return number buffer_id
 function M.get_buffer()
-  if M.buffer_id == nil or not vim.api.nvim_buf_is_valid(M.buffer_id) then
+  if state.buffer_id == nil or not vim.api.nvim_buf_is_valid(state.buffer_id) then
     -- Create an unlisted (1st param) scratch (2nd param) buffer
-    M.buffer_id = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_option(M.buffer_id, "filetype", "fidget")
+    state.buffer_id = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_option(state.buffer_id, "filetype", "fidget")
   end
-  return M.buffer_id
+  return state.buffer_id
 end
 
---- ID of the window that the notification buffer is shown in.
----@type number?
-M.window_id = nil
-
+--- Get the notification window ID; create it if it doesn't already exist.
+---
+--- Note that this will show the window as well, which is why it requires
+--- a bunch of parameters that dictate how the window should be shown.
+---
+--- This also has the side effect of creating a notification buffer if it
+--- doesn't already exist, associating it with the window.
+---
+---@param row     number
+---@param col     number
+---@param anchor  ("NW"|"NE"|"SW"|"SE")
+---@param width   number
+---@param height  number
+---@return number window_id
 function M.get_window(row, col, anchor, width, height)
   -- Clamp width and height to dimensions of editor and user specification.
   local editor_width, editor_height = M.get_editor_dimensions()
@@ -150,9 +175,9 @@ function M.get_window(row, col, anchor, width, height)
     height = math.min(height, M.optins.max_height)
   end
 
-  if M.window_id == nil or not vim.api.nvim_win_is_valid(M.window_id) then
+  if state.window_id == nil or not vim.api.nvim_win_is_valid(state.window_id) then
     -- Create window to display notifications buffer, but don't enter (2nd param)
-    M.window_id = vim.api.nvim_open_win(M.get_buffer(), false, {
+    state.window_id = vim.api.nvim_open_win(M.get_buffer(), false, {
       relative = "editor",
       width = width,
       height = height,
@@ -167,7 +192,7 @@ function M.get_window(row, col, anchor, width, height)
     })
   else
     -- Window is already created; reposition it in case anything has changed.
-    vim.api.nvim_win_set_config(M.window_id, {
+    vim.api.nvim_win_set_config(state.window_id, {
       relative = "editor",
       row = row,
       col = col,
@@ -181,48 +206,67 @@ function M.get_window(row, col, anchor, width, height)
     })
   end
 
-  M.win_set_local_options(M.window_id, {
+  M.win_set_local_options(state.window_id, {
     winblend = M.options.winblend,                   -- Transparent background
     winhighlight = "Normal:" .. M.options.normal_hl, -- Instead of NormalFloat
   })
-  return M.window_id
+  return state.window_id
 end
 
---- ID of the namespace on which highlights are created.
----@type number?
-M.namespace_id = nil
-
+--- Get the namespace ID used to apply highlights in the notification buffer.
+---
+--- Creates it if it doesn't already exist.
+---
+---@return number namespace_id
 function M.get_namespace()
-  if M.namespace_id == nil then
-    M.namespace_id = vim.api.nvim_create_namespace("fidget-window")
+  if state.namespace_id == nil then
+    state.namespace_id = vim.api.nvim_create_namespace("fidget-window")
   end
-  return M.namespace_id
+  return state.namespace_id
 end
 
+--- Show the notification window (and its buffer contents), editor-relative.
+---
+---@param width   number
+---@param height  number
 function M.show(width, height)
   local row, col, anchor = M.get_window_position("editor", true, true)
   M.get_window(row, col, anchor, width, height)
 end
 
---- TODO: document
+--- Replace the set of lines in the Fidget window, right-justify them, and apply
+--- highlights.
 ---
----@param lines string[]
----@param highlights NotificationHighlight[]
----@param right_justify_col number?
-function M.set_lines(lines, highlights, right_justify_col)
+--- To forego right-justification, pass nil for right_col.
+---
+---@param lines       string[]                  lines to place into buffer
+---@param highlights  NotificationHighlight[]   list of highlights to apply
+---@param right_col   number?                   optional display width, to right-justify
+function M.set_lines(lines, highlights, right_col)
   local buffer_id = M.get_buffer()
   local namespace_id = M.get_namespace()
+
+  -- Clear previous highlights
   vim.api.nvim_buf_clear_namespace(buffer_id, namespace_id, 0, -1)
+
+  -- Replace entire buffer with new set of lines
   vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
 
-  if right_justify_col then
+  if right_col then
+    -- Right-justify text using the :right <col> command.
     vim.api.nvim_buf_call(buffer_id, function()
-      vim.api.nvim_cmd({ cmd = "right", args = { tostring(right_justify_col) }, range = { 1, #lines } }, {})
+      vim.api.nvim_cmd({ cmd = "right", args = { tostring(right_col) }, range = { 1, #lines } }, {})
     end)
 
     for _, highlight in ipairs(highlights) do
-      -- When adding highlights, we need to add an offset to account for the right-padding.
-      local offset = right_justify_col - vim.fn.strdisplaywidth(lines[highlight.line + 1])
+      -- When adding highlights, we add an offset to account for the right-padding.
+      -- NOTE: we are computing the offset in terms of display width rather
+      -- than bytes, even though nvim_buf_add_highlight() expects byte indices.
+      -- This _should_ still be fine because :right adds the number of spaces
+      -- corresponding to the difference display width (what we compute), and
+      -- each of those spaces is 1 byte, meaning the byte offset is accurate.
+      -- But if any highlights ever look funky/misaligned, start debugging here!
+      local offset = right_col - vim.fn.strdisplaywidth(lines[highlight.line + 1])
       vim.api.nvim_buf_add_highlight(
         buffer_id,
         namespace_id,
@@ -244,20 +288,28 @@ function M.set_lines(lines, highlights, right_justify_col)
   end
 end
 
+--- Close the Fidget window and associated buffers.
 function M.close()
-  if M.window_id ~= nil then
-    if vim.api.nvim_win_is_valid(M.window_id) then
-      vim.api.nvim_win_close(M.window_id, true)
+  if state.namespace_id ~= nil then
+    if state.buffer_id ~= nil and vim.api.nvim_buf_is_valid(state.buffer_id) then
+      vim.api.nvim_buf_clear_namespace(state.buffer_id, state.namespace_id, 0, -1)
     end
-    M.window_id = nil
+    state.namespace_id = nil
   end
 
-  if M.buffer_id ~= nil then
-    if vim.api.nvim_buf_is_valid(M.buffer_id) then
-      vim.api.nvim_buf_set_lines(M.buffer_id, 0, -1, false, {}) -- clear out text (is this necessary?)
-      vim.api.nvim_buf_delete(M.buffer_id, { force = true })
+  if state.window_id ~= nil then
+    if vim.api.nvim_win_is_valid(state.window_id) then
+      vim.api.nvim_win_close(state.window_id, true)
     end
-    M.buffer_id = nil
+    state.window_id = nil
+  end
+
+  if state.buffer_id ~= nil then
+    if vim.api.nvim_buf_is_valid(state.buffer_id) then
+      vim.api.nvim_buf_set_lines(state.buffer_id, 0, -1, false, {}) -- clear out text (is this necessary?)
+      vim.api.nvim_buf_delete(state.buffer_id, { force = true })
+    end
+    state.buffer_id = nil
   end
 end
 
