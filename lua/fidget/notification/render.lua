@@ -1,5 +1,16 @@
 local M = {}
 
+---@class NotificationView
+---@field width       number                    the maximum width of any line
+---@field lines       string[]                  text to show in the notification
+---@field highlights  NotificationHighlight[]   buf_add_highlight() params, applied in order
+
+---@class NotificationHighlight
+---@field hl_group    string    what highlight group to add
+---@field line        number    (0-indexed) line number to add highlight
+---@field col_start   number    (byte-indexed) column to start highlight
+---@field col_end     number    (byte-indexed) column to end highlight
+
 --- Render the header of a group, consisting of a header and an optional icon.
 --- Also returns the range of the icon text, for highlighting.
 ---

@@ -10,7 +10,7 @@ local render = require("fidget.notification.render")
 ---@type NotificationConfig
 M.default_config = {
   ttl = 1.5,
-  icon = "<<<",
+  icon = "❰❰❰",
   name_style = "Title",
   icon_style = "Constant",
   annote_style = "Comment",
@@ -21,7 +21,7 @@ require("fidget.options")(M, {
   poll_rate = 10,
 
   --- Configs, used to instantiate groups in the notification model.
-  ---@type { [Key]: NotificationConfig }
+  ---@type { [any]: NotificationConfig }
   configs = {
     default = M.default_config,
   },
@@ -53,8 +53,8 @@ local now_sync = nil
 ---     vim.notify = require("fidget.notifications").notify
 ---
 ---@param msg     string?
----@param level   Level | Style | nil
----@param opts    NotificationOptions
+---@param level   NotificationLevel?
+---@param opts    NotificationOptions?
 function M.notify(msg, level, opts)
   local now = vim.fn.reltimefloat(vim.fn.reltime(origin_time))
   model.update(now, M.options.configs, groups, msg, level, opts)
