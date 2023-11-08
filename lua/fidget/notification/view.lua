@@ -1,3 +1,6 @@
+--- Helper methods used to render notification model elements into views.
+---
+--- TODO: partial/in-place rendering, to avoid building new strings.
 local M = {}
 
 ---@class NotificationView
@@ -47,7 +50,7 @@ end
 ---@param now number timestamp of current render frame
 ---@param groups NotificationGroup[]
 ---@return NotificationView view
-function M.render_view(now, groups)
+function M.render(now, groups)
   local width = 0
   local lines = {}
   local highlights = {}

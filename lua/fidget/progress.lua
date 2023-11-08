@@ -1,6 +1,6 @@
-local M = {}
-
-local logger = require("fidget.logger")
+--- Fidget's LSP progress subsystem.
+local M            = {}
+local logger       = require("fidget.logger")
 local notification = require("fidget.notification")
 
 ---@class ProgressMessage

@@ -1,10 +1,11 @@
---- This module encapsulates all the private (shared) model state used by the
---- notifications subsystem, and some helper functions.
+--- Type definitions and helper methods for the notifications model
+--- (i.e., its abstract state).
 ---
---- Not part of the public API (but do what you want with it).
----
---- If this framework were to be expanded to support multiple concurrent
---- instances of the model, this module's contents would need to be cloned.
+--- Note that this model exists separately from the view for several reasons:
+--- (1) to make debugging and testing easier;
+--- (2) to accumulate repeated, asynchronous in-place-updating notifications,
+---     and avoid building strings for no reason; and
+--- (3) to enable fine-grained cacheing of rendered elements.
 local M = {}
 
 --- Something that can be displayed. If callable, it is invoked every render cycle

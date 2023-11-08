@@ -11,12 +11,69 @@
 local M = {}
 
 require("fidget.options")(M, {
-  winblend = 100,
+  --- Base highlight (used for messages) in the notification window.
+  ---
+  --- Note that we use this blanket highlight for all messages to avoid adding
+  --- separate highlights to each line (whose lengths may vary).
+  ---
+  --- With winblend set to anything less than 100, this will also affect the
+  --- background color in the notification box area (see winblend docs).
+  ---
+  ---@type string
   normal_hl = "Normal",
+
+  --- Opacity of the background color in the notification window.
+  ---
+  --- Note that the notification window is rectangular, so any cells covered by
+  --- that rectangular area is affected by the background color of normal_hl.
+  --- With winblend set to anything less than 100, the background of normal_hl
+  --- will be blended with that of whatever is underneath, including, e.g.,
+  --- a shaded linecolumn, which is usually not desirable.
+  ---
+  --- However, if you would like to display the notification window as its own
+  --- "boxed" area (especially if you are using a non-"none" border), you may
+  --- consider setting winblend to something less than 100.
+  ---
+  --- See also: options for nvim_open_win().
+  ---
+  ---@type number
+  winblend = 100,
+
+  --- Border painted around the notification window.
+  ---
+  --- See also: options for nvim_open_win().
+  ---
+  ---@type "none" | "single" | "double" | "rounded" | "solid" | "shadow" | string[]
   border = "none",
+
+  --- Stacking priority of the notification window.
+  ---
+  --- Note that the default priority is 50.
+  ---
+  --- See also: options for nvim_open_win().
+  ---
+  ---@type number
   zindex = 45,
+
+  --- Maximum width of the notification window. 0 means no maximum width.
+  ---
+  ---@type number
   max_width = 0,
+
+  --- Maximum height of the notification window. 0 means no maximum height.
+  ---
+  ---@type number
   max_height = 0,
+
+  --- Padding from right edge of window boundary.
+  ---
+  ---@type number
+  x_padding = 1,
+
+  --- Padding from bottom edge of window boundary.
+  ---
+  ---@type number
+  y_padding = 0,
 })
 
 --- Local state maintained by this module.
@@ -25,12 +82,17 @@ require("fidget.options")(M, {
 --- this table's contents would need to be cloned.
 local state = {
   --- ID of the buffer that notifications are rendered to.
+  ---
   ---@type number?
   buffer_id = nil,
+
   --- ID of the window that the notification buffer is shown in.
+  ---
   ---@type number?
   window_id = nil,
+
   --- ID of the namespace on which highlights are created.
+  ---
   ---@type number?
   namespace_id = nil,
 }
@@ -42,9 +104,7 @@ local state = {
 function M.get_editor_dimensions()
   local statusline_height = 0
   local laststatus = vim.opt.laststatus:get()
-  if
-      laststatus == 2
-      or laststatus == 3
+  if laststatus == 2 or laststatus == 3
       or (laststatus == 1 and #vim.api.nvim_tabpage_list_wins() > 1)
   then
     statusline_height = 1
@@ -165,11 +225,13 @@ function M.get_window(row, col, anchor, width, height)
   -- Clamp width and height to dimensions of editor and user specification.
   local editor_width, editor_height = M.get_editor_dimensions()
 
+  width = width + M.options.x_padding
   width = math.min(width, editor_width - 4) -- guess width of signcolumn etc.
   if M.options.max_width > 0 then
     width = math.min(width, M.optins.max_width)
   end
 
+  height = height + M.options.y_padding
   height = math.min(height, editor_height)
   if M.options.max_height > 0 then
     height = math.min(height, M.optins.max_height)

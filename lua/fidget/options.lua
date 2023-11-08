@@ -1,43 +1,48 @@
---- Declare a table of available options for a module, which can be accessed via
---- MOD.options. Also creates a MOD.setup(opts) which merges the given opts with
---- the current options.
+--- Declare a table of available options for a module M. For internal use.
+---
+--- Those options can be accessed via M.options.
+---
+--- Also creates M.setup(opts) to merge the given opts with current options.
 ---
 --- Supports "submodules", i.e., redirects certain keys to the options of
 --- another module, e.g.:
 ---
 ---     options = require("fidget.options")
 ---
----     local sub_module = {}
+---     local SM = {}
 ---     local function post_setup()
----       sub_module.post_bar = sub_module.options.bar * 2
+---       SM.post_bar = SM.options.bar * 2
 ---     end
 ---
----     options(sub_module, {
+---     options(SM, {
 ---       foo = true,
 ---       bar = 0,
 ---     }, post_setup)
 ---
 ---     ...
 ---
----     local module = {}
----     options(module, {
+---     local M = {}
+---     options(M, {
 ---       baz = "baz",
----       sub_module = sub_module,
+---       sub_module = SM,
 ---     })
 ---
 ---     ...
 ---
----     module.setup {
+---     M.setup {
 ---       baz = "bazn't",
 ---       sub_module = {
 ---         bar = 42
 ---       },
 ---     }
 ---
----     assert(module.options.baz == "bazn't")
----     assert(module.options.sub_module.foo == true)
----     assert(sub_module.options.bar == 42)
----     assert(sub_module.post_bar == 42 * 2)
+---     assert(M.options.baz == "bazn't")
+---     assert(M.options.sub_module.foo == true)
+---     assert(SM.options.bar == 42)
+---     assert(SM.post_bar == 42 * 2)
+---
+--- Designed this way to keep the configuration structure sane and close to the
+--- implementation structure (which we assume to be sane xD).
 ---
 ---@param mod           table     the module to which options are being attached
 ---@param default_opts  table     the default set of options

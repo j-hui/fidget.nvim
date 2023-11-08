@@ -1,11 +1,13 @@
-local M = {}
+--- Fidget's notification subsystem.
+local M          = {}
+local logger     = require("fidget.logger")
+local model      = require("fidget.notification.model")
+local window     = require("fidget.notification.window")
+local view       = require("fidget.notification.view")
 
-local logger = require("fidget.logger")
-local model = require("fidget.notification.model")
-local window = require("fidget.notification.window")
-local render = require("fidget.notification.render")
-
---- Default notification configuration. Useful for users to integrate for when
+--- Default notification configuration.
+---
+--- Exposed publicly because it might be useful for users to integrate for when
 --- they are adding their own configs.
 ---
 ---@type NotificationConfig
@@ -65,12 +67,12 @@ end
 function M.poll()
   local now = now_sync or vim.fn.reltimefloat(vim.fn.reltime(origin_time))
   groups = model.tick(now, groups)
-  local view = render.render_view(now, groups)
-  if #view.lines > 0 then
+  local v = view.render(now, groups)
+  if #v.lines > 0 then
     -- TODO: if not modified, don't re-render
     -- TODO: check for textlock etc, other things that should cause us to skip this frame.
-    window.set_lines(view.lines, view.highlights, view.width)
-    window.show(view.width, #view.lines)
+    window.set_lines(v.lines, v.highlights, v.width)
+    window.show(v.width, #v.lines)
     return true
   else
     window.close()
