@@ -361,6 +361,13 @@ earth
 moon
 dots_pulse
 meter
+bouncing_rocket
+bouncing_satellite
+bouncing_coffee
+cloud_cycle
+bouncing_music_note
+bouncing_fish
+bouncing_bunny
 ```
 
 See <lua/fidget/spinners.lua> of this plugin's source code to see how each
