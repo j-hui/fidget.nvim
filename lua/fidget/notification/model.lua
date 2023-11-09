@@ -31,6 +31,7 @@ local M = {}
 ---@field info_style        string?   style used to highlight info item annotes
 ---@field warn_style        string?   style used to highlight warn item annotes
 ---@field error_style       string?   style used to highlight error item annotes
+---@field priority          number?   order in which group should be displayed; defaults to 50
 
 ---@class NotificationOptions
 ---@field key           any?      replace existing notification item of the same key

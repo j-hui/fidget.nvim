@@ -46,6 +46,11 @@ require("fidget.options")(M, {
   ---@type string
   icon_style = "Question",
 
+  --- Priority of LSP progress message notifications.
+  ---
+  ---@type number?
+  priority = 30,
+
   --- Callback to format a ProgressMessage into a notification message.
   ---
   ---@param msg ProgressMessage
@@ -126,6 +131,7 @@ function M.make_config(group_key)
     annote_style = M.options.progress_style,
     warn_style = M.options.progress_style,
     info_style = M.options.done_style,
+    priority = M.options.priority,
   }
 
   if M.options.overrides[group_key] then

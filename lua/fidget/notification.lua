@@ -28,6 +28,7 @@ require("fidget.options")(M, {
   ---@type { [any]: NotificationConfig }
   configs = { default = M.default_config },
 
+  view = M.view,
   window = M.window,
 }, function()
   -- Need to ensure that there is some sane default config.
@@ -59,7 +60,11 @@ local now_sync = nil
 ---@param opts    NotificationOptions?
 function M.notify(msg, level, opts)
   local now = vim.fn.reltimefloat(vim.fn.reltime(origin_time))
+  local n_groups = #groups
   M.model.update(now, M.options.configs, groups, msg, level, opts)
+  if n_groups ~= #groups then
+    groups = vim.fn.sort(groups, function(a, b) return (a.config.priority or 50) - (b.config.priority or 50) end)
+  end
   M.start_polling()
 end
 
