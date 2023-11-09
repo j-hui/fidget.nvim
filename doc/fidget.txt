@@ -195,15 +195,15 @@ Type: `number` (default: `100`)
 
 WINDOW.ZINDEX
 
-The value to use for `zindex` (see `:h nvim_open_win`) for the window.
+The value to use for `zindex` (see |nvim_open_win|) for the window.
 
 Type: `number` (default: `nil`)
 
 
 WINDOW.BORDER
 
-The value to use for the window `border` (see `:h nvim_open_win`), to adjust
-the Fidget window border style.
+The value to use for the window `border` (see |nvim_open_win|), to adjust the
+Fidget window border style.
 
 Type: `string` (default: `"none"`)
 
@@ -401,6 +401,13 @@ names:
     moon
     dots_pulse
     meter
+    bouncing_rocket
+    bouncing_satellite
+    bouncing_coffee
+    cloud_cycle
+    bouncing_music_note
+    bouncing_fish
+    bouncing_bunny
 <
 
 See <lua/fidget/spinners.lua> of this plugin’s source code to see how each
