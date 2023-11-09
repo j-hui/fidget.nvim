@@ -327,7 +327,8 @@ function base_fidget:close()
     -- Deleting the buffer at this point causes a Neovim crash.
     -- We let the buffer be - it will be deleted automatically on vim exit.
     if self.bufid ~= api.nvim_get_current_buf() then
-      api.nvim_buf_delete(self.bufid, { force = true })
+      -- wrap nvim_buf_delete to ignore E11 (#136)
+      pcall(api.nvim_buf_delete, self.bufid, { force = true })
     end
     self.bufid = nil
   end
