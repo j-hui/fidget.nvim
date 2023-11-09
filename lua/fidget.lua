@@ -14,4 +14,8 @@ end)
 
 M.notify = M.notification.notify
 
+M.suppress_progress = M.progress.suppress
+
+M.suppress_notifications = M.notification.suppress
+
 return M

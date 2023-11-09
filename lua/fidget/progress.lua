@@ -31,6 +31,9 @@ require("fidget.options")(M, {
   end
 end)
 
+--- Whether progress message updates are suppressed.
+local progress_suppressed = false
+
 --- Cache of generated LSP notification group configs.
 ---
 ---@type { [any]: NotificationConfig }
@@ -64,12 +67,16 @@ function M.format_progress(msg)
     group = group,
     annote = annote,
     ttl = msg.done and 0 or M.display.options.progress_ttl, -- Use config default when done
-    data = msg.done, -- use data to convey whether this task is done
+    data = msg.done,                                        -- use data to convey whether this task is done
   }
 end
 
 --- Poll for messages and feed them to the fidget notifications subsystem.
 function M.poll()
+  if progress_suppressed then
+    return false
+  end
+
   local messages = M.lsp.poll_for_messages()
   if messages == nil then
     return false
@@ -117,6 +124,20 @@ function M.start_polling()
     end
   end)
   )
+end
+
+--- Suppress consumption of progress messages.
+---
+--- Pass false as argument to turn off suppression.
+---
+--- If no argument is given, suppression state is toggled.
+---@param suppress boolean?
+function M.suppress(suppress)
+  if suppress == nil then
+    progress_suppressed = not progress_suppressed
+  else
+    progress_suppressed = suppress
+  end
 end
 
 return M

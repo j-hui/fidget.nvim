@@ -49,6 +49,9 @@ local origin_time = vim.fn.reltime()
 ---@type number?
 local now_sync = nil
 
+--- Whether the notification window is suppressed.
+local view_suppressed = false
+
 --- Send a notification to the Fidget notifications subsystem.
 ---
 --- Can be used to override vim.notify(), e.g.,
@@ -98,24 +101,38 @@ local function window_guard(callable)
   error(err)
 end
 
+--- Close the notification window.
+---
+---@return boolean closed_successfully
+function M.close()
+  return window_guard(function()
+    M.window.close()
+  end)
+end
+
 function M.poll()
   local now = now_sync or vim.fn.reltimefloat(vim.fn.reltime(origin_time))
-  groups = M.model.tick(now, groups)
+
+  -- TODO: if not modified, don't re-render
   local v = M.view.render(now, groups)
 
   if #v.lines > 0 then
-    -- TODO: if not modified, don't re-render
+    if view_suppressed then
+      return true
+    end
+
     window_guard(function()
       M.window.set_lines(v.lines, v.highlights, v.width)
       M.window.show(v.width, #v.lines)
     end)
     return true
   else
-    local closed = window_guard(function()
-      M.window.close()
-    end)
-    -- Keep polling, i.e., trying to close the window, if we could not close it.
-    return not closed
+    if view_suppressed then
+      return false
+    end
+
+    -- If we could not close the window, keep polling, i.e., keep trying to close the window.
+    return not M.close()
   end
 end
 
@@ -156,6 +173,24 @@ end
 function M.set_config(key, config, overwrite)
   if overwrite or not M.options.configs[key] then
     M.options.configs[key] = config
+  end
+end
+
+--- Suppress whether the notification window is shown.
+---
+--- Pass false as argument to turn off suppression.
+---
+--- If no argument is given, suppression state is toggled.
+---@param suppress boolean?
+function M.suppress(suppress)
+  if suppress == nil then
+    view_suppressed = not view_suppressed
+  else
+    view_suppressed = suppress
+  end
+
+  if view_suppressed then
+    M.close()
   end
 end
 
