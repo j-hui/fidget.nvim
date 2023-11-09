@@ -12,8 +12,9 @@ local logger     = require("fidget.logger")
 ---
 ---@type NotificationConfig
 M.default_config = {
-  ttl = 1.5,
-  icon = "❰❰❰",
+  name = "Notifications",
+  icon = "❰❰",
+  ttl = 5,
   group_style = "Title",
   icon_style = "Special",
   annote_style = "Question",
