@@ -90,7 +90,6 @@ local function find_item(group, key)
     return nil
   end
 
-
   for _, item in ipairs(group.items) do
     if item.key == key then
       return item
@@ -101,13 +100,13 @@ local function find_item(group, key)
   return nil
 end
 
---- Obtain the style specified by the level parameter of a .update() call,
+--- Obtain the style specified by the level parameter of a .update(),
 --- reading from config if necessary.
 ---
 ---@param config  NotificationConfig
 ---@param level   number | string | nil
 ---@return        string?
-local function get_item_style(config, level)
+local function style_from_level(config, level)
   if type(level) == "number" then
     if level == vim.log.levels.INFO and config.info_style then
       return config.info_style
@@ -120,6 +119,29 @@ local function get_item_style(config, level)
     end
   else
     return level
+  end
+end
+
+--- Obtain the annotation from the specified level of an .update() call.
+---
+--- TODO: config currently unused, but we should use it to configure the string.
+---
+---@param _config NotificationConfig
+---@param level   number | string | nil
+---@return string?
+local function annote_from_level(_config, level)
+  if type(level) == "number" then
+    if level == vim.log.levels.INFO then
+      return "INFO"
+    elseif level == vim.log.levels.WARN then
+      return "WARN"
+    elseif level == vim.log.levels.ERROR then
+      return "ERROR"
+    elseif level == vim.log.levels.DEBUG then
+      return "DEBUG"
+    end
+  else
+    return nil
   end
 end
 
@@ -160,8 +182,8 @@ function M.update(now, configs, groups, msg, level, opts)
     local new_item = {
       key = opts.key,
       message = msg,
-      annote = opts.annote,
-      style = get_item_style(group.config, level) or group.config.annote_style or "Question",
+      annote = opts.annote or annote_from_level(group.config, level),
+      style = style_from_level(group.config, level) or group.config.annote_style or "Question",
       hidden = opts.hidden or false,
       expires_at = compute_expiry(now, opts.ttl, group.config.ttl),
       data = opts.data,
@@ -170,8 +192,8 @@ function M.update(now, configs, groups, msg, level, opts)
   else
     -- Item with the same key already exists; update it in place
     item.message = msg or item.message
-    item.style = get_item_style(group.config, level) or item.style
-    item.annote = opts.annote or item.annote
+    item.style = style_from_level(group.config, level) or item.style
+    item.annote = opts.annote or annote_from_level(group.config, level) or item.annote
     item.hidden = opts.hidden or item.hidden
     item.expires_at = opts.ttl and compute_expiry(now, opts.ttl, group.config.ttl) or item.expires_at
     item.data = opts.data ~= nil and opts.data or item.data

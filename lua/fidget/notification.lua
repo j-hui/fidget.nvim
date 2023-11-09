@@ -18,6 +18,9 @@ M.default_config = {
   group_style = "Title",
   icon_style = "Special",
   annote_style = "Question",
+  debug_style = "Comment",
+  warn_style = "WarningMsg",
+  error_style = "ErrorMsg",
 }
 
 require("fidget.options")(M, {
@@ -112,6 +115,7 @@ end
 
 function M.poll()
   local now = now_sync or vim.fn.reltimefloat(vim.fn.reltime(origin_time))
+  groups = M.model.tick(now, groups)
 
   -- TODO: if not modified, don't re-render
   local v = M.view.render(now, groups)

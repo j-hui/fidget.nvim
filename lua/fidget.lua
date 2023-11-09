@@ -9,7 +9,7 @@ require("fidget.options")(M, {
   notification = M.notification,
   progress = M.progress,
 }, function()
-  M.logger.info("finished setting up fidget.nvim")
+  M.logger.info("fidget.nvim setup complete.")
 end)
 
 M.notify = M.notification.notify
