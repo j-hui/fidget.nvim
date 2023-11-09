@@ -1,17 +1,17 @@
 --- Fidget's top-level module.
----
---- For now, this doesn't do anything other than expose a setup() function.
-local M            = {}
-local logger       = require("fidget.logger")
-local notification = require("fidget.notification")
-local progress     = require("fidget.progress")
+local M        = {}
+M.logger       = require("fidget.logger")
+M.notification = require("fidget.notification")
+M.progress     = require("fidget.progress")
 
 require("fidget.options")(M, {
-  logger = logger,
-  notification = notification,
-  progress = progress,
+  logger = M.logger,
+  notification = M.notification,
+  progress = M.progress,
 }, function()
-  logger.info("finished setting up fidget.nvim")
+  M.logger.info("finished setting up fidget.nvim")
 end)
+
+M.notify = M.notification.notify
 
 return M

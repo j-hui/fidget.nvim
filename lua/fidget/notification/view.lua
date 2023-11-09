@@ -53,6 +53,7 @@ end
 function M.render(now, groups)
   local width = 0
   local lines = {}
+  ---@type NotificationHighlight[]
   local highlights = {}
 
   for _, group in ipairs(groups) do
@@ -61,7 +62,7 @@ function M.render(now, groups)
     width = math.max(width, vim.fn.strdisplaywidth(group_header))
     -- Insert highlight for group name
     table.insert(highlights, {
-      hl_group = group.config.name_style,
+      hl_group = group.config.group_style or "Title",
       line = #lines - 1,
       col_start = 0,
       col_end = -1,
@@ -69,7 +70,7 @@ function M.render(now, groups)
     if icon_begin >= 0 then
       -- Insert highlight for group icon
       table.insert(highlights, {
-        hl_group = group.config.icon_style,
+        hl_group = group.config.icon_style or group.config.group_style or "Title",
         line = #lines - 1,
         col_start = icon_begin,
         col_end = icon_end,

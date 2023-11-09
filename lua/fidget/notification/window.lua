@@ -20,7 +20,7 @@ require("fidget.options")(M, {
   --- background color in the notification box area (see winblend docs).
   ---
   ---@type string
-  normal_hl = "Normal",
+  normal_hl = "Comment",
 
   --- Opacity of the background color in the notification window.
   ---

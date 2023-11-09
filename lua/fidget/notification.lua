@@ -1,9 +1,9 @@
 --- Fidget's notification subsystem.
 local M          = {}
+M.model          = require("fidget.notification.model")
+M.window         = require("fidget.notification.window")
+M.view           = require("fidget.notification.view")
 local logger     = require("fidget.logger")
-local model      = require("fidget.notification.model")
-local window     = require("fidget.notification.window")
-local view       = require("fidget.notification.view")
 
 --- Default notification configuration.
 ---
@@ -14,9 +14,9 @@ local view       = require("fidget.notification.view")
 M.default_config = {
   ttl = 1.5,
   icon = "❰❰❰",
-  name_style = "Title",
-  icon_style = "Constant",
-  annote_style = "Comment",
+  group_style = "Title",
+  icon_style = "Special",
+  annote_style = "Question",
 }
 
 require("fidget.options")(M, {
@@ -25,11 +25,9 @@ require("fidget.options")(M, {
 
   --- Configs, used to instantiate groups in the notification model.
   ---@type { [any]: NotificationConfig }
-  configs = {
-    default = M.default_config,
-  },
+  configs = { default = M.default_config },
 
-  window = window,
+  window = M.window,
 }, function()
   -- Need to ensure that there is some sane default config.
   if not M.options.configs.default then
@@ -60,22 +58,22 @@ local now_sync = nil
 ---@param opts    NotificationOptions?
 function M.notify(msg, level, opts)
   local now = vim.fn.reltimefloat(vim.fn.reltime(origin_time))
-  model.update(now, M.options.configs, groups, msg, level, opts)
+  M.model.update(now, M.options.configs, groups, msg, level, opts)
   M.start_polling()
 end
 
 function M.poll()
   local now = now_sync or vim.fn.reltimefloat(vim.fn.reltime(origin_time))
-  groups = model.tick(now, groups)
-  local v = view.render(now, groups)
+  groups = M.model.tick(now, groups)
+  local v = M.view.render(now, groups)
   if #v.lines > 0 then
     -- TODO: if not modified, don't re-render
     -- TODO: check for textlock etc, other things that should cause us to skip this frame.
-    window.set_lines(v.lines, v.highlights, v.width)
-    window.show(v.width, #v.lines)
+    M.window.set_lines(v.lines, v.highlights, v.width)
+    M.window.show(v.width, #v.lines)
     return true
   else
-    window.close()
+    M.window.close()
     return false
   end
 end
@@ -107,6 +105,17 @@ function M.start_polling()
     now_sync = nil
   end)
   )
+end
+
+--- Dynamically add, overwrite, or delete a notification configuration.
+---
+---@param key     any
+---@param config  NotificationConfig?
+---@param overwrite boolean
+function M.set_config(key, config, overwrite)
+  if overwrite or not M.options.configs[key] then
+    M.options.configs[key] = config
+  end
 end
 
 return M

@@ -23,12 +23,12 @@ local M = {}
 ---@field icon              Display?  icon of the group; if nil, no icon is used
 ---@field icon_on_left      boolean?  if true, icon is rendered on the left instead of right
 ---@field annote_separator  string?   separator between message from annote; defaults to " "
----@field ttl               number    how long after a notification item should exist
----@field name_style        string    style used to highlight group name
----@field icon_style        string?   style used to highlight icon; if nil, use name_style
----@field annote_style      string    default style used to highlight item annotes
+---@field ttl               number?   how long a notification item should exist; defaults to 3
+---@field group_style       string?   style used to highlight group name; defaults to "Title"
+---@field icon_style        string?   style used to highlight icon; if nil, use group_style
+---@field annote_style      string?   default style used to highlight item annotes; defaults to "Question"
+---@field debug_style       string?   style used to highlight debug item annotes
 ---@field info_style        string?   style used to highlight info item annotes
----@field hint_style        string?   style used to highlight hint item annotes
 ---@field warn_style        string?   style used to highlight warn item annotes
 ---@field error_style       string?   style used to highlight error item annotes
 
@@ -114,8 +114,8 @@ local function get_item_style(config, level)
       return config.warn_style
     elseif level == vim.log.levels.ERROR and config.error_style then
       return config.error_style
-    elseif level == vim.log.levels.HINT and config.hint_style then
-      return config.hint_style
+    elseif level == vim.log.levels.DEBUG and config.debug_style then
+      return config.debug_style
     end
   else
     return level
@@ -124,11 +124,11 @@ end
 
 --- Compute the expiry time based on the given TTL (from notify() options) and the default TTL (from config).
 ---@param ttl         number?
----@param default_ttl number
+---@param default_ttl number?
 ---@return            number expiry_time
 local function compute_expiry(now, ttl, default_ttl)
   if not ttl or ttl == 0 then
-    return now + default_ttl
+    return now + (default_ttl or 3)
   else
     return now + ttl
   end
@@ -160,7 +160,7 @@ function M.update(now, configs, groups, msg, level, opts)
       key = opts.key,
       message = msg,
       annote = opts.annote,
-      style = get_item_style(group.config, level) or group.config.annote_style,
+      style = get_item_style(group.config, level) or group.config.annote_style or "Question",
       hidden = opts.hidden or false,
       expires_at = compute_expiry(now, opts.ttl, group.config.ttl),
       data = opts.data,
