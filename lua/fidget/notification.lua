@@ -68,19 +68,54 @@ function M.notify(msg, level, opts)
   M.start_polling()
 end
 
+--- Suppress errors that may occur while render windows.
+---
+--- The E523 error (Not allowed here) happens when 'secure' operations
+--- (including buffer or window management) are invoked while textlock is held
+--- or the Neovim UI is blocking. See #68.
+---
+--- Also ignore E11 (Invalid in command-line window), which is thrown when
+--- Fidget tries to close the window while a command-line window is focused.
+--- See #136.
+---
+--- This utility provides a workaround to simply supress the error.
+--- All other errors will be re-thrown.
+---
+--- (Thanks @wookayin and @0xAdk!)
+---
+---@param callable fun()
+---@return boolean suppressed_error
+local function window_guard(callable)
+  local function error_allowed(err)
+    if type(err) ~= "string" then return false end
+    if string.find(err, "E11: Invalid in command%-line window") then return true end
+    if string.find(err, "E523: Not allowed here") then return true end
+    return false
+  end
+  local ok, err = pcall(callable)
+  if ok then return true end
+  if error_allowed(err) then return false end
+  error(err)
+end
+
 function M.poll()
   local now = now_sync or vim.fn.reltimefloat(vim.fn.reltime(origin_time))
   groups = M.model.tick(now, groups)
   local v = M.view.render(now, groups)
+
   if #v.lines > 0 then
     -- TODO: if not modified, don't re-render
-    -- TODO: check for textlock etc, other things that should cause us to skip this frame.
-    M.window.set_lines(v.lines, v.highlights, v.width)
-    M.window.show(v.width, #v.lines)
+    window_guard(function()
+      M.window.set_lines(v.lines, v.highlights, v.width)
+      M.window.show(v.width, #v.lines)
+    end)
     return true
   else
-    M.window.close()
-    return false
+    local closed = window_guard(function()
+      M.window.close()
+    end)
+    -- Keep polling, i.e., trying to close the window, if we could not close it.
+    return not closed
   end
 end
 
