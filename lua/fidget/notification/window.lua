@@ -279,13 +279,13 @@ function M.get_window(row, col, anchor, width, height)
   width = width + M.options.x_padding
   width = math.min(width, editor_width - 4) -- guess width of signcolumn etc.
   if M.options.max_width > 0 then
-    width = math.min(width, M.optins.max_width)
+    width = math.min(width, M.options.max_width)
   end
 
   height = height + M.options.y_padding
   height = math.min(height, editor_height)
   if M.options.max_height > 0 then
-    height = math.min(height, M.optins.max_height)
+    height = math.min(height, M.options.max_height)
   end
 
   if state.window_id == nil or not vim.api.nvim_win_is_valid(state.window_id) then
