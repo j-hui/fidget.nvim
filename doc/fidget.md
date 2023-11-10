@@ -1,13 +1,11 @@
 ---
-project: fidget.nvim
+project: fidget
 vimversion: Neovim v0.8.0
 toc: true
 description: Extensible UI for Neovim notifications and LSP progress messages
 ---
 
-# fidget.nvim
-
-## Installation
+# Installation
 
 Install this plugin using your favorite plugin manager.
 Once installed, make sure to call its `setup()` function (in Lua), e.g.:
@@ -20,7 +18,7 @@ require("fidget").setup {
 
 `setup` takes a table of options as its parameter, used to configure the plugin.
 
-## Options
+# Options
 
 The following table shows the default options for this plugin:
 
@@ -93,9 +91,8 @@ The following table shows the default options for this plugin:
 }
 ```
 
-#### progress.poll_rate
-
-How frequently to poll for progress messages
+progress.poll_rate
+: How frequently to poll for progress messages
 
 Set to 0 to disable polling; you can still manually poll progress messages
 by calling `fidget.progress.poll()`.
@@ -104,9 +101,8 @@ Measured in Hertz (frames per second).
 
 Type: `number` (default: `5`)
 
-#### progress.notification_group
-
-How to get a progress message's notification group key
+progress.notification_group
+: How to get a progress message's notification group key
 
 Set this to return a constant to group all LSP progress messages together,
 e.g.,
@@ -121,9 +117,8 @@ end
 
 Type: `fun(msg: ProgressMessage): NotificationKey` (default: `msg.lsp_name`)
 
-#### progress.ignore
-
-List of LSP servers to ignore
+progress.ignore
+: List of LSP servers to ignore
 
 Example:
 
@@ -133,9 +128,8 @@ ignore = { "rust_analyzer" }
 
 Type: `NotificationKey[]` (default: `{}`)
 
-#### progress.display.done_ttl
-
-How long a message should persist after completion
+progress.display.done_ttl
+: How long a message should persist after completion
 
 Set to `0` to use notification group config default, and `math.huge` to show
 notification indefinitely (until overwritten).
@@ -144,21 +138,18 @@ Measured in seconds.
 
 Type: `number` (default: `3`)
 
-#### progress.display.done_icon
-
-Icon shown when all LSP progress tasks are complete
+progress.display.done_icon
+: Icon shown when all LSP progress tasks are complete
 
 Type: `string | Manga` (default: `"✔"`)
 
-#### progress.display.done_style
-
-Highlight group for completed LSP tasks
+progress.display.done_style
+: Highlight group for completed LSP tasks
 
 Type: `string` (default: `"Constant"`)
 
-#### progress.display.progress_ttl
-
-How long a message should persist when in progress
+progress.display.progress_ttl
+: How long a message should persist when in progress
 
 Set to `0` to use notification group config default, and `math.huge` to show
 notification indefinitely (until overwritten).
@@ -167,39 +158,33 @@ Measured in seconds.
 
 Type: `number` (default: `math.huge`)
 
-#### progress.display.progress_icon
-
-Icon shown when LSP progress tasks are in progress
+progress.display.progress_icon
+: Icon shown when LSP progress tasks are in progress
 
 Type: `string | Manga` (default: `{ pattern = "dots", period = 1 }`)
 
-#### progress.display.progress_style
-
-Highlight group for in-progress LSP tasks
+progress.display.progress_style
+: Highlight group for in-progress LSP tasks
 
 Type: `string` (default: `"WarningMsg"`)
 
-#### progress.display.group_style
-
-Highlight group for group name (LSP server name)
+progress.display.group_style
+: Highlight group for group name (LSP server name)
 
 Type: `string` (default: `"Title"`)
 
-#### progress.display.icon_style
-
-Highlight group for group icons
+progress.display.icon_style
+: Highlight group for group icons
 
 Type: `string` (default: `"Question"`)
 
-#### progress.display.priority
-
-Ordering priority for LSP notification group
+progress.display.priority
+: Ordering priority for LSP notification group
 
 Type: `number?` (default: `30`)
 
-#### progress.display.format_message
-
-How to format a progress message
+progress.display.format_message
+: How to format a progress message
 
 Example:
 
@@ -233,15 +218,13 @@ function fidget.display.default_format_message(msg)
 end
 ```
 
-#### progress.display.format_annote
-
-How to format a progress annotation
+progress.display.format_annote
+: How to format a progress annotation
 
 Type: `fun(msg: ProgressMessage): string` (default: `msg.title`)
 
-#### progress.display.format_group_name
-
-How to format a progress notification group's name
+progress.display.format_group_name
+: How to format a progress notification group's name
 
 Example:
 
@@ -253,9 +236,8 @@ end
 
 Type: `fun(group: NotificationKey): NotificationDisplay` (default: `tostring`)
 
-#### progress.display.overrides
-
-Override options from the default notification config
+progress.display.overrides
+: Override options from the default notification config
 
 Keys of the table are each notification group's `key`.
 
@@ -277,17 +259,15 @@ overrides = {
 
 Type: `{ [NotificationKey]: NotificationConfig }` (default: `{ rust_analyzer = { name = "rust-analyzer" } }`)
 
-#### notification.poll_rate
-
-How frequently to poll and render notifications
+notification.poll_rate
+: How frequently to poll and render notifications
 
 Measured in Hertz (frames per second).
 
 Type: `number` (default: `10`)
 
-#### notification.configs
-
-How to configure notification groups when instantiated
+notification.configs
+: How to configure notification groups when instantiated
 
 A configuration with the key `"default"` should always be specified, and
 is used as the fallback for notifications lacking a group key.
@@ -310,32 +290,28 @@ fidget.notification.default_config = {
 }
 ```
 
-#### notification.view.icon_separator
-
-Separator between group name and icon
+notification.view.icon_separator
+: Separator between group name and icon
 
 Must not contain any newlines. Set to `""` to remove the gap between names
 and icons in _all_ notification groups.
 
 Type: `string` (default: `" "`)
 
-#### notification.view.group_separator
-
-Separator between notification groups
+notification.view.group_separator
+: Separator between notification groups
 
 Must not contain any newlines. Set to `nil` to omit separator entirely.
 
 Type: `string?` (default: `"---"`)
 
-#### notification.view.group_separator_hl
-
-Highlight group used for group separator
+notification.view.group_separator_hl
+: Highlight group used for group separator
 
 Type: `string?` (default: `"Comment"`)
 
-#### notification.window.normal_hl
-
-Base highlight group in the notification window
+notification.window.normal_hl
+: Base highlight group in the notification window
 
 Used by any Fidget notification text that is not otherwise highlighted,
 i.e., message text.
@@ -348,9 +324,8 @@ background color in the notification box area (see `winblend` docs).
 
 Type: `string` (default: `"Comment"`)
 
-#### notification.window.winblend
-
-Background color opacity in the notification window
+notification.window.winblend
+: Background color opacity in the notification window
 
 Note that the notification window is rectangular, so any cells covered by
 that rectangular area is affected by the background color of `normal_hl`.
@@ -366,17 +341,15 @@ See also: options for [nvim_open_win()](<https://neovim.io/doc/user/api.html#nvi
 
 Type: `number` (default: `100`)
 
-#### notification.window.border
-
-Border around the notification window
+notification.window.border
+: Border around the notification window
 
 See also: options for [nvim_open_win()](<https://neovim.io/doc/user/api.html#nvim_open_win()>).
 
 Type: `"none" | "single" | "double" | "rounded" | "solid" | "shadow" | string[]` (default: `"none"`)
 
-#### notification.window.zindex
-
-Stacking priority of the notification window
+notification.window.zindex
+: Stacking priority of the notification window
 
 Note that the default priority for Vim windows is 50.
 
@@ -384,45 +357,39 @@ See also: options for [nvim_open_win()](<https://neovim.io/doc/user/api.html#nvi
 
 Type: `number` (default: `45`)
 
-#### notification.window.width
-
-Maximum width of the notification window
+notification.window.width
+: Maximum width of the notification window
 
 `0` means no maximum width.
 
 Type: `integer` (default: `0`)
 
-#### notification.window.height
-
-Maximum height of the notification window
+notification.window.height
+: Maximum height of the notification window
 
 `0` means no maximum height.
 
 Type: `integer` (default: `0`)
 
-#### notification.window.x_padding
-
-Padding from right edge of window boundary
+notification.window.x_padding
+: Padding from right edge of window boundary
 
 Type: `integer` (default: `1`)
 
-#### notification.window.y_padding
-
-Padding from bottom edge of window boundary
+notification.window.y_padding
+: Padding from bottom edge of window boundary
 
 Type: `integer` (default: `0`)
 
-#### logger.level
-
-Minimum logging level
+logger.level
+: Minimum logging level
 
 Set to `vim.log.levels.OFF` to disable logging.
 
 Type: `vim.log.levels` (default: `vim.log.levels.WARN`)
 
-#### logger.float_precision
-
-Limit the number of decimals displayed for floats
+logger.float_precision
+: Limit the number of decimals displayed for floats
 
 Type: `number` (default: `0.01`)
 
@@ -430,7 +397,7 @@ Type: `number` (default: `0.01`)
 
 <!-- TODO: write these -->
 
-## Highlights
+# Highlights
 
 Rather than defining its own highlights, Fidget uses built-in highlight groups
 that are typically overridden by custom Vim color schemes. With any luck, these
@@ -439,7 +406,7 @@ what your color scheme decided to do with those highlight groups.
 
 <!-- TODO: little tutorial? to define your own highlights. -->
 
-## Fidget Lua API
+# Fidget Lua API
 
 <!-- panvimdoc-ignore-start -->
 
@@ -448,133 +415,140 @@ You might have a better experience reading it in Vim using `:h fidget.txt`.
 
 <!-- panvimdoc-ignore-end -->
 
-### Types
+## Types
 
 NotificationKey
-:   A NotificationKey is `any` (non-`nil`) value,
-    used to determine the identity of notification items and groups.
+: Determines the identity of notification items and groups.
+
+Alias for `any` (non-`nil`) value.
 
 NotificationLevel
-:   Second (level) parameter passed to `:h fidget-fidget.notification.notify()`.
+: Second (`level`) parameter of `:h fidget-fidget.notification.notify()`.
 
-    Alias for `number | string`.
+Alias for `number | string`.
 
-    `string` indicates highlight group name; otherwise, `number` indicates
-    the `:h vim.log.levels` value (that will resolve to a highlight group as
-    determined by the `:h fidget-NotificationConfig`).
+`string` indicates highlight group name; otherwise, `number` indicates
+the `:h vim.log.levels` value (that will resolve to a highlight group as
+determined by the `:h fidget-NotificationConfig`).
 
 NotificationOptions
-:   Third (opts) parameter passed to `:h fidget-fidget.notification.notify()`.
+: Third (`opts`) parameter of `:h fidget-fidget.notification.notify()`.
 
-    Fields:
-    - `key`: (`NotificationKey?`) Replace existing notification item of the same key
-    - `group`: (`any?`) Group that this notification item belongs to
-    - `annote`: (`string?`) Optional single-line title that accompanies the message
-    - `hidden`: (`boolean?`) Whether this item should be shown
-    - `ttl`: (`number?`) How long after a notification item should exist; pass 0 to use default value
-    - `data`: (`any?`) Arbitrary data attached to notification item, can be used by `:h fidget-NotificationDisplay` function
+Fields:
+
+-   `key`: (`NotificationKey?`) Replace existing notification item of the same key
+-   `group`: (`any?`) Group that this notification item belongs to
+-   `annote`: (`string?`) Optional single-line title that accompanies the message
+-   `hidden`: (`boolean?`) Whether this item should be shown
+-   `ttl`: (`number?`) How long after a notification item should exist; pass 0 to use default value
+-   `data`: (`any?`) Arbitrary data attached to notification item, can be used by `:h fidget-NotificationDisplay` function
 
 NotificationDisplay
-:   Something that can be displayed in a `:h fidget-NotificationGroup`.
+: Displayed element in a `:h fidget-NotificationGroup`.
 
-    Alias for `string | fun(now: number, items: NotificationItem[]): string`.
+Alias for `string | fun(now: number, items: NotificationItem[]): string`.
 
-    If a callable `function`, it is invoked every render cycle with the items
-    list; useful for rendering animations and other dynamic content.
+If a callable `function`, it is invoked every render cycle with the items
+list; useful for rendering animations and other dynamic content.
 
 NotificationConfig
-:   Used to configure the behavior of notification groups.
+: Used to configure the behavior of notification groups.
 
-    See also: `:h fidget-notification.configs`.
+See also: `:h fidget-notification.configs`.
 
-    Fields:
-    - `name`: (`NotificationDisplay?`) Name of the group; if nil, tostring(key) is used as name
-    - `icon`: (`NotificationDisplay?`) Icon of the group; if nil, no icon is used
-    - `icon_on_left`: (`boolean?`) If true, icon is rendered on the left instead of right
-    - `annote_separator`: (`string?`) Separator between message from annote; defaults to " "
-    - `ttl`: (`number?`) How long a notification item should exist; defaults to 3
-    - `group_style`: (`string?`) Style used to highlight group name; defaults to "Title"
-    - `icon_style`: (`string?`) Style used to highlight icon; if nil, use group_style
-    - `annote_style`: (`string?`) Default style used to highlight item annotes; defaults to "Question"
-    - `debug_style`: (`string?`) Style used to highlight debug item annotes
-    - `info_style`: (`string?`) Style used to highlight info item annotes
-    - `warn_style`: (`string?`) style used to highlight warn item annotes
-    - `error_style`: (`string?`) style used to highlight error item annotes
-    - `priority`: (`number?`) order in which group should be displayed; defaults to 50
+Fields:
+
+-   `name`: (`NotificationDisplay?`) Name of the group; if nil, tostring(key) is used as name
+-   `icon`: (`NotificationDisplay?`) Icon of the group; if nil, no icon is used
+-   `icon_on_left`: (`boolean?`) If true, icon is rendered on the left instead of right
+-   `annote_separator`: (`string?`) Separator between message from annote; defaults to " "
+-   `ttl`: (`number?`) How long a notification item should exist; defaults to 3
+-   `group_style`: (`string?`) Style used to highlight group name; defaults to "Title"
+-   `icon_style`: (`string?`) Style used to highlight icon; if nil, use group_style
+-   `annote_style`: (`string?`) Default style used to highlight item annotes; defaults to "Question"
+-   `debug_style`: (`string?`) Style used to highlight debug item annotes
+-   `info_style`: (`string?`) Style used to highlight info item annotes
+-   `warn_style`: (`string?`) style used to highlight warn item annotes
+-   `error_style`: (`string?`) style used to highlight error item annotes
+-   `priority`: (`number?`) order in which group should be displayed; defaults to 50
 
 Anime
-:   An Anime is a function that takes a timestamp and renders a frame (string).
+: A function that takes a timestamp and renders a frame (string).
 
-    Parameters:
-    - `now`: (`number`) The current timestamp (in seconds)
+Parameters:
 
-    Returns:
-    - `string`: The contents of the frame right `now`
+- `now`: (`number`) The current timestamp (in seconds)
+
+Returns:
+
+- `string`: The contents of the frame right `now`
 
 Manga
-:   A Manga is a table specifying an `:h fidget-Anime` to generate.
+: A Manga is a table specifying an `:h fidget-Anime` to generate.
 
-    Fields:
-    - `pattern`: (`string[] | string`) The name of pattern (see `:h fidget-Spinners`)
-    - `period`: (`number`) How long one cycle of the animation should take, in seconds
+Fields:
+
+-   `pattern`: (`string[] | string`) The name of pattern (see `:h fidget-Spinners`)
+-   `period`: (`number`) How long one cycle of the animation should take, in seconds
 
 
-### Functions
+## Functions
 
 fidget.notify({msg}, {level}, {opts})
-:   Alias for `:h fidget.notifications.notify()`
+: Alias for `:h fidget.notifications.notify()`.
 
 fidget.progress.suppress({suppress})
-:   Suppress consumption of progress messages.
+: Suppress consumption of progress messages.
 
-    Pass `true` as argument to turn on suppression, or `false` to turn it off.
+Pass `true` as argument to turn on suppression, or `false` to turn it off.
 
-    If no argument is given, suppression state is toggled.
+If no argument is given, suppression state is toggled.
 
-    Parameters:
-    - `{suppress}`: (`boolean?`) whether to suppress or toggle suppression
+Parameters:
+
+-   `{suppress}`: (`boolean?`) whether to suppress or toggle suppression
 
 fidget.notification.notify({msg}, {level}, {opts})
-:   Send a notification to the Fidget notifications subsystem.
+: Send a notification.
 
-    Can be used to override `vim.notify()`, e.g.,
+Can be used to override `vim.notify()`, e.g.,
 
-    ```lua
-    vim.notify = require("fidget.notifications").notify
-    ```
+```lua
+vim.notify = require("fidget.notifications").notify
+```
 
-    Parameters:
-    - `{msg}`: (`string?`) Content of the notification to show to the user.
-    - `{level}`: (`NotificationLevel?`) One of the values from `:h vim.log.levels`, or the name of a highlight group.
-    - `{opts}`: (`NotificationOptions?`) Notification options (see `:h fidget-NotificationOptions`).
+Parameters:
+
+-   `{msg}`: (`string?`) Content of the notification to show to the user.
+-   `{level}`: (`NotificationLevel?`) One of the values from `:h vim.log.levels`, or the name of a highlight group.
+-   `{opts}`: (`NotificationOptions?`) Notification options (see `:h fidget-NotificationOptions`).
 
 fidget.notification.suppress({suppress})
-:   Suppress whether the notification window is shown.
+: Suppress notification window.
 
-    Pass `true` as argument to turn on suppression, or `false` to turn it off.
+Pass `true` as argument to turn on suppression, or `false` to turn it off.
 
-    If no argument is given, suppression state is toggled.
+If no argument is given, suppression state is toggled.
 
-    Parameters:
+Parameters:
 
-    - `{suppress}`: (`boolean?`) Whether to suppress or toggle suppression
+-   `{suppress}`: (`boolean?`) Whether to suppress or toggle suppression
 
 fidget.spinner.animate({pattern}, {period})
-:   Generate an `:h fidget-Anime` function that can be polled for spinner
-    animation frames.
+: Generate an `:h fidget-Anime` function.
 
-    Parameters:
+Parameters:
 
-    - `{pattern}`: `(string[] | string)` Either an array of frames, or the name of a known pattern (see `:h fidget-Spinners`)
-    - `{period}`: `(number)` How long one cycle of the animation should take, in seconds
+-   `{pattern}`: `(string[] | string)` Either an array of frames, or the name of a known pattern (see `:h fidget-Spinners`)
+-   `{period}`: `(number)` How long one cycle of the animation should take, in seconds
 
-    Returns:
+Returns:
 
-    - `(Anime)` Call this function to compute the frame at some given timestamp
+-   `(Anime)` Call this function to compute the frame at some given timestamp
 
 <!-- TODO: usage example -->
 
-### Spinners
+## Spinners
 
 The following spinner patterns are defined in `fidget.spinner.patterns`:
 
@@ -621,13 +595,13 @@ animation frame of each pattern.
 <!-- TODO: usage example -->
 
 
-## Troubleshooting
+# Troubleshooting
 
 If in doubt, file an issue on <https://github.com/j-hui/fidget.nvim/issues>.
 
 Logs are written to `~/.cache/nvim/fidget.nvim.log`.
 
-## Acknowledgements
+# Acknowledgements
 
 [fidget-spinner](#spinner) designs adapted from the npm package
 [sindresorhus/cli-spinners](https://github.com/sindresorhus/cli-spinners).
