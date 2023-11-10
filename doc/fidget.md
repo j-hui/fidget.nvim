@@ -624,6 +624,8 @@ animation frame of each pattern.
 
 If in doubt, file an issue on <https://github.com/j-hui/fidget.nvim/issues>.
 
+Logs are written to `~/.cache/nvim/fidget.nvim.log`.
+
 ## Acknowledgements
 
 [fidget-spinner](#spinner) designs adapted from the npm package

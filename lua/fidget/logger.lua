@@ -16,8 +16,7 @@ require("fidget.options")(M, {
 
 local PLUGIN_NAME = "fidget.nvim"
 local PLUGIN_PATH_PATTERN = "(/lua/fidget.+)"
-
-local log_file = string.format("%s/%s.log", vim.api.nvim_call_function("stdpath", { "data" }), PLUGIN_NAME)
+local log_file = string.format("%s/%s.log", vim.fn.stdpath("cache"), PLUGIN_NAME)
 
 local function fmt_level(level)
   if level == vim.log.levels.DEBUG then
