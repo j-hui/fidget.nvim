@@ -82,6 +82,11 @@ require("fidget.options")(M, {
   ---
   ---@type integer
   y_padding = 0,
+
+  --- Whether to bottom-align the notification window
+  ---
+  ---@type boolean
+  align_bottom = true,
 })
 
 --- Local state maintained by this module.
@@ -177,45 +182,43 @@ end
 ---
 --- (Thanks @levouh!)
 ---
----@param  relative     ("editor" | "win")  what the window is relative to
----@param  align_bottom boolean             whether to align to the bottom
----@param  align_right  boolean             wheter to align to the right
----@return number                 row
----@return number                 col
----@return ("NW"|"NE"|"SW"|"SE")  anchor
-function M.get_window_position(relative, align_bottom, align_right)
-  local width, height, baseheight
+---@return number       row
+---@return number       col
+---@return ("NE"|"SE")  anchor
+function M.get_window_position(align_bottom)
+  local col, row, row_max
+
+  local relative = "editor"
   if relative == "editor" then
-    width, height = M.get_editor_dimensions()
-
-    -- Applies when the layout is anchored at the top, need to check &tabline height
-    baseheight = 0
-    if relative == "editor" then
-      local showtabline = vim.opt.showtabline:get()
-      if
-          showtabline == 2
-          or (showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
-      then
-        baseheight = 1
-      end
+    col, row_max = M.get_editor_dimensions()
+    if M.options.align_bottom then
+      row = row_max
+    else
+      -- When the layout is anchored at the top, need to check &tabline height
+      local stal = vim.opt.showtabline:get()
+      local tabline_shown = stal == 2 or (stal == 1 and #vim.api.nvim_list_tabpages() > 1)
+      row = tabline_shown and 1 or 0
     end
-  else -- fidget relative to window.
-    height = vim.api.nvim_win_get_height(0)
-    width = vim.api.nvim_win_get_width(0)
-
+  else -- fidget relative to "window" (currently unreachable)
+    col = vim.api.nvim_win_get_width(0)
+    row_max = vim.api.nvim_win_get_height(0)
     if vim.fn.exists("+winbar") > 0 and vim.opt.winbar:get() ~= "" then
-      -- When winbar is enabled, the effective window height should be
-      -- decreased by 1. (see :help winbar)
-      height = height - 1
+      -- When winbar is set, effective win height is reduced by 1 (see :help winbar)
+      row_max = row_max - 1
     end
 
-    baseheight = 1
+    row = M.options.align_bottom and row_max or 1
   end
 
-  return
-      align_bottom and height or baseheight,
-      align_right and width or 1,
-      (align_bottom and "S" or "N") .. (align_right and "E" or "W")
+  col = math.max(0, col - M.options.x_padding)
+
+  if M.options.align_bottom then
+    row = math.max(0, row - M.options.y_padding)
+  else
+    row = math.min(row_max, row + M.options.y_padding)
+  end
+
+  return row, col, (M.options.align_bottom and "S" or "N") .. "E"
 end
 
 --- Set local options on a window.
@@ -276,13 +279,11 @@ function M.get_window(row, col, anchor, width, height)
   -- Clamp width and height to dimensions of editor and user specification.
   local editor_width, editor_height = M.get_editor_dimensions()
 
-  width = width + M.options.x_padding
   width = math.min(width, editor_width - 4) -- guess width of signcolumn etc.
   if M.options.max_width > 0 then
     width = math.min(width, M.options.max_width)
   end
 
-  height = height + M.options.y_padding
   height = math.min(height, editor_height)
   if M.options.max_height > 0 then
     height = math.min(height, M.options.max_height)
@@ -343,7 +344,7 @@ end
 ---@param width   number
 ---@param height  number
 function M.show(width, height)
-  local row, col, anchor = M.get_window_position("editor", true, true)
+  local row, col, anchor = M.get_window_position()
   M.get_window(row, col, anchor, width, height)
 end
 
@@ -369,6 +370,7 @@ function M.set_lines(lines, highlights, right_col)
     -- Right-justify text using the :right <col> command.
     vim.api.nvim_buf_call(buffer_id, function()
       vim.api.nvim_cmd({ cmd = "right", args = { tostring(right_col) }, range = { 1, #lines } }, {})
+      -- Same (ish): vim.cmd("%right " .. tostring(right_col))
     end)
 
     for _, highlight in ipairs(highlights) do

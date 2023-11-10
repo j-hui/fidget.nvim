@@ -80,6 +80,7 @@ The following table shows the default options for this plugin:
       max_height = 0,             -- Maximum height of the notification window
       x_padding = 1,              -- Padding from right edge of window boundary
       y_padding = 0,              -- Padding from bottom edge of window boundary
+      align_bottom = true,        -- Whether to bottom-align the notification window
     },
   },
 
@@ -380,6 +381,11 @@ notification.window.y_padding
 : Padding from bottom edge of window boundary
 
 Type: `integer` (default: `0`)
+
+notification.window.align_bottom
+: Whether to bottom-align the notification window
+
+Type: `boolean` (default: `true`)
 
 logger.level
 : Minimum logging level
