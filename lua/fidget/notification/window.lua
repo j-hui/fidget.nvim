@@ -123,15 +123,28 @@ local state = {
 ---@param callable fun()
 ---@return boolean suppressed_error
 function M.guard(callable)
-  local function error_allowed(err)
-    if type(err) ~= "string" then return false end
-    if string.find(err, "E11: Invalid in command%-line window") then return true end
-    if string.find(err, "E523: Not allowed here") then return true end
-    return false
-  end
+  local whitelist = {
+    "E11: Invalid in command%-line window",
+    "E523: Not allowed here",
+    "E565: Not allowed to change",
+  }
+
   local ok, err = pcall(callable)
-  if ok then return true end
-  if error_allowed(err) then return false end
+  if ok then
+    return true
+  end
+
+  if type(err) ~= "string" then
+    -- Don't know how to deal with this kind of error object
+    error(err)
+  end
+
+  for _, msg in ipairs(whitelist) do
+    if string.find(err, msg) then
+      return false
+    end
+  end
+
   error(err)
 end
 
@@ -307,8 +320,8 @@ function M.get_window(row, col, anchor, width, height)
   end
 
   M.win_set_local_options(state.window_id, {
-    winblend = M.options.winblend,                      -- Transparent background
-    winhighlight = "NormalNC:" .. M.options.normal_hl,  -- Instead of NormalFloat
+    winblend = M.options.winblend,                     -- Transparent background
+    winhighlight = "NormalNC:" .. M.options.normal_hl, -- Instead of NormalFloat
   })
   return state.window_id
 end
