@@ -42,8 +42,15 @@ function M.poll_for_messages()
   return #messages > 0 and messages or nil
 end
 
+--- Register handler for LSP progress updates.
+---
+---@param fn function
+---@return number
 function M.on_progress_message(fn)
-  vim.api.nvim_create_autocmd({ "LspProgress" }, { callback = fn })
+  return vim.api.nvim_create_autocmd({ "LspProgress" }, {
+    callback = fn,
+    documentation = "Fidget LSP progress handler",
+  })
 end
 
 if not vim.lsp.status then
@@ -118,8 +125,11 @@ if not vim.lsp.status then
   end
 
   --- Register autocmd callback for LspProgressUpdate event (v0.8.0--v0.9.4).
+  ---
+  ---@param fn function
+  ---@return number
   function M.on_progress_message(fn)
-    vim.api.nvim_create_autocmd({ "User" }, {
+    return vim.api.nvim_create_autocmd({ "User" }, {
       pattern = { "LspProgressUpdate" },
       callback = fn,
     })

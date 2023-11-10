@@ -5,6 +5,10 @@ M.lsp              = require("fidget.progress.lsp")
 local logger       = require("fidget.logger")
 local notification = require("fidget.notification")
 
+--- Used to ensure only a single autocmd callback exists.
+---@type number?
+local autocmd_id = nil
+
 --- Options related to LSP progress notification subsystem
 require("fidget.options")(M, {
   --- How frequently to poll for progress messages
@@ -48,9 +52,13 @@ require("fidget.options")(M, {
 
   display = M.display,
 }, function()
+  if autocmd_id ~= nil then
+    vim.api.nvim_del_autocmd(autocmd_id)
+    autocmd_id = nil
+  end
   if M.options.poll_rate > 0 then
     -- TODO: make idempotent
-    M.lsp.on_progress_message(M.start_polling)
+    autocmd_id = M.lsp.on_progress_message(M.start_polling)
   end
 end)
 
