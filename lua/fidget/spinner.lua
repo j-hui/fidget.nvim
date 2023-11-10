@@ -2,7 +2,7 @@ local M = {}
 M.patterns = require("fidget.spinner.patterns")
 
 --- A Manga is a table specifying an Anime to generate.
----@alias Manga { pattern: string, period: number }
+---@alias Manga { pattern: string[]|string, period: number }
 
 --- An Anime is a function that takes a timestamp and renders a frame (string).
 ---
@@ -11,9 +11,9 @@ M.patterns = require("fidget.spinner.patterns")
 
 --- Generate an Anime function that can be polled for spinner animation frames.
 ---
----@param pattern string[]|string either an array of frames, or the name of a known pattern
----@param period number     how long one cycle of the animation should take, in seconds
----@return Anime anime
+---@param pattern string[]|string Either an array of frames, or the name of a known pattern
+---@param period number How long one cycle of the animation should take, in seconds
+---@return Anime anime Call this function to compute the frame at some timestamp
 function M.animate(pattern, period)
   if type(pattern) == "string" then
     local pattern_name = pattern

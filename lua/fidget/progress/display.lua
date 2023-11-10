@@ -1,91 +1,139 @@
 local M       = {}
 local spinner = require("fidget.spinner")
 
+--- Default format_message implementation.
+---
+---@param msg ProgressMessage
+---@return string progress_notification_message
+function M.default_format_message(msg)
+  local message = msg.message
+  if not message then
+    message = msg.done and "Completed" or "In progress..."
+  end
+  if msg.percentage ~= nil then
+    message = string.format("%s (%.0f%%)", message, msg.percentage)
+  end
+  return message
+end
+
+--- Options related to how LSP progress messages are displayed as notifications
 require("fidget.options")(M, {
-  --- How long a progress notification should persist after it is complete.
+  --- How long a message should persist after completion
   ---
-  --- Set to 0 to use notification group config default.
+  --- Set to `0` to use notification group config default, and `math.huge` to
+  --- show notification indefinitely (until overwritten).
+  ---
+  --- Measured in seconds.
   ---
   ---@type number
   done_ttl = 3,
 
-  --- Icon shown when LSP tasks are complete.
+  --- Icon shown when all LSP progress tasks are complete
   ---
-  ---@type string|Manga
+  ---@type string | Manga
   done_icon = "✔",
 
-  --- Name of annotation highlight group when LSP tasks are complete.
+  --- Highlight group for completed LSP tasks
   ---
   ---@type string
   done_style = "Constant",
 
-  --- How long a progress notification should persist while it is in progress.
+  --- How long a message should persist when in progress
   ---
-  --- Set to 0 to use notification group config default.
+  --- Set to `0` to use notification group config default, and `math.huge` to
+  --- show notification indefinitely (until overwritten).
+  ---
+  --- Measured in seconds.
   ---
   ---@type number
   progress_ttl = math.huge,
 
-  --- Icon shown when LSP tasks are in progress.
+  --- Icon shown when LSP progress tasks are in progress
   ---
-  ---@type string|Manga
+  ---@type string | Manga
   progress_icon = { pattern = "dots", period = 1 },
 
-  --- Name of annotation highlight group when LSP tasks are in progress.
+  --- Highlight group for in-progress LSP tasks
   ---
   ---@type string
   progress_style = "WarningMsg",
 
-  --- Name of highlight group used for notification group title.
+  --- Highlight group for group name (LSP server name)
   ---
   ---@type string
   group_style = "Title",
 
-  --- Name of highlight group used for notification group icon.
+  --- Highlight group for group icons
   ---
   ---@type string
   icon_style = "Question",
 
-  --- Priority of LSP progress message notifications.
+  --- Ordering priority for LSP notification group
   ---
   ---@type number?
   priority = 30,
 
-  --- Callback to format a ProgressMessage into a notification message.
+  --- How to format a progress message
   ---
-  ---@param msg ProgressMessage
-  ---@return string notification_message
-  format_message = function(msg)
-    local message = msg.message
-    if not message then
-      message = msg.done and "Completed" or "In progress..."
-    end
-    if msg.percentage ~= nil then
-      message = string.format("%s (%.0f%%)", message, msg.percentage)
-    end
-    return message
-  end,
+  --- Example:
+  ---
+  --- ```lua
+  --- format_message = function(msg)
+  ---   if string.find(msg.title, "Indexing") then
+  ---     return nil -- Ignore "Indexing..." progress messages
+  ---   end
+  ---   if msg.message then
+  ---     return msg.message
+  ---   else
+  ---     return msg.done and "Completed" or "In progress..."
+  ---   end
+  --- end
+  --- ```
+  ---
+  ---@type fun(msg: ProgressMessage): string
+  format_message = M.default_format_message,
 
-  --- Callback to format a ProgressMessage into a notification annotation.
+  --- How to format a progress annotation
   ---
-  ---@param msg ProgressMessage
-  ---@return string notification_annote
+  ---@type fun(msg: ProgressMessage): string
   format_annote = function(msg)
     return msg.title
   end,
 
-  --- Callback to generate the group name from the key of a group.
+  --- How to format a progress notification group's name
   ---
-  ---@param group_key any
-  ---@return Display
-  format_group_name = function(group_key)
-    return tostring(group_key)
-  end,
+  --- Example:
+  ---
+  --- ```lua
+  --- format_group_name = function(group)
+  ---   return "lsp:" .. tostring(group)
+  --- end
+  --- ```
+  ---
+  ---@type fun(group: NotificationKey): NotificationDisplay
+  format_group_name = tostring,
 
-  --- Notification configs used to override options of the default configuration
-  --- on a per-LSP server basis.
+  --- Override options from the default notification config
   ---
-  ---@type { [any]: NotificationConfig }
+  --- Keys of the table are each notification group's `key`.
+  ---
+  --- Example:
+  ---
+  --- ```lua
+  --- overrides = {
+  ---   hls = {
+  ---     name = "Haskell Language Server",
+  ---     priority = 60,
+  ---     icon = fidget.progress.display.for_icon(fidget.spinner.animate("triangle", 3), "💯"),
+  ---   },
+  ---   rust_analyzer = {
+  ---     name = "Rust Analyzer",
+  ---     icon = fidget.progress.display.for_icon(fidget.spinner.animate("arrow", 2.5), "🦀"),
+  ---   },
+  --- }
+  --- ```
+  ---
+  ---@type { [NotificationKey]: NotificationConfig }
   overrides = {
     rust_analyzer = { name = "rust-analyzer" },
   }
@@ -95,7 +143,7 @@ require("fidget.options")(M, {
 ---
 ---@param progress  string|Anime progress icon/animation function
 ---@param done      string|Anime completion icon/animation function
----@return Display icon_display
+---@return NotificationDisplay icon_display
 function M.for_icon(progress, done)
   return function(now, items)
     for _, item in ipairs(items) do
@@ -109,9 +157,9 @@ function M.for_icon(progress, done)
 end
 
 --- Create the config for a language server indexed by the given group key.
----@param group_key any
+---@param group NotificationKey
 ---@return NotificationConfig
-function M.make_config(group_key)
+function M.make_config(group)
   local progress = M.options.progress_icon
   if type(progress) == "table" then
     progress = spinner.animate(progress.pattern, progress.period)
@@ -123,7 +171,7 @@ function M.make_config(group_key)
   end
 
   local config = {
-    name = M.options.format_group_name(group_key),
+    name = M.options.format_group_name(group),
     icon = M.for_icon(progress, done),
     ttl = M.options.done_ttl,
     group_style = M.options.group_style,
@@ -134,8 +182,8 @@ function M.make_config(group_key)
     priority = M.options.priority,
   }
 
-  if M.options.overrides[group_key] then
-    config = vim.tbl_extend("force", config, M.options.overrides[group_key])
+  if M.options.overrides[group] then
+    config = vim.tbl_extend("force", config, M.options.overrides[group])
   end
 
   return config

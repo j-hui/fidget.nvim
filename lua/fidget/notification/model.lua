@@ -8,46 +8,15 @@
 --- (3) to enable fine-grained cacheing of rendered elements.
 local M = {}
 
---- Something that can be displayed. If callable, it is invoked every render cycle
---- with the item list; useful for rendering animations and other dynamic content.
----@alias Display string | fun(now: number, items: NotificationItem[]): string
-
---- Level (second) paramter passed to vim.notify()
----
---- String indicates highlight group name; otherwise, number indicates a level
---- (error, warn, info, trace) that must be resolved using the group config.
----@alias NotificationLevel number | string
-
----@class NotificationConfig
----@field name              Display?  name of the group; if nil, tostring(key) is used as name
----@field icon              Display?  icon of the group; if nil, no icon is used
----@field icon_on_left      boolean?  if true, icon is rendered on the left instead of right
----@field annote_separator  string?   separator between message from annote; defaults to " "
----@field ttl               number?   how long a notification item should exist; defaults to 3
----@field group_style       string?   style used to highlight group name; defaults to "Title"
----@field icon_style        string?   style used to highlight icon; if nil, use group_style
----@field annote_style      string?   default style used to highlight item annotes; defaults to "Question"
----@field debug_style       string?   style used to highlight debug item annotes
----@field info_style        string?   style used to highlight info item annotes
----@field warn_style        string?   style used to highlight warn item annotes
----@field error_style       string?   style used to highlight error item annotes
----@field priority          number?   order in which group should be displayed; defaults to 50
-
----@class NotificationOptions
----@field key           any?      replace existing notification item of the same key
----@field group         any?      group that this notification item belongs to
----@field annote        string?   optional single-line title that accompanies the message
----@field hidden        boolean?  whether this item should be shown
----@field ttl           number?   how long after a notification item should exist; pass 0 to use default value
----@field data          any?      arbitrary data attached to notification item
-
+--- A collection of NotificationItems.
 ---@class NotificationGroup
----@field key           any                 used to distinguish this group from others
+---@field key           NotificationKey     used to distinguish this group from others
 ---@field config        NotificationConfig  configuration for this group
 ---@field items         NotificationItem[]  items displayed in the group
 
+--- Notification element containing a message and optional annotation.
 ---@class NotificationItem
----@field key         any       used to distinguish this item from others
+---@field key         NotificationKey  used to distinguish this item from others
 ---@field message     string    displayed message for the item
 ---@field annote      string?   optional title that accompanies the message
 ---@field style       string    style used to render the annote/title, if any
@@ -57,9 +26,9 @@ local M = {}
 
 --- Get the notification group indexed by group_key; create one if none exists.
 ---
----@param   configs     { [any]: NotificationConfig }
+---@param   configs     { [NotificationKey]: NotificationConfig }
 ---@param   groups      NotificationGroup[]
----@param   group_key   any
+---@param   group_key   NotificationKey
 ---@return              NotificationGroup group
 local function get_group(configs, groups, group_key)
   for _, group in ipairs(groups) do
@@ -83,7 +52,7 @@ end
 --- Search for an item with the given key among a notification group.
 ---
 ---@param group NotificationGroup
----@param key any
+---@param key NotificationKey
 ---@return NotificationItem?
 local function find_item(group, key)
   if key == nil then

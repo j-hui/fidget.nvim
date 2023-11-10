@@ -5,6 +5,47 @@ M.window         = require("fidget.notification.window")
 M.view           = require("fidget.notification.view")
 local logger     = require("fidget.logger")
 
+--- Used to determine the identity of notification items and groups.
+---@alias NotificationKey any
+
+--- Second (level) paramter passed to fidget.notification.notify().
+---
+--- `string` indicates highlight group name; otherwise, `number` indicates
+--- the `:h vim.log.levels` value (that will resolve to a highlight group as
+--- determined by the `:h NotificationConfig`).
+---@alias NotificationLevel number | string
+
+--- Third (opts) parameter passed to fidget.notification.notify().
+---@class NotificationOptions
+---@field key           NotificationKey?  Replace existing notification item of the same key
+---@field group         any?      Group that this notification item belongs to
+---@field annote        string?   Optional single-line title that accompanies the message
+---@field hidden        boolean?  Whether this item should be shown
+---@field ttl           number?   How long after a notification item should exist; pass 0 to use default value
+---@field data          any?      Arbitrary data attached to notification item
+
+--- Something that can be displayed in a NotificationGroup.
+---
+--- If a callable `function`, it is invoked every render cycle with the items
+--- list; useful for rendering animations and other dynamic content.
+---@alias NotificationDisplay string | fun(now: number, items: NotificationItem[]): string
+
+--- Used to configure the behavior of notification groups.
+---@class NotificationConfig
+---@field name              NotificationDisplay?  name of the group; if nil, tostring(key) is used as name
+---@field icon              NotificationDisplay?  icon of the group; if nil, no icon is used
+---@field icon_on_left      boolean?  if true, icon is rendered on the left instead of right
+---@field annote_separator  string?   separator between message from annote; defaults to " "
+---@field ttl               number?   how long a notification item should exist; defaults to 3
+---@field group_style       string?   style used to highlight group name; defaults to "Title"
+---@field icon_style        string?   style used to highlight icon; if nil, use group_style
+---@field annote_style      string?   default style used to highlight item annotes; defaults to "Question"
+---@field debug_style       string?   style used to highlight debug item annotes
+---@field info_style        string?   style used to highlight info item annotes
+---@field warn_style        string?   style used to highlight warn item annotes
+---@field error_style       string?   style used to highlight error item annotes
+---@field priority          number?   order in which group should be displayed; defaults to 50
+
 --- Default notification configuration.
 ---
 --- Exposed publicly because it might be useful for users to integrate for when
@@ -23,12 +64,21 @@ M.default_config = {
   error_style = "ErrorMsg",
 }
 
+--- Options related to notification subsystem
 require("fidget.options")(M, {
-  --- Rate at which Fidget should render notifications view.
+  --- How frequently to poll and render notifications
+  ---
+  --- Measured in Hertz (frames per second).
+  ---
+  ---@type number
   poll_rate = 10,
 
-  --- Configs, used to instantiate groups in the notification model.
-  ---@type { [any]: NotificationConfig }
+  --- How to configure notification groups when instantiated
+  ---
+  --- A configuration with the key `"default"` should always be specified, and
+  --- is used as the fallback for notifications lacking a group key.
+  ---
+  ---@type { [NotificationKey]: NotificationConfig }
   configs = { default = M.default_config },
 
   view = M.view,
@@ -36,6 +86,7 @@ require("fidget.options")(M, {
 }, function()
   -- Need to ensure that there is some sane default config.
   if not M.options.configs.default then
+    logger.warn("no default notification config specified; using default")
     M.options.configs.default = M.default_config
   end
 end)
@@ -57,9 +108,11 @@ local view_suppressed = false
 
 --- Send a notification to the Fidget notifications subsystem.
 ---
---- Can be used to override vim.notify(), e.g.,
+--- Can be used to override `vim.notify()`, e.g.,
 ---
----     vim.notify = require("fidget.notifications").notify
+--- ```lua
+--- vim.notify = require("fidget.notifications").notify
+--- ```
 ---
 ---@param msg     string?
 ---@param level   NotificationLevel?
@@ -74,41 +127,12 @@ function M.notify(msg, level, opts)
   M.start_polling()
 end
 
---- Suppress errors that may occur while render windows.
----
---- The E523 error (Not allowed here) happens when 'secure' operations
---- (including buffer or window management) are invoked while textlock is held
---- or the Neovim UI is blocking. See #68.
----
---- Also ignore E11 (Invalid in command-line window), which is thrown when
---- Fidget tries to close the window while a command-line window is focused.
---- See #136.
----
---- This utility provides a workaround to simply supress the error.
---- All other errors will be re-thrown.
----
---- (Thanks @wookayin and @0xAdk!)
----
----@param callable fun()
----@return boolean suppressed_error
-local function window_guard(callable)
-  local function error_allowed(err)
-    if type(err) ~= "string" then return false end
-    if string.find(err, "E11: Invalid in command%-line window") then return true end
-    if string.find(err, "E523: Not allowed here") then return true end
-    return false
-  end
-  local ok, err = pcall(callable)
-  if ok then return true end
-  if error_allowed(err) then return false end
-  error(err)
-end
 
 --- Close the notification window.
 ---
 ---@return boolean closed_successfully
 function M.close()
-  return window_guard(function()
+  return M.window.guard(function()
     M.window.close()
   end)
 end
@@ -125,7 +149,7 @@ function M.poll()
       return true
     end
 
-    window_guard(function()
+    M.window.guard(function()
       M.window.set_lines(v.lines, v.highlights, v.width)
       M.window.show(v.width, #v.lines)
     end)
@@ -171,7 +195,7 @@ end
 
 --- Dynamically add, overwrite, or delete a notification configuration.
 ---
----@param key     any
+---@param key     NotificationKey
 ---@param config  NotificationConfig?
 ---@param overwrite boolean
 function M.set_config(key, config, overwrite)
@@ -182,10 +206,10 @@ end
 
 --- Suppress whether the notification window is shown.
 ---
---- Pass false as argument to turn off suppression.
+--- Pass `true` as argument to turn on suppression, or `false` to turn it off.
 ---
 --- If no argument is given, suppression state is toggled.
----@param suppress boolean?
+---@param suppress boolean? Whether to suppress or toggle suppression
 function M.suppress(suppress)
   if suppress == nil then
     view_suppressed = not view_suppressed

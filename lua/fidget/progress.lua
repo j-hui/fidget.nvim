@@ -1,26 +1,49 @@
 --- Fidget's LSP progress subsystem.
 local M            = {}
-M.lsp              = require("fidget.progress.lsp")
 M.display          = require("fidget.progress.display")
+M.lsp              = require("fidget.progress.lsp")
 local logger       = require("fidget.logger")
 local notification = require("fidget.notification")
 
+--- Options related to LSP progress notification subsystem
 require("fidget.options")(M, {
-  --- Rate at which Fidget should poll for progress messages.
+  --- How frequently to poll for progress messages
   ---
-  --- Set to 0 to disable polling; you can still manually poll by calling
-  --- fidget.progress.poll().
+  --- Set to 0 to disable polling; you can still manually poll progress messages
+  --- by calling `fidget.progress.poll()`.
+  ---
+  --- Measured in Hertz (frames per second).
+  ---
+  ---@type number
   poll_rate = 5,
 
-  --- Callback to obtain the notification group key from a progress message.
+  --- How to get a progress message's notification group key
   ---
-  ---@param msg ProgressMessage
-  ---@return any key
+  --- Set this to return a constant to group all LSP progress messages together,
+  --- e.g.,
+  ---
+  --- ```lua
+  --- notification_group = function(msg)
+  ---   -- N.B. you may also want to configure this group key ("lsp_progress")
+  ---   -- using progress.display.overrides or notification.configs
+  ---   return "lsp_progress"
+  --- end
+  --- ```
+  ---
+  ---@type fun(msg: ProgressMessage): NotificationKey
   notification_group = function(msg)
     return msg.lsp_name
   end,
 
-  --- List of LSP server names whose progress messages Fidget should ignore.
+  --- List of LSP servers to ignore
+  ---
+  --- Example:
+  ---
+  --- ```lua
+  --- ignore = { "rust_analyzer" }
+  --- ```
+  ---
+  ---@type NotificationKey[]
   ignore = {},
 
   display = M.display,
@@ -36,7 +59,7 @@ local progress_suppressed = false
 
 --- Cache of generated LSP notification group configs.
 ---
----@type { [any]: NotificationConfig }
+---@type { [NotificationKey]: NotificationConfig }
 local loaded_configs = {}
 
 --- Lazily load the notification configuration for some progress message.
@@ -128,10 +151,10 @@ end
 
 --- Suppress consumption of progress messages.
 ---
---- Pass false as argument to turn off suppression.
+--- Pass `false` as argument to turn off suppression.
 ---
 --- If no argument is given, suppression state is toggled.
----@param suppress boolean?
+---@param suppress boolean? Whether to suppress or toggle suppression
 function M.suppress(suppress)
   if suppress == nil then
     progress_suppressed = not progress_suppressed

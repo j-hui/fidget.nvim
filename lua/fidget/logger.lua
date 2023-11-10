@@ -2,12 +2,15 @@
 local M = {}
 
 require("fidget.options")(M, {
-  --- Minimum log level; set to vim.log.levels.OFF to disable logging.
+  --- Minimum logging level
   ---
-  --- TODO: change to WARN before releasing.
-  level = vim.log.levels.DEBUG,
+  --- Set to `vim.log.levels.OFF` to disable logging.
+  ---
+  ---@type 0|1|2|3|4|5
+  level = vim.log.levels.WARN,
 
-  --- Limit the number of decimals displayed for floats.
+  --- Limit the number of decimals displayed for floats
+  ---@type number
   float_precision = 0.01,
 })
 

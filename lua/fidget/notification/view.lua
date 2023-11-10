@@ -14,18 +14,24 @@ local M = {}
 ---@field col_start   number    (byte-indexed) column to start highlight
 ---@field col_end     number    (byte-indexed) column to end highlight
 
+--- Options related to how notifications are rendered as text
 require("fidget.options")(M, {
-  --- Separator between group name and icon.
+  --- Separator between group name and icon
+  ---
+  --- Must not contain any newlines. Set to `""` to remove the gap between names
+  --- and icons in _all_ notification groups.
   ---
   ---@type string
   icon_separator = " ",
 
-  --- Separator between notification groups.
+  --- Separator between notification groups
+  ---
+  --- Must not contain any newlines. Set to `nil` to omit separator entirely.
   ---
   ---@type string?
   group_separator = "---",
 
-  --- Higlight group used for group separator.
+  --- Highlight group used for group separator
   ---
   ---@type string?
   group_separator_hl = "Comment",

@@ -1,48 +1,80 @@
 # fidget.nvim
 
-> **NOTE**: fidget.nvim will soon be completely rewritten. In the meantime,
-> please pin your plugin config to the `legacy` tag to avoid breaking changes.
-
-Standalone UI for nvim-lsp progress. Eye candy for the impatient.
+Extensible UI for Neovim notifications and LSP progress messages.
 
 ![fidget.nvim demo](https://github.com/j-hui/fidget.nvim/blob/media/gifs/fidget-demo-rust-analyzer.gif?raw=true)
 
-## Why?
+<details>
+  <summary>Demo setup</summary>
 
-The goals of this plugin are:
+*Note that this demo may not always reflect the exact behavior of the latest release.*
 
-- to provide a UI for nvim-lsp's [progress][lsp-progress] handler.
-- to be easy to configure
-- to stay out of the way of other plugins (in particular status lines)
+This screen recording was taken as I opened a Rust file I'm working on,
+triggering `rust-analyzer` to send me some LSP progress messages.
 
-The language server protocol (LSP) defines an [endpoint][lsp-progress] for
-servers to report their progress while performing work.
-This endpoint is supported by Neovim's builtin LSP client, but only a handful
-of plugins (that I'm aware of) make use of this feature.
-Those that do typically report progress in the status line, where space is at
-a premium and the layout is not well-suited to display the progress of
-concurrent tasks coming from multiple LSP servers.
-This approach also made status line configuration more complicated.
+As those messages are ongoing, I trigger some notifications with the following:
 
-I wanted be able to see the progress reported by LSP servers without involving
-the status line.
-Who doesn't love a little bit of eye candy?
+```lua
+local fidget = require("fidget")
+
+vim.keymap.set("n", "A", function()
+  fidget.notify("This is from fidget.notify().")
+end)
+
+vim.keymap.set("n", "B", function()
+  fidget.notify("This is also from fidget.notify().", vim.log.levels.WARN)
+end)
+
+vim.keymap.set("n", "C", function()
+  fidget.notify("fidget.notify() supports annotations...", nil, { annote = "MY NOTE", key = "foobar" })
+end)
+
+vim.keymap.set("n", "D", function()
+  fidget.notify(nil, vim.log.levels.ERROR, { annote = "YOUR AD HERE", key = "foobar" })
+  fidget.notify("... and overwriting notifications.", vim.log.levels.WARN, { annote = "bottom text" })
+end)
+```
+
+(I use normal mode keymaps to avoid going into ex mode, which would pause Fidget
+rendering and make the demo look glitchy...)
+
+Visible elements:
+
+-   Terminal + font: [Kitty](https://sw.kovidgoyal.net/kitty/) + [Comic Shanns Mono](https://github.com/shannpersand/comic-shanns)
+-   Editor: [Neovim v0.9.4](https://github.com/neovim/neovim/tree/v0.9.4)
+-   Theme: [folke/twilight.nvim](https://github.com/folke/twilight.nvim)
+-   Status line: [nvim-lualine/lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
+-   Color columns: `:set colorcolumn=81,121,+1,+2` (sorry)
+
+</details>
+
+### Why?
+
+Fidget is an unintrusive window in the corner of your editor that manages
+its own lifetime. Its goals are:
+
+- to provide a UI for Neovim's [`$/progress`][lsp-progress] handler
+- to provide a configurable [`vim.notify()`][vim-notify] backend
+- to support basic ASCII animations (Fidget spinners!) to indicate signs of life
+- to be easy to configure, sane to maintain, and fun to hack on
+
+There's only so much information one can stash into the status line. Besides,
+who doesn't love a little bit of terminal eye candy, as a treat?
 
 [lsp-progress]: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#progress
-
-## Requirements
-
-- Neovim v0.7.0+
-- [nvim-lsp](https://github.com/neovim/nvim-lspconfig)
-- An LSP server that implements LSP's [progress][lsp-progress] endpoint
-
-Having a working nvim-lsp setup is not technically necessary to _setup_ the
-plugin, but it won't do anything without a source of progress notifications.
-
-For an up-to-date list of LSP servers this plugin is known to work with, see
-[this pinned issue](https://github.com/j-hui/fidget.nvim/issues/17).
+[vim-notify]: https://neovim.io/doc/user/lua.html#vim.notify()
 
 ## Quickstart
+
+### Requirements
+
+Fidget requires Neovim v0.8.0+.
+
+If you would like to see progress notifications, you must have configured Neovim
+with an LSP server that uses the [`$/progress`][lsp-progress] handler. For an
+up-to-date list of LSP servers this plugin is known to work with, see
+[this pinned issue](https://github.com/j-hui/fidget.nvim/issues/17).
+
 
 ### Installation
 
@@ -50,41 +82,21 @@ Install this plugin using your favorite plugin manager.
 
 See the [documentation](doc/fidget.md) for `setup()` options.
 
-> **NOTE**: fidget.nvim will soon be completely rewritten. In the meantime, these instructions will pin your configuration to the `legacy` branch to avoid breaking changes. 
-
 #### [Lazy](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
   "j-hui/fidget.nvim",
-  tag = "legacy",
-  event = "LspAttach",
   opts = {
     -- options
   },
 }
 ```
 
-#### [Packer](https://github.com/wbthomason/packer.nvim):
-
-```vim
-use {
-  'j-hui/fidget.nvim',
-  tag = 'legacy',
-  config = function()
-    require("fidget").setup {
-      -- options
-    }
-  end,
-}
-```
-
-To ensure the plugin is installed, run `:PackerSync`.
-
 #### [vim-plug](https://github.com/junegunn/vim-plug):
 
 ```vim
-Plug 'j-hui/fidget.nvim', { 'tag': 'legacy' }
+Plug 'j-hui/fidget.nvim'
 ```
 
 Make sure the plugin is installed run `:PlugInstall`.
@@ -98,18 +110,32 @@ require("fidget").setup {
 }
 ```
 
-## Acknowledgements and Alternatives
+## Related Work
 
-This plugin takes inspiration and borrows code from
-[arkav/lualine-lsp-progress](https://github.com/arkav/lualine-lsp-progress).
+[rcarriga/nvim-notify](https://github.com/rcarriga/nvim-notify) is first and
+foremost a `vim.notify()` backend, and it also supports
+[LSP progress notifications](https://github.com/rcarriga/nvim-notify/wiki/Usage-Recipes#lsp-status-updates)
+(with the integration seems to have been packaged up in
+[mrded/nvim-lsp-notify](https://github.com/mrded/nvim-lsp-notify)).
 
-Fidget spinner designs were adapted from the npm package
-[sindresorhus/cli-spinners](https://github.com/sindresorhus/cli-spinners).
+[vigoux/notifier.nvim](https://github.com/vigoux/notifier.nvim) is
+a `vim.notify()` backend that comes with first-class LSP notification support.
+
+[neoclide/coc.nvim](https://github.com/neoclide/coc.nvim) provides a nice LSP
+progress UI in the status line, which first inspired my desire to have this
+feature for nvim-lsp.
+
+[arkav/lualine-lsp-progress](https://github.com/arkav/lualine-lsp-progress) was
+the original inspiration for Fidget, and funnels LSP progress messages into
+[nvim-lualine/lualine.nvim](https://github.com/nvim-lualine/lualine.nvim).
+I once borrowed some of its code (though much of that code has since been
+rewritten).
 
 [nvim-lua/lsp-status.nvim](https://github.com/nvim-lua/lsp-status.nvim) also
 supports showing progress text, though it requires some configuration to
 integrate that into their status line.
 
-[neoclide/coc.nvim](https://github.com/neoclide/coc.nvim) provides a nice LSP
-progress UI in the status line, which first inspired my desire to have this
-feature for nvim-lsp.
+### Acknowledgements
+
+Most of the Fidget spinner patterns were adapted from the npm package
+[sindresorhus/cli-spinners](https://github.com/sindresorhus/cli-spinners).

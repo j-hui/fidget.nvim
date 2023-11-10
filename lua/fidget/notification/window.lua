@@ -10,69 +10,77 @@
 --- ported from the legacy version still supports window-relative floats.
 local M = {}
 
+-- Options related to the notification window and buffer
 require("fidget.options")(M, {
-  --- Base highlight (used for messages) in the notification window.
+  --- Base highlight group in the notification window
+  ---
+  --- Used by any Fidget notification text that is not otherwise highlighted,
+  --- i.e., message text.
   ---
   --- Note that we use this blanket highlight for all messages to avoid adding
   --- separate highlights to each line (whose lengths may vary).
   ---
-  --- With winblend set to anything less than 100, this will also affect the
-  --- background color in the notification box area (see winblend docs).
+  --- With `winblend` set to anything less than `100`, this will also affect the
+  --- background color in the notification box area (see `winblend` docs).
   ---
   ---@type string
   normal_hl = "Comment",
 
-  --- Opacity of the background color in the notification window.
+  --- Background color opacity in the notification window
   ---
   --- Note that the notification window is rectangular, so any cells covered by
-  --- that rectangular area is affected by the background color of normal_hl.
-  --- With winblend set to anything less than 100, the background of normal_hl
-  --- will be blended with that of whatever is underneath, including, e.g.,
-  --- a shaded linecolumn, which is usually not desirable.
+  --- that rectangular area is affected by the background color of `normal_hl`.
+  --- With `winblend` set to anything less than `100`, the background of
+  --- `normal_hl` will be blended with that of whatever is underneath,
+  --- including, e.g., a shaded `colorcolumn`, which is usually not desirable.
   ---
   --- However, if you would like to display the notification window as its own
-  --- "boxed" area (especially if you are using a non-"none" border), you may
-  --- consider setting winblend to something less than 100.
+  --- "boxed" area (especially if you are using a non-"none" `border`), you may
+  --- consider setting `winblend` to something less than `100`.
   ---
-  --- See also: options for nvim_open_win().
+  --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
   ---
   ---@type number
   winblend = 100,
 
-  --- Border painted around the notification window.
+  --- Border around the notification window
   ---
-  --- See also: options for nvim_open_win().
+  --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
   ---
   ---@type "none" | "single" | "double" | "rounded" | "solid" | "shadow" | string[]
   border = "none",
 
-  --- Stacking priority of the notification window.
+  --- Stacking priority of the notification window
   ---
-  --- Note that the default priority is 50.
+  --- Note that the default priority for Vim windows is 50.
   ---
-  --- See also: options for nvim_open_win().
+  --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
   ---
   ---@type number
   zindex = 45,
 
-  --- Maximum width of the notification window. 0 means no maximum width.
+  --- Maximum width of the notification window
   ---
-  ---@type number
+  --- `0` means no maximum width.
+  ---
+  ---@type integer
   max_width = 0,
 
-  --- Maximum height of the notification window. 0 means no maximum height.
+  --- Maximum height of the notification window
   ---
-  ---@type number
+  --- `0` means no maximum height.
+  ---
+  ---@type integer
   max_height = 0,
 
-  --- Padding from right edge of window boundary.
+  --- Padding from right edge of window boundary
   ---
-  ---@type number
+  ---@type integer
   x_padding = 1,
 
-  --- Padding from bottom edge of window boundary.
+  --- Padding from bottom edge of window boundary
   ---
-  ---@type number
+  ---@type integer
   y_padding = 0,
 })
 
@@ -96,6 +104,36 @@ local state = {
   ---@type number?
   namespace_id = nil,
 }
+
+--- Suppress errors that may occur while render windows.
+---
+--- The E523 error (Not allowed here) happens when 'secure' operations
+--- (including buffer or window management) are invoked while textlock is held
+--- or the Neovim UI is blocking. See #68.
+---
+--- Also ignore E11 (Invalid in command-line window), which is thrown when
+--- Fidget tries to close the window while a command-line window is focused.
+--- See #136.
+---
+--- This utility provides a workaround to simply supress the error.
+--- All other errors will be re-thrown.
+---
+--- (Thanks @wookayin and @0xAdk!)
+---
+---@param callable fun()
+---@return boolean suppressed_error
+function M.guard(callable)
+  local function error_allowed(err)
+    if type(err) ~= "string" then return false end
+    if string.find(err, "E11: Invalid in command%-line window") then return true end
+    if string.find(err, "E523: Not allowed here") then return true end
+    return false
+  end
+  local ok, err = pcall(callable)
+  if ok then return true end
+  if error_allowed(err) then return false end
+  error(err)
+end
 
 --- Get the current width and height of the editor window.
 ---
