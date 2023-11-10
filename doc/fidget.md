@@ -18,8 +18,7 @@ require("fidget").setup {
 }
 ```
 
-`setup` takes a table of [options](#options) as its parameter, used to
-configure the plugin.
+`setup` takes a table of options as its parameter, used to configure the plugin.
 
 ## Options
 
@@ -443,8 +442,10 @@ what your color scheme decided to do with those highlight groups.
 ## Fidget Lua API
 
 <!-- panvimdoc-ignore-start -->
+
 Note that this Lua API documentation is not written for GitHub Markdown.
 You might have a better experience reading it in Vim using `:h fidget.txt`.
+
 <!-- panvimdoc-ignore-end -->
 
 ### Types
