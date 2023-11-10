@@ -1,0 +1,485 @@
+*fidget.txt*                               Standalone UI for nvim-lsp progress
+
+==============================================================================
+Table of Contents                                   *fidget-table-of-contents*
+
+1. fidget.nvim                                            |fidget-fidget.nvim|
+  - Installation                             |fidget-fidget.nvim-installation|
+  - Options                                       |fidget-fidget.nvim-options|
+  - Highlights                                 |fidget-fidget.nvim-highlights|
+  - Fidget Lua API                         |fidget-fidget.nvim-fidget-lua-api|
+
+==============================================================================
+1. fidget.nvim                                            *fidget-fidget.nvim*
+
+
+INSTALLATION                                 *fidget-fidget.nvim-installation*
+
+Install this plugin using your favorite plugin manager. Once installed, make
+sure to call its `setup()` function (in Lua), e.g.:
+
+>lua
+    require("fidget").setup {
+      -- options
+    }
+<
+
+`setup` takes a table of |fidget-options| as its parameter, used to configure
+the plugin.
+
+
+OPTIONS                                           *fidget-fidget.nvim-options*
+
+The following table shows the default options for this plugin:
+
+>lua
+    {
+      -- Options related to LSP progress subsystem
+      progress = {
+        poll_rate = 5,                -- How frequently to poll for progress messages
+        notification_group =          -- How to get a progress message's notification group key
+          function(msg) return msg.lsp_name end,
+        ignore = {},                  -- List of LSP servers to ignore
+    
+        -- Options related to how LSP progress messages are displayed as notifications
+        display = {
+          done_ttl = 3,               -- How long a message should persist after completion
+          done_icon = "✔",            -- Icon shown when all LSP progress tasks are complete
+          done_style = "Constant",    -- Highlight group for completed LSP tasks
+          progress_ttl = math.huge,   -- How long a message should persist when in progress
+          progress_icon =             -- Icon shown when LSP progress tasks are in progress
+            { pattern = "dots", period = 1 },
+          progress_style =            -- Highlight group for in-progress LSP tasks
+            "WarningMsg",
+          group_style = "Title",      -- Highlight group for group name (LSP server name)
+          icon_style = "Question",    -- Highlight group for group icons
+          priority = 30,              -- Ordering priority for LSP notification group
+          format_message =            -- How to format a progress message
+            require("fidget.progress.display").default_format_message,
+          format_annote =             -- How to format a progress annotation
+            function(msg) return msg.title end,
+          format_group_name =         -- How to format a progress notification group's name
+            function(group) return tostring(group) end,
+          overrides = {               -- Override options from the default notification config
+            rust_analyzer = { name = "rust-analyzer" },
+          },
+        },
+      },
+    
+      -- Options related to notification subsystem
+      notification = {
+        poll_rate = 10,               -- How frequently to poll and render notifications
+        configs =                     -- How to configure notification groups when instantiated
+          { default = M.default_config },
+    
+        -- Options related to how notifications are rendered as text
+        view = {
+          icon_separator = " ",       -- Separator between group name and icon
+          group_separator = "---",    -- Separator between notification groups
+          group_separator_hl =        -- Highlight group used for group separator
+            "Comment",
+        },
+    
+        -- Options related to the notification window and buffer
+        window = {
+          normal_hl = "Comment",      -- Base highlight group in the notification window
+          winblend = 100,             -- Background color opacity in the notification window
+          border = "none",            -- Border around the notification window
+          zindex = 45,                -- Stacking priority of the notification window
+          max_width = 0,              -- Maximum width of the notification window
+          max_height = 0,             -- Maximum height of the notification window
+          x_padding = 1,              -- Padding from right edge of window boundary
+          y_padding = 0,              -- Padding from bottom edge of window boundary
+        },
+      },
+    
+      -- Options related to logging
+      logger = {
+        level = vim.log.levels.WARN,  -- Minimum logging level
+        float_precision = 0.01,       -- Limit the number of decimals displayed for floats
+      },
+    }
+<
+
+
+PROGRESS.POLL_RATE
+
+How frequently to poll for progress messages
+
+Set to 0 to disable polling; you can still manually poll progress messages by
+calling `fidget.progress.poll()`.
+
+Measured in Hertz (frames per second).
+
+Type: `number` (default: `5`)
+
+
+PROGRESS.NOTIFICATION_GROUP
+
+How to get a progress message’s notification group key
+
+Set this to return a constant to group all LSP progress messages together,
+e.g.,
+
+>lua
+    notification_group = function(msg)
+      -- N.B. you may also want to configure this group key ("lsp_progress")
+      -- using progress.display.overrides or notification.configs
+      return "lsp_progress"
+    end
+<
+
+Type: `fun(msg: ProgressMessage): NotificationKey` (default: `msg.lsp_name`)
+
+
+PROGRESS.IGNORE
+
+List of LSP servers to ignore
+
+Example:
+
+>lua
+    ignore = { "rust_analyzer" }
+<
+
+Type: `NotificationKey[]` (default: `{}`)
+
+
+PROGRESS.DISPLAY.DONE_TTL
+
+How long a message should persist after completion
+
+Set to `0` to use notification group config default, and `math.huge` to show
+notification indefinitely (until overwritten).
+
+Measured in seconds.
+
+Type: `number` (default: `3`)
+
+
+PROGRESS.DISPLAY.DONE_ICON
+
+Icon shown when all LSP progress tasks are complete
+
+Type: `string | Manga` (default: `"✔"`)
+
+
+PROGRESS.DISPLAY.DONE_STYLE
+
+Highlight group for completed LSP tasks
+
+Type: `string` (default: `"Constant"`)
+
+
+PROGRESS.DISPLAY.PROGRESS_TTL
+
+How long a message should persist when in progress
+
+Set to `0` to use notification group config default, and `math.huge` to show
+notification indefinitely (until overwritten).
+
+Measured in seconds.
+
+Type: `number` (default: `math.huge`)
+
+
+PROGRESS.DISPLAY.PROGRESS_ICON
+
+Icon shown when LSP progress tasks are in progress
+
+Type: `string | Manga` (default: `{ pattern = "dots", period = 1 }`)
+
+
+PROGRESS.DISPLAY.PROGRESS_STYLE
+
+Highlight group for in-progress LSP tasks
+
+Type: `string` (default: `"WarningMsg"`)
+
+
+PROGRESS.DISPLAY.GROUP_STYLE
+
+Highlight group for group name (LSP server name)
+
+Type: `string` (default: `"Title"`)
+
+
+PROGRESS.DISPLAY.ICON_STYLE
+
+Highlight group for group icons
+
+Type: `string` (default: `"Question"`)
+
+
+PROGRESS.DISPLAY.PRIORITY
+
+Ordering priority for LSP notification group
+
+Type: `number?` (default: `30`)
+
+
+PROGRESS.DISPLAY.FORMAT_MESSAGE
+
+How to format a progress message
+
+Example:
+
+>lua
+    format_message = function(msg)
+      if string.find(msg.title, "Indexing") then
+        return nil -- Ignore "Indexing..." progress messages
+      end
+      if msg.message then
+        return msg.message
+      else
+        return msg.done and "Completed" or "In progress..."
+      end
+    end
+<
+
+Type: `fun(msg: ProgressMessage): string` (default:
+`fidget.display.default_format_message`)
+
+where
+
+>lua
+    function fidget.display.default_format_message(msg)
+      local message = msg.message
+      if not message then
+        message = msg.done and "Completed" or "In progress..."
+      end
+      if msg.percentage ~= nil then
+        message = string.format("%s (%.0f%%)", message, msg.percentage)
+      end
+      return message
+    end
+<
+
+
+PROGRESS.DISPLAY.FORMAT_ANNOTE
+
+How to format a progress annotation
+
+Type: `fun(msg: ProgressMessage): string` (default: `msg.title`)
+
+
+PROGRESS.DISPLAY.FORMAT_GROUP_NAME
+
+How to format a progress notification group’s name
+
+Example:
+
+>lua
+    format_group_name = function(group)
+      return "lsp:" .. tostring(group)
+    end
+<
+
+Type: `fun(group: NotificationKey): NotificationDisplay` (default: `tostring`)
+
+
+PROGRESS.DISPLAY.OVERRIDES
+
+Override options from the default notification config
+
+Keys of the table are each notification group’s `key`.
+
+Example:
+
+>lua
+    overrides = {
+      hls = {
+        name = "Haskell Language Server",
+        priority = 60,
+        icon = fidget.progress.display.for_icon(fidget.spinner.animate("triangle", 3), "💯"),
+      },
+      rust_analyzer = {
+        name = "Rust Analyzer",
+        icon = fidget.progress.display.for_icon(fidget.spinner.animate("arrow", 2.5), "🦀"),
+      },
+    }
+<
+
+Type: `{ [NotificationKey]: NotificationConfig }` (default: `{ rust_analyzer =
+{ name = "rust-analyzer" } }`)
+
+
+NOTIFICATION.POLL_RATE
+
+How frequently to poll and render notifications
+
+Measured in Hertz (frames per second).
+
+Type: `number` (default: `10`)
+
+
+NOTIFICATION.CONFIGS
+
+How to configure notification groups when instantiated
+
+A configuration with the key `"default"` should always be specified, and is
+used as the fallback for notifications lacking a group key.
+
+Type: `{ [NotificationKey]: NotificationConfig }` (default: `{ default =
+fidget.notification.default_config }`)
+
+where
+
+>lua
+    fidget.notification.default_config = {
+      name = "Notifications",
+      icon = "❰❰",
+      ttl = 5,
+      group_style = "Title",
+      icon_style = "Special",
+      annote_style = "Question",
+      debug_style = "Comment",
+      warn_style = "WarningMsg",
+      error_style = "ErrorMsg",
+    }
+<
+
+
+NOTIFICATION.VIEW.ICON_SEPARATOR
+
+Separator between group name and icon
+
+Must not contain any newlines. Set to `""` to remove the gap between names and
+icons in _all_ notification groups.
+
+Type: `string` (default: `" "`)
+
+
+NOTIFICATION.VIEW.GROUP_SEPARATOR
+
+Separator between notification groups
+
+Must not contain any newlines. Set to `nil` to omit separator entirely.
+
+Type: `string?` (default: `"---"`)
+
+
+NOTIFICATION.VIEW.GROUP_SEPARATOR_HL
+
+Highlight group used for group separator
+
+Type: `string?` (default: `"Comment"`)
+
+
+NOTIFICATION.WINDOW.NORMAL_HL
+
+Base highlight group in the notification window
+
+Used by any Fidget notification text that is not otherwise highlighted, i.e.,
+message text.
+
+Note that we use this blanket highlight for all messages to avoid adding
+separate highlights to each line (whose lengths may vary).
+
+With `winblend` set to anything less than `100`, this will also affect the
+background color in the notification box area (see `winblend` docs).
+
+Type: `string` (default: `"Comment"`)
+
+
+NOTIFICATION.WINDOW.WINBLEND
+
+Background color opacity in the notification window
+
+Note that the notification window is rectangular, so any cells covered by that
+rectangular area is affected by the background color of `normal_hl`. With
+`winblend` set to anything less than `100`, the background of `normal_hl` will
+be blended with that of whatever is underneath, including, e.g., a shaded
+`colorcolumn`, which is usually not desirable.
+
+However, if you would like to display the notification window as its own
+"boxed" area (especially if you are using a non-"none" `border`), you may
+consider setting `winblend` to something less than `100`.
+
+See also: options for |nvim_open_win()|.
+
+Type: `number` (default: `100`)
+
+
+NOTIFICATION.WINDOW.BORDER
+
+Border around the notification window
+
+See also: options for |nvim_open_win()|.
+
+Type: `"none" | "single" | "double" | "rounded" | "solid" | "shadow" |
+string[]` (default: `"none"`)
+
+
+NOTIFICATION.WINDOW.ZINDEX
+
+Stacking priority of the notification window
+
+Note that the default priority for Vim windows is 50.
+
+See also: options for |nvim_open_win()|.
+
+Type: `number` (default: `45`)
+
+
+NOTIFICATION.WINDOW.WIDTH
+
+Maximum width of the notification window
+
+`0` means no maximum width.
+
+Type: `integer` (default: `0`)
+
+
+NOTIFICATION.WINDOW.HEIGHT
+
+Maximum height of the notification window
+
+`0` means no maximum height.
+
+Type: `integer` (default: `0`)
+
+
+NOTIFICATION.WINDOW.X_PADDING
+
+Padding from right edge of window boundary
+
+Type: `integer` (default: `1`)
+
+
+NOTIFICATION.WINDOW.Y_PADDING
+
+Padding from bottom edge of window boundary
+
+Type: `integer` (default: `0`)
+
+
+LOGGER.LEVEL
+
+Minimum logging level
+
+Set to `vim.log.levels.OFF` to disable logging.
+
+Type: `vim.log.levels` (default: `vim.log.levels.WARN`)
+
+
+LOGGER.FLOAT_PRECISION
+
+Limit the number of decimals displayed for floats
+
+Type: `number` (default: `0.01`)
+
+
+HIGHLIGHTS                                     *fidget-fidget.nvim-highlights*
+
+Rather than defining its own highlights, Fidget uses built-in highlight groups
+that are typically overridden by custom Vim color schemes. With any luck, these
+will look reasonable when rendered, but the visual outcome will really depend
+on what your color scheme decided to do with those highlight groups.
+
+
+FIDGET LUA API                             *fidget-fidget.nvim-fidget-lua-api*
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:
