@@ -49,7 +49,7 @@ end
 function M.on_progress_message(fn)
   return vim.api.nvim_create_autocmd({ "LspProgress" }, {
     callback = fn,
-    documentation = "Fidget LSP progress handler",
+    desc = "Fidget LSP progress handler",
   })
 end
 
@@ -132,6 +132,7 @@ if not vim.lsp.status then
     return vim.api.nvim_create_autocmd({ "User" }, {
       pattern = { "LspProgressUpdate" },
       callback = fn,
+      desc = "Fidget LSP progress handler",
     })
   end
 end
