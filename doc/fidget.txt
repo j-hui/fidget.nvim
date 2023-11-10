@@ -8,6 +8,8 @@ Table of Contents                                   *fidget-table-of-contents*
   - Options                                       |fidget-fidget.nvim-options|
   - Highlights                                 |fidget-fidget.nvim-highlights|
   - Fidget Lua API                         |fidget-fidget.nvim-fidget-lua-api|
+  - Troubleshooting                       |fidget-fidget.nvim-troubleshooting|
+  - Acknowledgements                     |fidget-fidget.nvim-acknowledgements|
 
 ==============================================================================
 1. fidget.nvim                                            *fidget-fidget.nvim*
@@ -24,8 +26,8 @@ sure to call its `setup()` function (in Lua), e.g.:
     }
 <
 
-`setup` takes a table of |fidget-options| as its parameter, used to configure
-the plugin.
+`setup` takes a table of options as its parameter, used to configure the
+plugin.
 
 
 OPTIONS                                           *fidget-fidget.nvim-options*
@@ -479,6 +481,205 @@ on what your color scheme decided to do with those highlight groups.
 
 
 FIDGET LUA API                             *fidget-fidget.nvim-fidget-lua-api*
+
+
+TYPES ~
+
+
+                                                    *fidget-NotificationKey*
+
+
+NotificationKey                        A NotificationKey is `any` (non-`nil`) value,
+                                       used to determine the identity of notification items and groups.
+
+
+                                                  *fidget-NotificationLevel*
+
+
+NotificationLevel                      Second (level) parameter passed to |fidget-fidget.notification.notify()|.
+                                       Alias for `number | string`.
+                                       `string` indicates highlight group name; otherwise, `number` indicates
+                                       the |vim.log.levels| value (that will resolve to a highlight group as
+                                       determined by the |fidget-NotificationConfig|).
+
+
+                                                *fidget-NotificationOptions*
+
+
+NotificationOptions                    Third (opts) parameter passed to |fidget-fidget.notification.notify()|.
+                                       Fields:
+                                       - `key`: (`NotificationKey?`) Replace existing notification item of the same key
+                                       - `group`: (`any?`) Group that this notification item belongs to
+                                       - `annote`: (`string?`) Optional single-line title that accompanies the message
+                                       - `hidden`: (`boolean?`) Whether this item should be shown
+                                       - `ttl`: (`number?`) How long after a notification item should exist; pass 0 to use default value
+                                       - `data`: (`any?`) Arbitrary data attached to notification item, can be used by |fidget-NotificationDisplay| function
+
+
+                                                *fidget-NotificationDisplay*
+
+
+NotificationDisplay                    Something that can be displayed in a |fidget-NotificationGroup|.
+                                       Alias for `string | fun(now: number, items: NotificationItem[]): string`.
+                                       If a callable `function`, it is invoked every render cycle with the items
+                                       list; useful for rendering animations and other dynamic content.
+
+
+                                                 *fidget-NotificationConfig*
+
+
+NotificationConfig                     Used to configure the behavior of notification groups.
+                                       See also: |fidget-notification.configs|.
+                                       Fields:
+                                       - `name`: (`NotificationDisplay?`) Name of the group; if nil, tostring(key) is used as name
+                                       - `icon`: (`NotificationDisplay?`) Icon of the group; if nil, no icon is used
+                                       - `icon_on_left`: (`boolean?`) If true, icon is rendered on the left instead of right
+                                       - `annote_separator`: (`string?`) Separator between message from annote; defaults to ” ”
+                                       - `ttl`: (`number?`) How long a notification item should exist; defaults to 3
+                                       - `group_style`: (`string?`) Style used to highlight group name; defaults to "Title"
+                                       - `icon_style`: (`string?`) Style used to highlight icon; if nil, use group_style
+                                       - `annote_style`: (`string?`) Default style used to highlight item annotes; defaults to "Question"
+                                       - `debug_style`: (`string?`) Style used to highlight debug item annotes
+                                       - `info_style`: (`string?`) Style used to highlight info item annotes
+                                       - `warn_style`: (`string?`) style used to highlight warn item annotes
+                                       - `error_style`: (`string?`) style used to highlight error item annotes
+                                       - `priority`: (`number?`) order in which group should be displayed; defaults to 50
+
+
+                                                              *fidget-Anime*
+
+
+Anime                                  An Anime is a function that takes a timestamp and renders a frame (string).
+                                       Parameters:
+                                       - `now`: (`number`) The current timestamp (in seconds)
+                                       Returns:
+                                       - `string`: The contents of the frame right `now`
+
+
+                                                              *fidget-Manga*
+
+
+Manga                                  A Manga is a table specifying an |fidget-Anime| to generate.
+                                       Fields:
+                                       - `pattern`: (`string[] | string`) The name of pattern (see |fidget-Spinners|)
+                                       - `period`: (`number`) How long one cycle of the animation should take, in seconds
+
+
+
+
+FUNCTIONS ~
+
+
+                                                    *fidget-fidget.notify()*
+
+
+fidget.notify({msg}, {level}, {opts})  Alias for |fidget.notifications.notify()|
+
+
+                                         *fidget-fidget.progress.suppress()*
+
+
+fidget.progress.suppress({suppress})   Suppress consumption of progress messages.
+                                       Pass `true` as argument to turn on suppression, or `false` to turn it off.
+                                       If no argument is given, suppression state is toggled.
+                                       Parameters:
+                                       - `{suppress}`: (`boolean?`) whether to suppress or toggle suppression
+
+
+                                       *fidget-fidget.notification.notify()*
+
+
+fidget.notification.notify({msg}, {level}, {opts})Send a notification to the Fidget notifications subsystem.
+                                       Can be used to override `vim.notify()`, e.g.,
+                                       >lua
+                                           vim.notify = require("fidget.notifications").notify
+                                       <
+                                       Parameters:
+                                       - `{msg}`: (`string?`) Content of the notification to show to the user.
+                                       - `{level}`: (`NotificationLevel?`) One of the values from |vim.log.levels|, or the name of a highlight group.
+                                       - `{opts}`: (`NotificationOptions?`) Notification options (see |fidget-NotificationOptions|).
+
+
+                                     *fidget-fidget.notification.suppress()*
+
+
+fidget.notification.suppress({suppress})Suppress whether the notification window is shown.
+                                       Pass `true` as argument to turn on suppression, or `false` to turn it off.
+                                       If no argument is given, suppression state is toggled.
+                                       Parameters:
+                                       - `{suppress}`: (`boolean?`) Whether to suppress or toggle suppression
+
+
+                                           *fidget-fidget.spinner.animate()*
+
+
+fidget.spinner.animate({pattern}, {period})Generate an |fidget-Anime| function that can be polled for spinner
+                                       animation frames.
+                                       Parameters:
+                                       - `{pattern}`: `(string[] | string)` Either an array of frames, or the name of a known pattern (see |fidget-Spinners|)
+                                       - `{period}`: `(number)` How long one cycle of the animation should take, in seconds
+                                       Returns:
+                                       - `(Anime)` Call this function to compute the frame at some given timestamp
+
+
+
+
+SPINNERS ~
+
+The following spinner patterns are defined in `fidget.spinner.patterns`:
+
+>
+    check
+    dots
+    dots_negative
+    dots_snake
+    dots_footsteps
+    dots_hop
+    line
+    pipe
+    dots_ellipsis
+    dots_scrolling
+    star
+    flip
+    hamburger
+    grow_vertical
+    grow_horizontal
+    noise
+    dots_bounce
+    triangle
+    arc
+    circle
+    square_corners
+    circle_quarters
+    circle_halves
+    dots_toggle
+    box_toggle
+    arrow
+    zip
+    bouncing_bar
+    bouncing_ball
+    clock
+    earth
+    moon
+    dots_pulse
+    meter
+<
+
+See <lua/fidget/spinner/patterns.lua> of the plugin source code to see each
+animation frame of each pattern.
+
+
+TROUBLESHOOTING                           *fidget-fidget.nvim-troubleshooting*
+
+If in doubt, file an issue on <https://github.com/j-hui/fidget.nvim/issues>.
+
+Logs are written to `~/.cache/nvim/fidget.nvim.log`.
+
+
+ACKNOWLEDGEMENTS                         *fidget-fidget.nvim-acknowledgements*
+
+|fidget-fidget-spinner| designs adapted from the npm package
+sindresorhus/cli-spinners <https://github.com/sindresorhus/cli-spinners>.
 
 Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
 
