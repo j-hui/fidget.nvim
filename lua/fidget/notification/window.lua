@@ -304,6 +304,8 @@ function M.get_window(row, col, anchor, width, height)
       zindex = M.options.zindex,
       noautocmd = true,
     })
+
+    vim.wo[state.window_id].scrolloff = 0
   else
     -- Window is already created; reposition it in case anything has changed.
     vim.api.nvim_win_set_config(state.window_id, {
