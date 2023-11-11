@@ -323,6 +323,7 @@ function M.get_window(row, col, anchor, width, height)
   M.win_set_local_options(state.window_id, {
     winblend = M.options.winblend,                     -- Transparent background
     winhighlight = "NormalNC:" .. M.options.normal_hl, -- Instead of NormalFloat
+    scrolloff = 0,
   })
   return state.window_id
 end
