@@ -75,7 +75,7 @@ M.default_config = {
 }
 
 --- Options related to notification subsystem
-require("fidget.options")(M, {
+require("fidget.options").declare(M, "notification", {
   --- How frequently to poll and render notifications
   ---
   --- Measured in Hertz (frames per second).
@@ -136,7 +136,6 @@ function M.notify(msg, level, opts)
   end
   M.start_polling()
 end
-
 
 --- Close the notification window.
 ---

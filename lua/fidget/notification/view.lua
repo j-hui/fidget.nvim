@@ -15,7 +15,7 @@ local M = {}
 ---@field col_end     number    (byte-indexed) column to end highlight
 
 --- Options related to how notifications are rendered as text
-require("fidget.options")(M, {
+require("fidget.options").declare(M, "notification.view", {
   --- Separator between group name and icon
   ---
   --- Must not contain any newlines. Set to `""` to remove the gap between names

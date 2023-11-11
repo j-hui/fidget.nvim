@@ -17,7 +17,7 @@ function M.default_format_message(msg)
 end
 
 --- Options related to how LSP progress messages are displayed as notifications
-require("fidget.options")(M, {
+require("fidget.options").declare(M, "progress.display", {
   --- How long a message should persist after completion
   ---
   --- Set to `0` to use notification group config default, and `math.huge` to

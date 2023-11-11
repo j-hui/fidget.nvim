@@ -1,7 +1,7 @@
 --- Adapted from https://www.github.com/tjdevries/vlog.nvim
 local M = {}
 
-require("fidget.options")(M, {
+require("fidget.options").declare(M, "logger", {
   --- Minimum logging level
   ---
   --- Set to `vim.log.levels.OFF` to disable logging.

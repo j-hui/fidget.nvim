@@ -1,3 +1,24 @@
+local M = {}
+
+--- Declare a table as a fidget module, so we can tell using is_fidget_module().
+local function set_fidget_module(m)
+  local mt = getmetatable(m)
+  if not mt then
+    mt = {}
+    setmetatable(m, mt)
+  end
+  mt.fidget_module = true
+end
+
+--- Whether this is fidget module, i.e., set_fidget_module() was called on it.
+local function is_fidget_module(m)
+  if type(m) ~= "table" then
+    return false
+  end
+  local mt = getmetatable(m)
+  return mt and mt.fidget_module == true
+end
+
 --- Declare a table of available options for a module M. For internal use.
 ---
 --- Those options can be accessed via M.options.
@@ -45,29 +66,13 @@
 --- implementation structure (which we assume to be sane xD).
 ---
 ---@param mod           table     the module to which options are being attached
+---@param name          string    name of the module
 ---@param default_opts  table     the default set of options
 ---@param post_setup    function? called after setup() is called
-local function declare_options(mod, default_opts, post_setup)
-  --- Declare a table as a fidget module, so we can tell using is_fidget_module().
-  local function set_fidget_module(m)
-    local mt = getmetatable(m)
-    if not mt then
-      mt = {}
-      setmetatable(m, mt)
-    end
-    mt.fidget_module = true
-  end
-
-  --- Whether this is fidget module, i.e., set_fidget_module() was called on it.
-  local function is_fidget_module(m)
-    if type(m) ~= "table" then
-      return false
-    end
-    local mt = getmetatable(m)
-    return mt and mt.fidget_module == true
-  end
-
+function M.declare(mod, name, default_opts, post_setup)
   set_fidget_module(mod)
+
+  local prefix = name == "" and "" or (name .. ".")
 
   local options, sub_setup = {}, {}
   for k, v in pairs(default_opts) do
@@ -83,19 +88,28 @@ local function declare_options(mod, default_opts, post_setup)
 
   ---@param opts table? table of options passed to setup function
   mod.setup = function(opts)
+    local warnlog = {}
     opts = opts or {}
     for key, setup in pairs(sub_setup) do
-      setup(opts[key])
+      local subwarnlog = setup(opts[key])
+      for _, w in ipairs(subwarnlog) do
+        table.insert(warnlog, w)
+      end
     end
     for key, val in pairs(opts) do
       if not sub_setup[key] then
-        mod.options[key] = val
+        if mod.options[key] == nil then
+          table.insert(warnlog, "unknown option: " .. prefix .. tostring(key))
+        else
+          mod.options[key] = val
+        end
       end
     end
     if post_setup then
-      post_setup()
+      post_setup(warnlog)
     end
+    return warnlog
   end
 end
 
-return declare_options
+return M

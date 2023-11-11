@@ -11,7 +11,7 @@
 local M = {}
 
 -- Options related to the notification window and buffer
-require("fidget.options")(M, {
+require("fidget.options").declare(M, "notification.window", {
   --- Base highlight group in the notification window
   ---
   --- Used by any Fidget notification text that is not otherwise highlighted,

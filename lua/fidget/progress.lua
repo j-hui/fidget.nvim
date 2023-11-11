@@ -7,10 +7,10 @@ local notification = require("fidget.notification")
 
 --- Used to ensure only a single autocmd callback exists.
 ---@type number?
-local autocmd_id = nil
+local autocmd_id   = nil
 
 --- Options related to LSP progress notification subsystem
-require("fidget.options")(M, {
+require("fidget.options").declare(M, "progress", {
   --- How frequently to poll for progress messages
   ---
   --- Set to 0 to disable polling; you can still manually poll progress messages
