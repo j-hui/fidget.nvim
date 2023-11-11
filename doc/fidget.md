@@ -27,6 +27,7 @@ The following table shows the default options for this plugin:
   -- Options related to LSP progress subsystem
   progress = {
     poll_rate = 5,                -- How frequently to poll for progress messages
+    suppress_on_insert = false,   -- Suppress new messages while in insert mode
     notification_group =          -- How to get a progress message's notification group key
       function(msg) return msg.lsp_name end,
     ignore = {},                  -- List of LSP servers to ignore
@@ -101,6 +102,14 @@ by calling `fidget.progress.poll()`.
 Measured in Hertz (frames per second).
 
 Type: `number` (default: `5`)
+
+progress.suppress_on_insert
+: Suppress new messages while in insert mode
+
+Note that progress messages for new tasks will be dropped, but existing
+tasks will be processed to completion.
+
+Type: `boolean` (default: `false`)
 
 progress.notification_group
 : How to get a progress message's notification group key

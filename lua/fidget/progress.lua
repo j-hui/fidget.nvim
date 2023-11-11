@@ -21,6 +21,14 @@ require("fidget.options")(M, {
   ---@type number
   poll_rate = 5,
 
+  --- Suppress new messages while in insert mode
+  ---
+  --- Note that progress messages for new tasks will be dropped, but existing
+  --- tasks will be processed to completion.
+  ---
+  ---@type boolean
+  suppress_on_insert = false,
+
   --- How to get a progress message's notification group key
   ---
   --- Set this to return a constant to group all LSP progress messages together,
@@ -93,10 +101,16 @@ function M.format_progress(msg)
   local message = M.options.display.format_message(msg)
   local annote = M.options.display.format_annote(msg)
 
+  local update_only = false
+  if M.options.suppress_on_insert and string.find(vim.fn.mode(), "i") then
+    update_only = true
+  end
+
   return message, msg.done and vim.log.levels.WARN or vim.log.levels.INFO, {
     key = msg.token,
     group = group,
     annote = annote,
+    update_only = update_only,
     ttl = msg.done and 0 or M.display.options.progress_ttl, -- Use config default when done
     data = msg.done,                                        -- use data to convey whether this task is done
   }
