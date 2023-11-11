@@ -93,23 +93,27 @@ function M.render(now, groups)
     end
 
     local group_header, icon_begin, icon_end = M.render_group_header(now, group)
-    table.insert(lines, group_header)
-    width = math.max(width, vim.fn.strdisplaywidth(group_header))
-    -- Insert highlight for group name
-    table.insert(highlights, {
-      hl_group = group.config.group_style or "Title",
-      line = #lines - 1,
-      col_start = 0,
-      col_end = -1,
-    })
-    if icon_begin >= 0 then
-      -- Insert highlight for group icon
+    if #group_header > 0 then
+      -- Don't render any line if name and icon are both empty.
+      -- If you want to force an empty line, use " " as the name.
+      table.insert(lines, group_header)
+      width = math.max(width, vim.fn.strdisplaywidth(group_header))
+      -- Insert highlight for group name
       table.insert(highlights, {
-        hl_group = group.config.icon_style or group.config.group_style or "Title",
+        hl_group = group.config.group_style or "Title",
         line = #lines - 1,
-        col_start = icon_begin,
-        col_end = icon_end,
+        col_start = 0,
+        col_end = -1,
       })
+      if icon_begin >= 0 then
+        -- Insert highlight for group icon
+        table.insert(highlights, {
+          hl_group = group.config.icon_style or group.config.group_style or "Title",
+          line = #lines - 1,
+          col_start = icon_begin,
+          col_end = icon_end,
+        })
+      end
     end
 
     for _, item in ipairs(group.items) do
