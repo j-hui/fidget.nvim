@@ -447,6 +447,7 @@ Fields:
 -   `annote`: (`string?`) Optional single-line title that accompanies the message
 -   `hidden`: (`boolean?`) Whether this item should be shown
 -   `ttl`: (`number?`) How long after a notification item should exist; pass 0 to use default value
+-   `update_only`: (`boolean?`) If true, don't create new notification items
 -   `data`: (`any?`) Arbitrary data attached to notification item, can be used by `:h fidget-NotificationDisplay` function
 
 NotificationDisplay

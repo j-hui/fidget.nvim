@@ -22,6 +22,7 @@ local logger     = require("fidget.logger")
 ---@field annote        string?   Optional single-line title that accompanies the message
 ---@field hidden        boolean?  Whether this item should be shown
 ---@field ttl           number?   How long after a notification item should exist; pass 0 to use default value
+---@field update_only   boolean?  If true, don't create new notification items
 ---@field data          any?      Arbitrary data attached to notification item
 
 --- Something that can be displayed in a NotificationGroup.

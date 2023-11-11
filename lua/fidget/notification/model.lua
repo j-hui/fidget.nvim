@@ -144,7 +144,7 @@ function M.update(now, configs, groups, msg, level, opts)
 
   if item == nil then
     -- Item doesn't yet exist; create new item and to insert into the group
-    if msg == nil then
+    if msg == nil or opts.update_only then
       return
     end
     ---@type NotificationItem
