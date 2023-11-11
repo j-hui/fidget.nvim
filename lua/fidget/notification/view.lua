@@ -140,7 +140,7 @@ function M.render(now, groups)
         table.insert(highlights, {
           hl_group = item.style,
           line = annote_line - 1, -- 0-indexed
-          col_start = vim.fn.strdisplaywidth(msg),
+          col_start = #msg,       -- byte-indexed
           col_end = -1,
         })
       end
