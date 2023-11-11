@@ -422,6 +422,10 @@ where
       debug_style = "Comment",
       warn_style = "WarningMsg",
       error_style = "ErrorMsg",
+      debug_annote = "DEBUG",
+      info_annote = "INFO",
+      warn_annote = "WARN",
+      error_annote = "ERROR",
     }
 <
 
@@ -699,6 +703,10 @@ Fields:
 - `info_style`: (`string?`) Style used to highlight info item annotes
 - `warn_style`: (`string?`) style used to highlight warn item annotes
 - `error_style`: (`string?`) style used to highlight error item annotes
+- `debug_annote`: (`string?`) default annotation for debug items
+- `info_annote`: (`string?`) default annotation for info items
+- `warn_annote`: (`string?`) default annotation for warn items
+- `error_annote`: (`string?`) default annotation for error items
 - `priority`: (`number?`) order in which group should be displayed; defaults to 50
 
 
