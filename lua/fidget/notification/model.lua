@@ -93,21 +93,19 @@ end
 
 --- Obtain the annotation from the specified level of an .update() call.
 ---
---- TODO: config currently unused, but we should use it to configure the string.
----
----@param _config NotificationConfig
+---@param config NotificationConfig
 ---@param level   number | string | nil
 ---@return string?
-local function annote_from_level(_config, level)
+local function annote_from_level(config, level)
   if type(level) == "number" then
     if level == vim.log.levels.INFO then
-      return "INFO"
+      return config.info_annote or "INFO"
     elseif level == vim.log.levels.WARN then
-      return "WARN"
+      return config.warn_annote or "WARN"
     elseif level == vim.log.levels.ERROR then
-      return "ERROR"
+      return config.error_annote or "ERROR"
     elseif level == vim.log.levels.DEBUG then
-      return "DEBUG"
+      return config.debug_annote or "DEBUG"
     end
   else
     return nil

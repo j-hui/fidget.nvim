@@ -45,6 +45,10 @@ local logger     = require("fidget.logger")
 ---@field info_style        string?   style used to highlight info item annotes
 ---@field warn_style        string?   style used to highlight warn item annotes
 ---@field error_style       string?   style used to highlight error item annotes
+---@field debug_annote      string?   default annotation for debug items
+---@field info_annote       string?   default annotation for info items
+---@field warn_annote       string?   default annotation for warn items
+---@field error_annote      string?   default annotation for error items
 ---@field priority          number?   order in which group should be displayed; defaults to 50
 
 --- Default notification configuration.
@@ -61,8 +65,13 @@ M.default_config = {
   icon_style = "Special",
   annote_style = "Question",
   debug_style = "Comment",
+  info_style = "Question",
   warn_style = "WarningMsg",
   error_style = "ErrorMsg",
+  debug_annote = "DEBUG",
+  info_annote = "INFO",
+  warn_annote = "WARN",
+  error_annote = "ERROR",
 }
 
 --- Options related to notification subsystem
