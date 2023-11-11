@@ -28,6 +28,7 @@ The following table shows the default options for this plugin:
   progress = {
     poll_rate = 5,                -- How frequently to poll for progress messages
     suppress_on_insert = false,   -- Suppress new messages while in insert mode
+    ignore_done_already = false,  -- Ignore new tasks that are already complete
     notification_group =          -- How to get a progress message's notification group key
       function(msg) return msg.lsp_name end,
     ignore = {},                  -- List of LSP servers to ignore
@@ -108,6 +109,15 @@ progress.suppress_on_insert
 
 Note that progress messages for new tasks will be dropped, but existing
 tasks will be processed to completion.
+
+Type: `boolean` (default: `false`)
+
+progress.ignore_done_already
+: Ignore new tasks that are already complete
+
+This is useful if you want to avoid excessively bouncy behavior, and only
+seeing notifications for long-running tasks. Works best when combined with
+a low `poll_rate`.
 
 Type: `boolean` (default: `false`)
 

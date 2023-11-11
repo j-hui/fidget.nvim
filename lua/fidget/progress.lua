@@ -29,6 +29,15 @@ require("fidget.options")(M, {
   ---@type boolean
   suppress_on_insert = false,
 
+  --- Ignore new tasks that are already complete
+  ---
+  --- This is useful if you want to avoid excessively bouncy behavior, and only
+  --- seeing notifications for long-running tasks. Works best when combined with
+  --- a low `poll_rate`.
+  ---
+  ---@type boolean
+  ignore_done_already = false,
+
   --- How to get a progress message's notification group key
   ---
   --- Set this to return a constant to group all LSP progress messages together,
@@ -102,7 +111,9 @@ function M.format_progress(msg)
   local annote = M.options.display.format_annote(msg)
 
   local update_only = false
-  if M.options.suppress_on_insert and string.find(vim.fn.mode(), "i") then
+  if M.options.suppress_done_already and msg.done then
+    update_only = true
+  elseif M.options.suppress_on_insert and string.find(vim.fn.mode(), "i") then
     update_only = true
   end
 
