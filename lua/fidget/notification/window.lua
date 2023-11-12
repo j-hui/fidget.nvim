@@ -355,24 +355,50 @@ end
 ---
 ---@param lines       string[]                  lines to place into buffer
 ---@param highlights  NotificationHighlight[]   list of highlights to apply
-function M.set_lines(lines, highlights)
+---@param right_col   number?                   optional display width, to right-justify
+function M.set_lines(lines, highlights, right_col)
   local buffer_id = M.get_buffer()
   local namespace_id = M.get_namespace()
 
   -- Clear previous highlights
   vim.api.nvim_buf_clear_namespace(buffer_id, namespace_id, 0, -1)
 
-  -- Replace entire buffer with new set of lines
-  vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
+  if right_col then
+    local offsets = {}
 
-  for _, highlight in ipairs(highlights) do
-    vim.api.nvim_buf_add_highlight(
-      buffer_id,
-      namespace_id,
-      highlight.hl_group,
-      highlight.line,
-      highlight.col_start,
-      highlight.col_end)
+    -- Right justify each line by padding spaces
+    for l, line in ipairs(lines) do
+      local offset = right_col - vim.fn.strdisplaywidth(line)
+      lines[l] = string.rep(" ", offset) .. lines[l]
+      offsets[l] = offset
+    end
+
+    -- Replace entire buffer with new set of lines
+    vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
+
+    for _, highlight in ipairs(highlights) do
+      local offset = offsets[highlight.line + 1] -- highlight.line is 0-based, so needs +1
+      vim.api.nvim_buf_add_highlight(
+        buffer_id,
+        namespace_id,
+        highlight.hl_group,
+        highlight.line,
+        highlight.col_start + offset,
+        highlight.col_end == -1 and -1 or highlight.col_end + offset)
+    end
+  else
+    -- Replace entire buffer with new set of lines
+    vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
+
+    for _, highlight in ipairs(highlights) do
+      vim.api.nvim_buf_add_highlight(
+        buffer_id,
+        namespace_id,
+        highlight.hl_group,
+        highlight.line,
+        highlight.col_start,
+        highlight.col_end)
+    end
   end
 end
 

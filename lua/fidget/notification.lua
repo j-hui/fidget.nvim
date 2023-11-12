@@ -159,7 +159,7 @@ function M.poll()
     end
 
     M.window.guard(function()
-      M.window.set_lines(v.lines, v.highlights)
+      M.window.set_lines(v.lines, v.highlights, v.width)
       M.window.show(v.width, #v.lines)
     end)
     return true
