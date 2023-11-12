@@ -63,6 +63,7 @@ The following table shows the default options for this plugin:
     poll_rate = 10,               -- How frequently to poll and render notifications
     configs =                     -- How to configure notification groups when instantiated
       { default = M.default_config },
+    override_vim_notify = false,  -- Automatically override vim.notify() with Fidget
 
     -- Options related to how notifications are rendered as text
     view = {
@@ -285,6 +286,18 @@ notification.poll_rate
 Measured in Hertz (frames per second).
 
 Type: `number` (default: `10`)
+
+notification.override_vim_notify
+: Automatically override vim.notify() with Fidget
+
+Equivalent to the following:
+
+```lua
+fidget.setup({ --[[ options ]] })
+vim.notify = fidget.notify
+```
+
+Type: `boolean` (default: `false`)
 
 notification.configs
 : How to configure notification groups when instantiated

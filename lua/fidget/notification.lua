@@ -83,6 +83,18 @@ require("fidget.options").declare(M, "notification", {
   ---@type number
   poll_rate = 10,
 
+  --- Automatically override vim.notify() with Fidget
+  ---
+  --- Equivalent to the following:
+  ---
+  --- ```lua
+  --- fidget.setup({ --[[ options ]] })
+  --- vim.notify = fidget.notify
+  --- ```
+  ---
+  ---@type boolean
+  override_vim_notify = false,
+
   --- How to configure notification groups when instantiated
   ---
   --- A configuration with the key `"default"` should always be specified, and
