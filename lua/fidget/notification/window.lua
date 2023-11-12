@@ -323,7 +323,6 @@ function M.get_window(row, col, anchor, width, height)
   M.win_set_local_options(state.window_id, {
     winblend = M.options.winblend,                     -- Transparent background
     winhighlight = "NormalNC:" .. M.options.normal_hl, -- Instead of NormalFloat
-    scrolloff = 0,
   })
   return state.window_id
 end
@@ -364,34 +363,33 @@ function M.set_lines(lines, highlights, right_col)
   -- Clear previous highlights
   vim.api.nvim_buf_clear_namespace(buffer_id, namespace_id, 0, -1)
 
-  -- Replace entire buffer with new set of lines
-  vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
-
   if right_col then
-    -- Right-justify text using the :right <col> command.
-    vim.api.nvim_buf_call(buffer_id, function()
-      vim.api.nvim_cmd({ cmd = "right", args = { tostring(right_col) }, range = { 1, #lines } }, {})
-      -- Same (ish): vim.cmd("%right " .. tostring(right_col))
-    end)
+    local offsets = {}
+
+    -- Right justify each line by padding spaces
+    for l, line in ipairs(lines) do
+      local offset = right_col - vim.fn.strdisplaywidth(line)
+      lines[l] = string.rep(" ", offset) .. lines[l]
+      offsets[l] = offset
+    end
+
+    -- Replace entire buffer with new set of lines
+    vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
 
     for _, highlight in ipairs(highlights) do
-      -- When adding highlights, we add an offset to account for the right-padding.
-      -- NOTE: we are computing the offset in terms of display width rather
-      -- than bytes, even though nvim_buf_add_highlight() expects byte indices.
-      -- This _should_ still be fine because :right adds the number of spaces
-      -- corresponding to the difference display width (what we compute), and
-      -- each of those spaces is 1 byte, meaning the byte offset is accurate.
-      -- But if any highlights ever look funky/misaligned, start debugging here!
-      local offset = right_col - vim.fn.strdisplaywidth(lines[highlight.line + 1])
+      local offset = offsets[highlight.line + 1] -- highlight.line is 0-based, so needs +1
       vim.api.nvim_buf_add_highlight(
         buffer_id,
         namespace_id,
         highlight.hl_group,
         highlight.line,
         highlight.col_start + offset,
-        highlight.col_end < highlight.col_start and -1 or highlight.col_end + offset)
+        highlight.col_end == -1 and -1 or highlight.col_end + offset)
     end
   else
+    -- Replace entire buffer with new set of lines
+    vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
+
     for _, highlight in ipairs(highlights) do
       vim.api.nvim_buf_add_highlight(
         buffer_id,
