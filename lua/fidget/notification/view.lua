@@ -147,6 +147,18 @@ function M.render(now, groups)
     end
   end
 
+  -- Right justify each line.
+  for i = 1, #lines do
+    local offset = width - vim.fn.strdisplaywidth(lines[i])
+    lines[i] = string.rep(' ', offset) .. lines[i]
+
+    local h = highlights[i]
+    h.col_start = h.col_start + offset
+    h.col_end = h.col_end == -1
+        and -1
+        or h.col_end + offset
+  end
+
   return {
     width = width,
     lines = lines,
