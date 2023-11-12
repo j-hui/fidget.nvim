@@ -3,6 +3,7 @@ local M          = {}
 M.model          = require("fidget.notification.model")
 M.window         = require("fidget.notification.window")
 M.view           = require("fidget.notification.view")
+local poll       = require("fidget.poll")
 local logger     = require("fidget.logger")
 
 --- Used to determine the identity of notification items and groups.
@@ -117,14 +118,6 @@ end)
 ---@type NotificationGroup[]
 local groups = {}
 
---- Arbitrary point in time that timestamps are computed relative to.
----@type number
-local origin_time = vim.fn.reltime()
-
---- Timestamp for current poll frame. Only valid while actively polling.
----@type number?
-local now_sync = nil
-
 --- Whether the notification window is suppressed.
 local view_suppressed = false
 
@@ -140,13 +133,13 @@ local view_suppressed = false
 ---@param level   NotificationLevel?
 ---@param opts    NotificationOptions?
 function M.notify(msg, level, opts)
-  local now = vim.fn.reltimefloat(vim.fn.reltime(origin_time))
+  local now = poll.get_time()
   local n_groups = #groups
   M.model.update(now, M.options.configs, groups, msg, level, opts)
   if n_groups ~= #groups then
     groups = vim.fn.sort(groups, function(a, b) return (a.config.priority or 50) - (b.config.priority or 50) end)
   end
-  M.start_polling()
+  M.poller:start_polling(M.options.poll_rate)
 end
 
 --- Close the notification window.
@@ -158,61 +151,35 @@ function M.close()
   end)
 end
 
-function M.poll()
-  local now = now_sync or vim.fn.reltimefloat(vim.fn.reltime(origin_time))
-  groups = M.model.tick(now, groups)
+--- The poller for the notification subsystem.
+M.poller = poll.Poller {
+  name = "notification",
+  poll = function(self)
+    groups = M.model.tick(self:now(), groups)
 
-  -- TODO: if not modified, don't re-render
-  local v = M.view.render(now, groups)
+    -- TODO: if not modified, don't re-render
+    local v = M.view.render(self:now(), groups)
 
-  if #v.lines > 0 then
-    if view_suppressed then
+    if #v.lines > 0 then
+      if view_suppressed then
+        return true
+      end
+
+      M.window.guard(function()
+        M.window.set_lines(v.lines, v.highlights, v.width)
+        M.window.show(v.width, #v.lines)
+      end)
       return true
-    end
+    else
+      if view_suppressed then
+        return false
+      end
 
-    M.window.guard(function()
-      M.window.set_lines(v.lines, v.highlights, v.width)
-      M.window.show(v.width, #v.lines)
-    end)
-    return true
-  else
-    if view_suppressed then
-      return false
+      -- If we could not close the window, keep polling, i.e., keep trying to close the window.
+      return not M.close()
     end
-
-    -- If we could not close the window, keep polling, i.e., keep trying to close the window.
-    return not M.close()
   end
-end
-
---- Counting semaphore used to guard against starting multiple pollers.
-local poll_count = 0
-
---- Whether Fidget is currently polling for progress messages.
-function M.is_polling()
-  return poll_count > 0
-end
-
---- Start periodically polling for progress messages, until we stop receiving them.
-function M.start_polling()
-  if M.is_polling() then return end
-  logger.info("starting notification poller")
-  poll_count = poll_count + 1
-  local done, timer, delay = false, vim.loop.new_timer(), math.ceil(1000 / M.options.poll_rate)
-  timer:start(15, delay, vim.schedule_wrap(function() -- Note: hard-coded 15ms attack
-    if done then return end
-    now_sync = vim.fn.reltimefloat(vim.fn.reltime(origin_time))
-    if not M.poll() then
-      logger.info("stopping notification poller")
-      timer:stop()
-      timer:close()
-      done = true
-      poll_count = poll_count - 1
-    end
-    now_sync = nil
-  end)
-  )
-end
+}
 
 --- Dynamically add, overwrite, or delete a notification configuration.
 ---

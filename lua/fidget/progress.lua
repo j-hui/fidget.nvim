@@ -2,7 +2,7 @@
 local M            = {}
 M.display          = require("fidget.progress.display")
 M.lsp              = require("fidget.progress.lsp")
-local logger       = require("fidget.logger")
+local poll         = require("fidget.poll")
 local notification = require("fidget.notification")
 
 --- Used to ensure only a single autocmd callback exists.
@@ -74,8 +74,9 @@ require("fidget.options").declare(M, "progress", {
     autocmd_id = nil
   end
   if M.options.poll_rate > 0 then
-    -- TODO: make idempotent
-    autocmd_id = M.lsp.on_progress_message(M.start_polling)
+    autocmd_id = M.lsp.on_progress_message(function()
+      M.poller:start_polling(M.options.poll_rate)
+    end)
   end
 end)
 
@@ -127,60 +128,36 @@ function M.format_progress(msg)
   }
 end
 
---- Poll for messages and feed them to the fidget notifications subsystem.
-function M.poll()
-  if progress_suppressed then
-    return false
-  end
+--- Poll for progress messages to feed to the fidget notifications subsystem.
+M.poller = poll.Poller {
+  name = "progress",
+  poll = function()
+    if progress_suppressed then
+      return false
+    end
 
-  local messages = M.lsp.poll_for_messages()
-  if messages == nil then
-    return false
-  end
+    local messages = M.lsp.poll_for_messages()
+    if messages == nil then
+      return false
+    end
 
-  for _, msg in ipairs(messages) do
-    -- NOTE: hopefully this loop isn't too expensive.
-    -- But if it is, consider indexing by hash.
-    local ignore = false
-    for _, lsp_name in ipairs(M.options.ignore) do
-      if msg.lsp_name == lsp_name then
-        ignore = true
+    for _, msg in ipairs(messages) do
+      -- NOTE: hopefully this loop isn't too expensive.
+      -- But if it is, consider indexing by hash.
+      local ignore = false
+      for _, lsp_name in ipairs(M.options.ignore) do
+        if msg.lsp_name == lsp_name then
+          ignore = true
+        end
+      end
+      if not ignore then
+        M.load_config(msg)
+        notification.notify(M.format_progress(msg))
       end
     end
-    if not ignore then
-      M.load_config(msg)
-      notification.notify(M.format_progress(msg))
-    end
+    return true
   end
-  return true
-end
-
---- Counting semaphore used to guard against starting multiple pollers.
-local poll_count = 0
-
---- Whether Fidget is currently polling for progress messages.
-function M.is_polling()
-  return poll_count > 0
-end
-
---- Start periodically polling for progress messages, until we stop receiving them.
-function M.start_polling()
-  if M.is_polling() then return end
-  logger.info("starting progress poller")
-  poll_count = poll_count + 1
-  local done, timer, delay = false, vim.loop.new_timer(), math.ceil(1000 / M.options.poll_rate)
-  timer:start(15, delay, vim.schedule_wrap(function() -- Note: hard-coded 15ms attack
-    if done then return end
-    if not M.poll() then
-      logger.info("stopping progress poller")
-      timer:stop()
-      timer:close()
-      done = true
-      poll_count = poll_count - 1
-    end
-  end)
-  )
-end
+}
 
 --- Suppress consumption of progress messages.
 ---
