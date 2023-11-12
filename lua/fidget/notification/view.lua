@@ -35,6 +35,11 @@ require("fidget.options").declare(M, "notification.view", {
   ---
   ---@type string?
   group_separator_hl = "Comment",
+
+  --- Display lines from bottom to top
+  ---
+  ---@type boolean
+  stack_upwards = true,
 })
 
 --- Render the header of a group, consisting of a header and an optional icon.
@@ -74,76 +79,125 @@ end
 ---@param groups NotificationGroup[]
 ---@return NotificationView view
 function M.render(now, groups)
-  local width = 0
-  local lines = {}
-  ---@type NotificationHighlight[]
-  local highlights = {}
+  ---@class NotificationRenderItem
+  ---@field lines      string[] displayed message for the item
+  ---@field highlights NotificationHighlight[] buf_add_highlight() params for lines field
+
+  ---@type NotificationRenderItem[]
+  local render_items = {}
 
   for idx, group in ipairs(groups) do
     if idx ~= 1 and M.options.group_separator then
-      table.insert(lines, M.options.group_separator)
+      local render_item = {
+        lines = { M.options.group_separator },
+        highlights = {}
+      }
+
       if M.options.group_separator_hl then
-        table.insert(highlights, {
+        table.insert(render_item.highlights, {
           hl_group = M.options.group_separator_hl,
-          line = #lines - 1,
+          line = 0,
           col_start = 0,
           col_end = -1,
         })
       end
+
+      table.insert(render_items, render_item)
     end
 
     local group_header, icon_begin, icon_end = M.render_group_header(now, group)
     if #group_header > 0 then
       -- Don't render any line if name and icon are both empty.
       -- If you want to force an empty line, use " " as the name.
-      table.insert(lines, group_header)
-      width = math.max(width, vim.fn.strdisplaywidth(group_header))
-      -- Insert highlight for group name
-      table.insert(highlights, {
-        hl_group = group.config.group_style or "Title",
-        line = #lines - 1,
-        col_start = 0,
-        col_end = -1,
-      })
+
+      local render_item = {
+        lines = { group_header },
+        highlights = {
+          -- Highlight for group name
+          {
+            hl_group = group.config.group_style or "Title",
+            line = 0,
+            col_start = 0,
+            col_end = -1,
+          },
+        },
+      }
+
       if icon_begin >= 0 then
         -- Insert highlight for group icon
-        table.insert(highlights, {
+        table.insert(render_item.highlights, {
           hl_group = group.config.icon_style or group.config.group_style or "Title",
-          line = #lines - 1,
+          line = 0,
           col_start = icon_begin,
           col_end = icon_end,
         })
       end
+
+      table.insert(render_items, render_item)
     end
 
     for _, item in ipairs(group.items) do
-      local prev_line_count = #lines
-      for line in string.gmatch(item.message, "([^\n]*)\n?") do
-        width = math.max(width, vim.fn.strdisplaywidth(line))
-        table.insert(lines, line)
+      local render_item = {
+        lines = {},
+        highlights = {},
+      }
+
+      if type(item.message) == "number" then
+        item.message = tostring(item.message)
       end
-      -- The above capture always produces an extra empty string at the end,
-      -- so we trim it off here.
-      table.remove(lines)
 
-      if prev_line_count ~= #lines and item.annote then
+      for line in vim.gsplit(item.message, "\n", { plain = true, trimempty = true }) do
+        table.insert(render_item.lines, line)
+      end
+
+      if #render_item.lines ~= 0 and item.annote then
         -- Need to add the annotation to the first line of the item message
-        local annote_line = prev_line_count + 1
-        local sep = group.config.annote_separator or " "
-        local msg = lines[annote_line]                              -- we are appending annote to this msg
-        local line = string.format("%s%s%s", msg, sep, item.annote) -- to construct this line
+        local annote_line = 1
 
-        lines[annote_line] = line
-        width = math.max(width, vim.fn.strdisplaywidth(line))
+        local msg = render_item.lines[annote_line]                  -- we are appending annote to this msg
+        local sep = group.config.annote_separator or " "
+        local line = string.format("%s%s%s", msg, sep, item.annote) -- to construct this line
+        render_item.lines[annote_line] = line
 
         -- Insert highlight for annote
-        table.insert(highlights, {
+        table.insert(render_item.highlights, {
           hl_group = item.style,
           line = annote_line - 1, -- 0-indexed
           col_start = #msg,       -- byte-indexed
           col_end = -1,
         })
       end
+
+      table.insert(render_items, render_item)
+    end
+  end
+
+  if M.options.stack_upwards then
+    local lo_idx = 1
+    local hi_idx = #render_items
+    while lo_idx < hi_idx do
+      render_items[lo_idx], render_items[hi_idx] = render_items[hi_idx], render_items[lo_idx]
+      lo_idx = lo_idx + 1
+      hi_idx = hi_idx - 1
+    end
+  end
+
+  local width = 0
+  ---@type string[]
+  local lines = {}
+  ---@type NotificationHighlight[]
+  local highlights = {}
+
+  for _, item in ipairs(render_items) do
+    local starting_line = #lines
+    for _, line in ipairs(item.lines) do
+      width = math.max(width, vim.fn.strdisplaywidth(line))
+      table.insert(lines, line)
+    end
+
+    for _, highlight in ipairs(item.highlights) do
+      highlight.line = highlight.line + starting_line
+      table.insert(highlights, highlight)
     end
   end
 
