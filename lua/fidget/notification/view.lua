@@ -20,6 +20,14 @@ local M = {}
 
 --- Options related to how notifications are rendered as text
 require("fidget.options").declare(M, "notification.view", {
+  --- Display notification items from bottom to top
+  ---
+  --- Setting this to true tends to lead to more stable animations when the
+  --- window is bottom-aligned.
+  ---
+  ---@type boolean
+  stack_upwards = true,
+
   --- Separator between group name and icon
   ---
   --- Must not contain any newlines. Set to `""` to remove the gap between names
@@ -39,11 +47,6 @@ require("fidget.options").declare(M, "notification.view", {
   ---
   ---@type string?
   group_separator_hl = "Comment",
-
-  --- Display notification items from bottom to top
-  ---
-  ---@type boolean
-  stack_upwards = true,
 })
 
 

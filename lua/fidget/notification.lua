@@ -33,9 +33,12 @@ local logger     = require("fidget.logger")
 ---@alias NotificationDisplay string | fun(now: number, items: NotificationItem[]): string
 
 --- Used to configure the behavior of notification groups.
+---
+--- If both name and icon are nil, then no group header is rendered.
+---
 ---@class NotificationConfig
----@field name              NotificationDisplay?  name of the group; if nil, tostring(key) is used as name
----@field icon              NotificationDisplay?  icon of the group; if nil, no icon is used
+---@field name              NotificationDisplay?  name of the group
+---@field icon              NotificationDisplay?  icon of the group
 ---@field icon_on_left      boolean?  if true, icon is rendered on the left instead of right
 ---@field annote_separator  string?   separator between message from annote; defaults to " "
 ---@field ttl               number?   how long a notification item should exist; defaults to 3
