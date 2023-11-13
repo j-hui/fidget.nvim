@@ -1,6 +1,8 @@
 --- Adapted from https://www.github.com/tjdevries/vlog.nvim
 local M = {}
 
+local PLUGIN_PATH_PATTERN = "(/lua/fidget.+)"
+
 require("fidget.options").declare(M, "logger", {
   --- Minimum logging level
   ---
@@ -10,13 +12,18 @@ require("fidget.options").declare(M, "logger", {
   level = vim.log.levels.WARN,
 
   --- Limit the number of decimals displayed for floats
+  ---
   ---@type number
   float_precision = 0.01,
-})
 
-local PLUGIN_NAME = "fidget.nvim"
-local PLUGIN_PATH_PATTERN = "(/lua/fidget.+)"
-local log_file = string.format("%s/%s.log", vim.fn.stdpath("cache"), PLUGIN_NAME)
+  --- Where Fidget writes its logs to
+  ---
+  --- Using `vim.fn.stdpath("cache")`, the default path usually ends up at
+  --- `~/.cache/nvim/fidget.nvim.log`.
+  ---
+  ---@type string
+  path = string.format("%s/fidget.nvim.log", vim.fn.stdpath("cache")),
+})
 
 local function fmt_level(level)
   if level == vim.log.levels.DEBUG then
@@ -64,7 +71,7 @@ local function do_log(level, ...)
   local _, _, filename = string.find(info.short_src, PLUGIN_PATH_PATTERN)
   local lineinfo = (filename or info.short_src) .. ":" .. info.currentline
 
-  local fp = io.open(log_file, "a")
+  local fp = io.open(M.options.path, "a")
   if fp then
     local log_line = string.format("[%-6s%s] %s: %s\n",
       fmt_level(level), os.date(), lineinfo, make_string(...))

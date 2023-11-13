@@ -93,6 +93,8 @@ The following table shows the default options for this plugin:
   logger = {
     level = vim.log.levels.WARN,  -- Minimum logging level
     float_precision = 0.01,       -- Limit the number of decimals displayed for floats
+    path =                        -- Where Fidget writes its logs to
+      string.format("%s/fidget.nvim.log", vim.fn.stdpath("cache")),
   },
 }
 ```
@@ -454,6 +456,14 @@ logger.float_precision
 : Limit the number of decimals displayed for floats
 
 Type: `number` (default: `0.01`)
+
+logger.path
+: Where Fidget writes its logs to
+
+Using `vim.fn.stdpath("cache")`, the default path usually ends up at
+`~/.cache/nvim/fidget.nvim.log`.
+
+Type: `string` (default: `string.format("%s/fidget.nvim.log", vim.fn.stdpath("cache"))`)
 
 <!-- ## Commands -->
 
