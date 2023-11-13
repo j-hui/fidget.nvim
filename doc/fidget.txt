@@ -47,6 +47,7 @@ The following table shows the default options for this plugin:
     
         -- Options related to how LSP progress messages are displayed as notifications
         display = {
+          render_limit = 16,          -- How many LSP messages to show at once
           done_ttl = 3,               -- How long a message should persist after completion
           done_icon = "✔",            -- Icon shown when all LSP progress tasks are complete
           done_style = "Constant",    -- Highlight group for completed LSP tasks
@@ -73,9 +74,10 @@ The following table shows the default options for this plugin:
       -- Options related to notification subsystem
       notification = {
         poll_rate = 10,               -- How frequently to poll and render notifications
+        filter = vim.log.levels.INFO, -- Minimum notifications level
+        override_vim_notify = false,  -- Automatically override vim.notify() with Fidget
         configs =                     -- How to configure notification groups when instantiated
           { default = M.default_config },
-        override_vim_notify = false,  -- Automatically override vim.notify() with Fidget
     
         -- Options related to how notifications are rendered as text
         view = {
@@ -104,6 +106,8 @@ The following table shows the default options for this plugin:
       logger = {
         level = vim.log.levels.WARN,  -- Minimum logging level
         float_precision = 0.01,       -- Limit the number of decimals displayed for floats
+        path =                        -- Where Fidget writes its logs to
+          string.format("%s/fidget.nvim.log", vim.fn.stdpath("cache")),
       },
     }
 <
@@ -186,6 +190,21 @@ Example:
 <
 
 Type: `NotificationKey[]` (default: `{}`)
+
+
+                                      *fidget-progress.display.render_limit*
+
+
+progress.display.render_limit          How many LSP messages to show at once
+
+
+
+If `false`, no limit.
+
+This is used to configure each LSP notification group, so by default, this is a
+per-server limit.
+
+Type: `number | false` (default: `16`)
 
 
                                           *fidget-progress.display.done_ttl*
@@ -396,6 +415,22 @@ notification.poll_rate                 How frequently to poll and render notific
 Measured in Hertz (frames per second).
 
 Type: `number` (default: `10`)
+
+
+                                                *fidget-notification.filter*
+
+
+notification.filter                    Minimum notifications level
+
+
+
+Note that this filter only applies to notifications with an explicit numeric
+level (i.e., `vim.log.levels`).
+
+Set to `vim.log.levels.OFF` to filter out all notifications with an numeric
+level, or `vim.log.levels.TRACE` to turn off filtering.
+
+Type: `vim.log.levels` (default: `vim.log.levels.INFO`)
 
 
                                    *fidget-notification.override_vim_notify*
@@ -626,7 +661,11 @@ logger.level                           Minimum logging level
 
 
 
-Set to `vim.log.levels.OFF` to disable logging.
+Set to `vim.log.levels.OFF` to disable logging, or `vim.log.levels.TRACE` to
+enable all logging.
+
+Note that this option only filters logging (useful for debugging), and is
+different from `notification.filter`, which filters `notify()` messages.
 
 Type: `vim.log.levels` (default: `vim.log.levels.WARN`)
 
@@ -639,6 +678,20 @@ logger.float_precision                 Limit the number of decimals displayed fo
 
 
 Type: `number` (default: `0.01`)
+
+
+                                                        *fidget-logger.path*
+
+
+logger.path                            Where Fidget writes its logs to
+
+
+
+Using `vim.fn.stdpath("cache")`, the default path usually ends up at
+`~/.cache/nvim/fidget.nvim.log`.
+
+Type: `string` (default: `string.format("%s/fidget.nvim.log",
+vim.fn.stdpath("cache"))`)
 
 
 ==============================================================================
@@ -728,6 +781,7 @@ Fields:
 - `icon_on_left`: (`boolean?`) If true, icon is rendered on the left instead of right
 - `annote_separator`: (`string?`) Separator between message from annote; defaults to ” ”
 - `ttl`: (`number?`) How long a notification item should exist; defaults to 3
+- `render_limit`: (`number?`) how many notification items to show at once
 - `group_style`: (`string?`) Style used to highlight group name; defaults to "Title"
 - `icon_style`: (`string?`) Style used to highlight icon; if nil, use group_style
 - `annote_style`: (`string?`) Default style used to highlight item annotes; defaults to "Question"
