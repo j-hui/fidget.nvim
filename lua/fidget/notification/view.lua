@@ -8,6 +8,10 @@ local M = {}
 ---@field lines       string[]                  text to show in the notification
 ---@field highlights  NotificationHighlight[]   buf_add_highlight() params, applied in order
 
+---@class NotificationRenderItem
+---@field lines      string[]                 displayed message for the item
+---@field highlights NotificationHighlight[]  buf_add_highlight() params for lines field
+
 ---@class NotificationHighlight
 ---@field hl_group    string    what highlight group to add
 ---@field line        number    (0-indexed) line number to add highlight
@@ -36,28 +40,43 @@ require("fidget.options").declare(M, "notification.view", {
   ---@type string?
   group_separator_hl = "Comment",
 
-  --- Display lines from bottom to top
+  --- Display notification items from bottom to top
   ---
   ---@type boolean
   stack_upwards = true,
 })
 
---- Render the header of a group, consisting of a header and an optional icon.
---- Also returns the range of the icon text, for highlighting.
+
+--- Render group separator item.
+---
+---@return NotificationRenderItem? group_separator
+function M.render_group_separator()
+  if not M.options.group_separator then
+    return nil
+  end
+
+  return {
+    lines = { M.options.group_separator },
+    highlights = {
+      M.options.group_separator_hl and {
+        hl_group = M.options.group_separator_hl,
+        line = 0,
+        col_start = 0,
+        col_end = -1,
+      }
+    }
+  }
+end
+
+--- Render the header of a group, containing group name and icon.
 ---
 ---@param         now   number    timestamp of current render frame
 ---@param         group NotificationGroup
----@return string header
----@return number icon_begin_col  byte-indexed
----@return number icon_end_col    byte-indexed; ignore if icon_end_col is -1
+---@return              NotificationRenderItem? group_header
 function M.render_group_header(now, group)
   local group_name = group.config.name
-  if group_name ~= nil then
-    if type(group_name) == "function" then
-      group_name = group_name(now, group.items)
-    end
-  else
-    group_name = tostring(group.key)
+  if type(group_name) == "function" then
+    group_name = group_name(now, group.items)
   end
 
   local group_icon = group.config.icon
@@ -65,138 +84,153 @@ function M.render_group_header(now, group)
     group_icon = group_icon(now, group.items)
   end
 
-  if group_icon then
-    if group.config.icon_on_left then
-      return string.format("%s%s%s", group_icon, M.options.icon_separator, group_name), 0, #group_icon
-    end
-    return string.format("%s%s%s", group_name, M.options.icon_separator, group_icon), #group_name + 1, -1
-  else
-    return group_name, -1, -1
+  if group_name == nil and group_icon == nil then
+    -- No group header to render
+    return nil
   end
+
+  local lines, highlights = {}, {}
+
+  if group_name and group_icon then
+    -- Both group_name and group_icon are present, lay them out next to each other
+    if group.config.icon_on_left then
+      table.insert(lines, string.format("%s%s%s", group_icon, M.options.icon_separator, group_name))
+      table.insert(highlights, {
+        hl_group = group.config.group_style or "Title",
+        line = 0,
+        col_start = 0,
+        col_end = -1,
+      })
+      if group.config.icon_style then
+        table.insert(highlights, {
+          hl_group = group.config.icon_style,
+          line = 0,
+          col_start = 0,
+          col_end = #group_icon,
+        })
+      end
+    else -- not icon_on_left, AKA icon on right
+      -- NOTE: this branch represents the most common case (default options)
+      table.insert(lines, string.format("%s%s%s", group_name, M.options.icon_separator, group_icon))
+      table.insert(highlights, {
+        hl_group = group.config.group_style or "Title",
+        line = 0,
+        col_start = 0,
+        col_end = -1,
+      })
+      if group.config.icon_style then
+        table.insert(highlights, {
+          hl_group = group.config.icon_style,
+          line = 0,
+          col_start = #group_name + #M.options.icon_separator,
+          col_end = -1,
+        })
+      end
+    end
+  else
+    if group_name then
+      table.insert(lines, group_name)
+      table.insert(highlights, {
+        hl_group = group.config.group_style or "Title",
+        line = 0,
+        col_start = 0,
+        col_end = -1,
+      })
+    elseif group_icon then
+      table.insert(lines, group_icon)
+      table.insert(highlights, {
+        hl_group = group.config.icon_style or group.config.group_style or "Title",
+        line = 0,
+        col_start = 0,
+        col_end = -1,
+      })
+    end
+  end
+  return { lines = lines, highlights = highlights }
 end
 
+--- Render a notification item, containing message and annote.
+---
+---@param item   NotificationItem
+---@param config NotificationConfig
+---@return       NotificationRenderItem? render_item
+function M.render_item(item, config)
+  local lines, highlights = {}, {}
+
+  for line in vim.gsplit(item.message, "\n", { plain = true, trimempty = true }) do
+    table.insert(lines, line)
+  end
+
+  if #lines == 0 then
+    -- Don't render empty messages
+    return nil
+  end
+
+  if item.annote then
+    local msg = lines[1] -- Append annote to first line of message
+    local sep = config.annote_separator or " "
+    local line = string.format("%s%s%s", msg, sep, item.annote)
+    lines[1] = line
+
+    -- Insert highlight for annote
+    table.insert(highlights, {
+      hl_group = item.style,
+      line = 0,         -- 0-indexed
+      col_start = #msg, -- byte-indexed
+      col_end = -1,
+    })
+  end
+
+  return { lines = lines, highlights = highlights }
+end
+
+--- Render notifications into lines and highlights.
+---
 ---@param now number timestamp of current render frame
 ---@param groups NotificationGroup[]
 ---@return NotificationView view
 function M.render(now, groups)
-  ---@class NotificationRenderItem
-  ---@field lines      string[] displayed message for the item
-  ---@field highlights NotificationHighlight[] buf_add_highlight() params for lines field
-
   ---@type NotificationRenderItem[]
   local render_items = {}
 
   for idx, group in ipairs(groups) do
-    if idx ~= 1 and M.options.group_separator then
-      local render_item = {
-        lines = { M.options.group_separator },
-        highlights = {}
-      }
-
-      if M.options.group_separator_hl then
-        table.insert(render_item.highlights, {
-          hl_group = M.options.group_separator_hl,
-          line = 0,
-          col_start = 0,
-          col_end = -1,
-        })
+    if idx ~= 1 then
+      local separator = M.render_group_separator()
+      if separator then
+        table.insert(render_items, separator)
       end
-
-      table.insert(render_items, render_item)
     end
 
-    local group_header, icon_begin, icon_end = M.render_group_header(now, group)
-    if #group_header > 0 then
-      -- Don't render any line if name and icon are both empty.
-      -- If you want to force an empty line, use " " as the name.
-
-      local render_item = {
-        lines = { group_header },
-        highlights = {
-          -- Highlight for group name
-          {
-            hl_group = group.config.group_style or "Title",
-            line = 0,
-            col_start = 0,
-            col_end = -1,
-          },
-        },
-      }
-
-      if icon_begin >= 0 then
-        -- Insert highlight for group icon
-        table.insert(render_item.highlights, {
-          hl_group = group.config.icon_style or group.config.group_style or "Title",
-          line = 0,
-          col_start = icon_begin,
-          col_end = icon_end,
-        })
-      end
-
-      table.insert(render_items, render_item)
+    local group_header = M.render_group_header(now, group)
+    if group_header then
+      table.insert(render_items, group_header)
     end
 
     for _, item in ipairs(group.items) do
-      local render_item = {
-        lines = {},
-        highlights = {},
-      }
-
-      if type(item.message) == "number" then
-        item.message = tostring(item.message)
+      local render_item = M.render_item(item, group.config)
+      if render_item then
+        table.insert(render_items, render_item)
       end
-
-      for line in vim.gsplit(item.message, "\n", { plain = true, trimempty = true }) do
-        table.insert(render_item.lines, line)
-      end
-
-      if #render_item.lines ~= 0 and item.annote then
-        -- Need to add the annotation to the first line of the item message
-        local annote_line = 1
-
-        local msg = render_item.lines[annote_line]                  -- we are appending annote to this msg
-        local sep = group.config.annote_separator or " "
-        local line = string.format("%s%s%s", msg, sep, item.annote) -- to construct this line
-        render_item.lines[annote_line] = line
-
-        -- Insert highlight for annote
-        table.insert(render_item.highlights, {
-          hl_group = item.style,
-          line = annote_line - 1, -- 0-indexed
-          col_start = #msg,       -- byte-indexed
-          col_end = -1,
-        })
-      end
-
-      table.insert(render_items, render_item)
     end
   end
 
+  local width, lines, highlights = 0, {}, {}
+
+  local start, stop, step
   if M.options.stack_upwards then
-    local lo_idx = 1
-    local hi_idx = #render_items
-    while lo_idx < hi_idx do
-      render_items[lo_idx], render_items[hi_idx] = render_items[hi_idx], render_items[lo_idx]
-      lo_idx = lo_idx + 1
-      hi_idx = hi_idx - 1
-    end
+    start, stop, step = #render_items, 1, -1
+  else
+    start, stop, step = 1, #render_items, 1
   end
 
-  local width = 0
-  ---@type string[]
-  local lines = {}
-  ---@type NotificationHighlight[]
-  local highlights = {}
-
-  for _, item in ipairs(render_items) do
-    local starting_line = #lines
+  for i = start, stop, step do
+    local item, offset = render_items[i], #lines
     for _, line in ipairs(item.lines) do
       width = math.max(width, vim.fn.strdisplaywidth(line))
       table.insert(lines, line)
     end
-
     for _, highlight in ipairs(item.highlights) do
-      highlight.line = highlight.line + starting_line
+      highlight.line = highlight.line + offset
       table.insert(highlights, highlight)
     end
   end
