@@ -18,6 +18,16 @@ end
 
 --- Options related to how LSP progress messages are displayed as notifications
 require("fidget.options").declare(M, "progress.display", {
+  --- How many LSP messages to show at once
+  ---
+  --- If `false`, no limit.
+  ---
+  --- This is used to configure each LSP notification group, so by default, this
+  --- is a per-server limit.
+  ---
+  ---@type number | false
+  render_limit = 16,
+
   --- How long a message should persist after completion
   ---
   --- Set to `0` to use notification group config default, and `math.huge` to
@@ -174,6 +184,7 @@ function M.make_config(group)
     name = M.options.format_group_name(group),
     icon = M.for_icon(progress, done),
     ttl = M.options.done_ttl,
+    render_limit = M.options.render_limit or nil,
     group_style = M.options.group_style,
     icon_style = M.options.icon_style,
     annote_style = M.options.progress_style,

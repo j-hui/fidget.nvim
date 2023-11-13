@@ -42,6 +42,7 @@ local logger     = require("fidget.logger")
 ---@field icon_on_left      boolean?  if true, icon is rendered on the left instead of right
 ---@field annote_separator  string?   separator between message from annote; defaults to " "
 ---@field ttl               number?   how long a notification item should exist; defaults to 3
+---@field render_limit      number?   how many notification items to show at once
 ---@field group_style       string?   style used to highlight group name; defaults to "Title"
 ---@field icon_style        string?   style used to highlight icon; if nil, use group_style
 ---@field annote_style      string?   default style used to highlight item annotes; defaults to "Question"

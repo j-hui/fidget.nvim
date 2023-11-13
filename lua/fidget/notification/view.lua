@@ -209,7 +209,11 @@ function M.render(now, groups)
       table.insert(render_items, group_header)
     end
 
-    for _, item in ipairs(group.items) do
+    for i, item in ipairs(group.items) do
+      if group.config.render_limit and i > group.config.render_limit then
+        -- Don't bother rendering the rest (though they still exist)
+        break
+      end
       local render_item = M.render_item(item, group.config)
       if render_item then
         table.insert(render_items, render_item)

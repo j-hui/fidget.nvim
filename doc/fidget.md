@@ -35,6 +35,7 @@ The following table shows the default options for this plugin:
 
     -- Options related to how LSP progress messages are displayed as notifications
     display = {
+      render_limit = 16,          -- How many LSP messages to show at once
       done_ttl = 3,               -- How long a message should persist after completion
       done_icon = "✔",            -- Icon shown when all LSP progress tasks are complete
       done_style = "Constant",    -- Highlight group for completed LSP tasks
@@ -149,6 +150,16 @@ ignore = { "rust_analyzer" }
 ```
 
 Type: `NotificationKey[]` (default: `{}`)
+
+progress.display.render_limit
+: How many LSP messages to show at once
+
+If `false`, no limit.
+
+This is used to configure each LSP notification group, so by default, this
+is a per-server limit.
+
+Type: `number | false` (default: `16`)
 
 progress.display.done_ttl
 : How long a message should persist after completion
@@ -515,6 +526,7 @@ Fields:
 -   `icon_on_left`: (`boolean?`) If true, icon is rendered on the left instead of right
 -   `annote_separator`: (`string?`) Separator between message from annote; defaults to " "
 -   `ttl`: (`number?`) How long a notification item should exist; defaults to 3
+-   `render_limit`: (`number?`) how many notification items to show at once
 -   `group_style`: (`string?`) Style used to highlight group name; defaults to "Title"
 -   `icon_style`: (`string?`) Style used to highlight icon; if nil, use group_style
 -   `annote_style`: (`string?`) Default style used to highlight item annotes; defaults to "Question"
