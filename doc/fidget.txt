@@ -79,6 +79,7 @@ The following table shows the default options for this plugin:
     
         -- Options related to how notifications are rendered as text
         view = {
+          stack_upwards = true,       -- Display notification items from bottom to top
           icon_separator = " ",       -- Separator between group name and icon
           group_separator = "---",    -- Separator between notification groups
           group_separator_hl =        -- Highlight group used for group separator
@@ -446,6 +447,19 @@ where
       error_annote = "ERROR",
     }
 <
+
+
+                                    *fidget-notification.view.stack_upwards*
+
+
+notification.view.stack_upwards        Display notification items from bottom to top
+
+
+
+Setting this to true tends to lead to more stable animations when the window is
+bottom-aligned.
+
+Type: `boolean` (default: `true`)
 
 
                                    *fidget-notification.view.icon_separator*
