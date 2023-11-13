@@ -23,9 +23,13 @@ end
 ---@field private poll fun(self: Poller): boolean what to do for polling
 ---@field private timer uv_timer_t? timer handle when this poller is polling
 ---@field private current_time number time at each poll
+---@field private err any? error object possibly encountered while polling
 ---
 --- Note that when the Poller:poll() method returns true, the poller should
 --- call it again, but if it returns anything false-y, the poller will stop.
+---
+--- If a poller encounters an error while polling, it will refuse to start
+--- polling again until its err is reset.
 local Poller = {}
 Poller.__index = Poller
 
@@ -45,16 +49,23 @@ function Poller:start_polling(poll_rate, attack)
   self.timer = vim.loop.new_timer()
 
   self.timer:start(attack, math.ceil(1000 / poll_rate), vim.schedule_wrap(function()
-    if not self.timer then
+    if not self.timer or self.err ~= nil then
       return
     end
 
     self.current_time = M.get_time()
 
-    if not self:poll() then
+    local ok, cont = pcall(self.poll, self)
+
+    if not ok or not cont then
       self.timer:stop()
       self.timer:close()
       self.timer = nil
+      if not ok then
+        -- Save error object and propagate it
+        self.err = cont
+        error(cont)
+      end
     end
   end))
 end
@@ -73,6 +84,18 @@ end
 ---@return boolean is_polling
 function Poller:is_polling()
   return self.timer ~= nil
+end
+
+--- Query poller for potential encountered error.
+---
+---@return any? error_object
+function Poller:has_error()
+  return self.err
+end
+
+--- Forget about error object so that poller can start polling again.
+function Poller:reset_error()
+  self.err = nil
 end
 
 --- Construct a Poller object.
@@ -96,6 +119,7 @@ function M.Poller(opts)
     poll         = opts.poll or function() return false end,
     timer        = nil,
     current_time = 0,
+    err          = nil,
   }
   return setmetatable(poller, Poller)
 end

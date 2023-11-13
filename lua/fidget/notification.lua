@@ -164,6 +164,14 @@ function M.close()
   end)
 end
 
+--- Reset notification subsystem state.
+function M.reset()
+  M.poller:reset_error() -- Clear error if previously encountered one
+  M.window.guard(function()
+    M.window.close()
+  end)
+end
+
 --- The poller for the notification subsystem.
 M.poller = poll.Poller {
   name = "notification",
