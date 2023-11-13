@@ -21,6 +21,10 @@ require("fidget.options").declare(M, "", {
     for _, w in ipairs(warn_log) do
       M.logger.warn("-", w)
     end
+    local warn_msg = string.format(
+      "Encountered %d unknown options during setup().\nSee log (%s) for details.",
+      #warn_log, M.options.logger.path)
+    M.notification.notify(warn_msg, vim.log.levels.WARN, { annote = "fidget.nvim" })
   end
 end)
 
