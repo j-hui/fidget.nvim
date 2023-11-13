@@ -88,6 +88,17 @@ require("fidget.options").declare(M, "notification", {
   ---@type number
   poll_rate = 10,
 
+  --- Minimum notifications level
+  ---
+  --- Note that this filter only applies to notifications with an explicit
+  --- numeric level (i.e., `vim.log.levels`).
+  ---
+  --- Set to `vim.log.levels.OFF` to filter out all notifications with an
+  --- numeric level, or `vim.log.levels.TRACE` to turn off filtering.
+  ---
+  ---@type 0|1|2|3|4|5
+  filter = vim.log.levels.INFO,
+
   --- Automatically override vim.notify() with Fidget
   ---
   --- Equivalent to the following:
@@ -140,11 +151,18 @@ function M.notify(msg, level, opts)
   if msg ~= nil and type(msg) ~= "string" then
     error("message: expected string, got " .. type(msg))
   end
+
   if level ~= nil and type(level) ~= "number" and type(level) ~= "string" then
     error("level: expected number | string, got " .. type(level))
   end
+
   if opts ~= nil and type(opts) ~= "table" then
     error("opts: expected table, got " .. type(opts))
+  end
+
+  if type(level) == "number" and level < M.options.filter then
+    logger.info(string.format("Filtered out notification (%s): %s", logger.fmt_level(level), msg))
+    return
   end
 
   local now = poll.get_time()

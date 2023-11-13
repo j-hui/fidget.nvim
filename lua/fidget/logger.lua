@@ -6,7 +6,11 @@ local PLUGIN_PATH_PATTERN = "(/lua/fidget.+)"
 require("fidget.options").declare(M, "logger", {
   --- Minimum logging level
   ---
-  --- Set to `vim.log.levels.OFF` to disable logging.
+  --- Set to `vim.log.levels.OFF` to disable logging, or `vim.log.levels.TRACE`
+  --- to enable all logging.
+  ---
+  --- Note that this option only filters logging (useful for debugging), and is
+  --- different from `notification.filter`, which filters `notify()` messages.
   ---
   ---@type 0|1|2|3|4|5
   level = vim.log.levels.WARN,
@@ -25,7 +29,7 @@ require("fidget.options").declare(M, "logger", {
   path = string.format("%s/fidget.nvim.log", vim.fn.stdpath("cache")),
 })
 
-local function fmt_level(level)
+function M.fmt_level(level)
   if level == vim.log.levels.DEBUG then
     return "DEBUG"
   elseif level == vim.log.levels.INFO then
@@ -74,7 +78,7 @@ local function do_log(level, ...)
   local fp = io.open(M.options.path, "a")
   if fp then
     local log_line = string.format("[%-6s%s] %s: %s\n",
-      fmt_level(level), os.date(), lineinfo, make_string(...))
+      M.fmt_level(level), os.date(), lineinfo, make_string(...))
     fp:write(log_line)
     fp:close()
   end

@@ -62,9 +62,10 @@ The following table shows the default options for this plugin:
   -- Options related to notification subsystem
   notification = {
     poll_rate = 10,               -- How frequently to poll and render notifications
+    filter = vim.log.levels.INFO, -- Minimum notifications level
+    override_vim_notify = false,  -- Automatically override vim.notify() with Fidget
     configs =                     -- How to configure notification groups when instantiated
       { default = M.default_config },
-    override_vim_notify = false,  -- Automatically override vim.notify() with Fidget
 
     -- Options related to how notifications are rendered as text
     view = {
@@ -301,6 +302,17 @@ Measured in Hertz (frames per second).
 
 Type: `number` (default: `10`)
 
+notification.filter
+: Minimum notifications level
+
+Note that this filter only applies to notifications with an explicit
+numeric level (i.e., `vim.log.levels`).
+
+Set to `vim.log.levels.OFF` to filter out all notifications with an
+numeric level, or `vim.log.levels.TRACE` to turn off filtering.
+
+Type: `vim.log.levels` (default: `vim.log.levels.INFO`)
+
 notification.override_vim_notify
 : Automatically override vim.notify() with Fidget
 
@@ -448,7 +460,11 @@ Type: `boolean` (default: `true`)
 logger.level
 : Minimum logging level
 
-Set to `vim.log.levels.OFF` to disable logging.
+Set to `vim.log.levels.OFF` to disable logging, or `vim.log.levels.TRACE`
+to enable all logging.
+
+Note that this option only filters logging (useful for debugging), and is
+different from `notification.filter`, which filters `notify()` messages.
 
 Type: `vim.log.levels` (default: `vim.log.levels.WARN`)
 
