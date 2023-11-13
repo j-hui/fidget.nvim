@@ -136,6 +136,16 @@ local view_suppressed = false
 ---@param level   NotificationLevel?
 ---@param opts    NotificationOptions?
 function M.notify(msg, level, opts)
+  if msg ~= nil and type(msg) ~= "string" then
+    error("message: expected string, got " .. type(msg))
+  end
+  if level ~= nil and type(level) ~= "number" and type(level) ~= "string" then
+    error("level: expected number | string, got " .. type(level))
+  end
+  if opts ~= nil and type(opts) ~= "table" then
+    error("opts: expected table, got " .. type(opts))
+  end
+
   local now = poll.get_time()
   local n_groups = #groups
   M.model.update(now, M.options.configs, groups, msg, level, opts)
