@@ -45,6 +45,7 @@ Visible elements:
 -   Theme: [folke/twilight.nvim](https://github.com/folke/twilight.nvim)
 -   Status line: [nvim-lualine/lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
 -   Color columns: `:set colorcolumn=81,121,+1,+2` (sorry)
+-   Scrollbar: [petertriho/nvim-scrollbar](https://github.com/petertriho/nvim-scrollbar)
 
 </details>
 
