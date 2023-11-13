@@ -30,8 +30,8 @@ vim.keymap.set("n", "C", function()
 end)
 
 vim.keymap.set("n", "D", function()
-  fidget.notify(nil, vim.log.levels.ERROR, { annote = "YOUR AD HERE", key = "foobar" })
-  fidget.notify("... and overwriting notifications.", vim.log.levels.WARN, { annote = "bottom text" })
+  fidget.notify(nil, vim.log.levels.ERROR, { annote = "bottom text", key = "foobar" })
+  fidget.notify("... and overwriting notifications.", vim.log.levels.WARN, { annote = "YOUR AD HERE" })
 end)
 ```
 
