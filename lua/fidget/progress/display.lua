@@ -40,7 +40,13 @@ require("fidget.options").declare(M, "progress.display", {
 
   --- Icon shown when all LSP progress tasks are complete
   ---
-  ---@type string | Manga
+  --- When a string literal is given (e.g., `"✔"`), it is used as a static icon;
+  --- when a table (e.g., `{"dots"}` or `{ pattern = "clock", period = 2 }`) is
+  --- given, it is used to generate an animation function; when a function is
+  --- specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`),
+  --- it is used as the animation function.
+  ---
+  ---@type string | Manga | Anime
   done_icon = "✔",
 
   --- Highlight group for completed LSP tasks
@@ -60,8 +66,14 @@ require("fidget.options").declare(M, "progress.display", {
 
   --- Icon shown when LSP progress tasks are in progress
   ---
-  ---@type string | Manga
-  progress_icon = { pattern = "dots", period = 1 },
+  --- When a string literal is given (e.g., `"✔"`), it is used as a static icon;
+  --- when a table (e.g., `{"dots"}` or `{ pattern = "clock", period = 2 }`) is
+  --- given, it is used to generate an animation function; when a function is
+  --- specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`),
+  --- it is used as the animation function.
+  ---
+  ---@type string | Manga | Anime
+  progress_icon = { "dots" },
 
   --- Highlight group for in-progress LSP tasks
   ---
@@ -172,12 +184,12 @@ end
 function M.make_config(group)
   local progress = M.options.progress_icon
   if type(progress) == "table" then
-    progress = spinner.animate(progress.pattern, progress.period)
+    progress = spinner.animate(progress[1] or progress.pattern, progress.period)
   end
 
   local done = M.options.done_icon
   if type(done) == "table" then
-    done = spinner.animate(done.pattern, done.period)
+    done = spinner.animate(done[1] or done.pattern, done.period)
   end
 
   local config = {

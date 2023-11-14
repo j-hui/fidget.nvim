@@ -178,6 +178,12 @@ Type: `number` (default: `3`)
 progress.display.done_icon
 : Icon shown when all LSP progress tasks are complete
 
+When a string literal is given (e.g., `"✔"`), it is used as a static icon;
+when a table (e.g., `{"dots"}` or `{ pattern = "clock", period = 2 }`) is
+given, it is used to generate an animation function; when a function is
+specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`),
+it is used as the animation function.
+
 Type: `string | Manga` (default: `"✔"`)
 
 progress.display.done_style
@@ -198,7 +204,13 @@ Type: `number` (default: `math.huge`)
 progress.display.progress_icon
 : Icon shown when LSP progress tasks are in progress
 
-Type: `string | Manga` (default: `{ pattern = "dots", period = 1 }`)
+When a string literal is given (e.g., `"✔"`), it is used as a static icon;
+when a table (e.g., `{"dots"}` or `{ pattern = "clock", period = 2 }`) is
+given, it is used to generate an animation function; when a function is
+specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`),
+it is used as the animation function.
+
+Type: `string | Manga` (default: `{ "dots" }`)
 
 progress.display.progress_style
 : Highlight group for in-progress LSP tasks
