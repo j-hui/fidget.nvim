@@ -87,6 +87,7 @@ The following table shows the default options for this plugin:
       x_padding = 1,              -- Padding from right edge of window boundary
       y_padding = 0,              -- Padding from bottom edge of window boundary
       align_bottom = true,        -- Whether to bottom-align the notification window
+      relative = "editor",        -- What the notification window position is relative to
     },
   },
 
@@ -456,6 +457,13 @@ notification.window.align_bottom
 : Whether to bottom-align the notification window
 
 Type: `boolean` (default: `true`)
+
+notification.window.relative
+: What the notification window position is relative to
+
+See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+
+Type: `"editor"|"win"` (default: `"editor"`)
 
 logger.level
 : Minimum logging level

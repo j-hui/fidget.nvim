@@ -87,6 +87,13 @@ require("fidget.options").declare(M, "notification.window", {
   ---
   ---@type boolean
   align_bottom = true,
+
+  --- What the notification window position is relative to
+  ---
+  --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+  ---
+  ---@type "editor" | "win"
+  relative = "editor",
 })
 
 --- Local state maintained by this module.
@@ -185,11 +192,10 @@ end
 ---@return number       row
 ---@return number       col
 ---@return ("NE"|"SE")  anchor
-function M.get_window_position(align_bottom)
+function M.get_window_position()
   local col, row, row_max
 
-  local relative = "editor"
-  if relative == "editor" then
+  if M.options.relative == "editor" then
     col, row_max = M.get_editor_dimensions()
     if M.options.align_bottom then
       row = row_max
@@ -292,7 +298,7 @@ function M.get_window(row, col, anchor, width, height)
   if state.window_id == nil or not vim.api.nvim_win_is_valid(state.window_id) then
     -- Create window to display notifications buffer, but don't enter (2nd param)
     state.window_id = vim.api.nvim_open_win(M.get_buffer(), false, {
-      relative = "editor",
+      relative = M.options.relative,
       width = width,
       height = height,
       row = row,
@@ -307,7 +313,7 @@ function M.get_window(row, col, anchor, width, height)
   else
     -- Window is already created; reposition it in case anything has changed.
     vim.api.nvim_win_set_config(state.window_id, {
-      relative = "editor",
+      relative = M.options.relative,
       row = row,
       col = col,
       anchor = anchor,
