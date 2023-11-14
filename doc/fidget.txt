@@ -230,6 +230,12 @@ progress.display.done_icon             Icon shown when all LSP progress tasks ar
 
 
 
+When a string literal is given (e.g., `"✔"`), it is used as a static icon;
+when a table (e.g., `{"dots"}` or `{ pattern = "clock", period = 2 }`) is
+given, it is used to generate an animation function; when a function is
+specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`), it is
+used as the animation function.
+
 Type: `string | Manga` (default: `"✔"`)
 
 
@@ -265,7 +271,13 @@ progress.display.progress_icon         Icon shown when LSP progress tasks are in
 
 
 
-Type: `string | Manga` (default: `{ pattern = "dots", period = 1 }`)
+When a string literal is given (e.g., `"✔"`), it is used as a static icon;
+when a table (e.g., `{"dots"}` or `{ pattern = "clock", period = 2 }`) is
+given, it is used to generate an animation function; when a function is
+specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`), it is
+used as the animation function.
+
+Type: `string | Manga` (default: `{ "dots" }`)
 
 
                                     *fidget-progress.display.progress_style*
