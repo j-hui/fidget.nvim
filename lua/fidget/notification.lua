@@ -189,6 +189,7 @@ function M.reset()
   M.window.guard(function()
     M.window.close()
   end)
+  groups = {}
 end
 
 --- The poller for the notification subsystem.
