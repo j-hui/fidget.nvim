@@ -115,6 +115,14 @@ local state = {
   ---
   ---@type number?
   namespace_id = nil,
+
+  --- Additional, temporary offset.
+  ---
+  --- Useful for temporarily adding additional padding to account for space
+  --- taken up by other plugins' windows.
+  ---
+  ---@type number?
+  x_offset = 0,
 }
 
 --- Suppress errors that may occur while render windows.
@@ -216,7 +224,7 @@ function M.get_window_position()
     row = M.options.align_bottom and row_max or 1
   end
 
-  col = math.max(0, col - M.options.x_padding)
+  col = math.max(0, col - M.options.x_padding - state.x_offset)
 
   if M.options.align_bottom then
     row = math.max(0, row - M.options.y_padding)
@@ -431,6 +439,19 @@ function M.close()
     end
     state.buffer_id = nil
   end
+
+  state.x_offset = 0
+end
+
+--- Set x_offset, shifting the horizontal position of the notification window.
+---
+--- Unlike the x_padding option, this API is meant to be called
+--- programmatically, and intended for dynamically adjusting padding to
+--- compensate for other plugins' side panels (e.g., nvim-tree).
+---
+---@param offset number
+function M.set_x_offset(offset)
+  state.x_offset = offset
 end
 
 return M
