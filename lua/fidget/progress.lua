@@ -118,7 +118,7 @@ function M.format_progress(msg)
     update_only = true
   end
 
-  return message, msg.done and vim.log.levels.WARN or vim.log.levels.INFO, {
+  return message, msg.done and vim.log.levels.INFO or vim.log.levels.WARN, {
     key = msg.token,
     group = group,
     annote = annote,
