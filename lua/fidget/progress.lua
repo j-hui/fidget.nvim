@@ -4,6 +4,7 @@ M.display          = require("fidget.progress.display")
 M.lsp              = require("fidget.progress.lsp")
 local poll         = require("fidget.poll")
 local notification = require("fidget.notification")
+local logger       = require("fidget.logger")
 
 --- Used to ensure only a single autocmd callback exists.
 ---@type number?
@@ -142,15 +143,19 @@ M.poller = poll.Poller {
     end
 
     for _, msg in ipairs(messages) do
-      -- NOTE: hopefully this loop isn't too expensive.
-      -- But if it is, consider indexing by hash.
+      -- Determine if we should ignore this message
       local ignore = false
       for _, lsp_name in ipairs(M.options.ignore) do
+        -- NOTE: hopefully this loop isn't too expensive.
+        -- But if it is, consider indexing by hash.
         if msg.lsp_name == lsp_name then
           ignore = true
+          logger.info("Ignoring LSP progress message:", msg)
+          break
         end
       end
       if not ignore then
+        logger.info("Notifying LSP progress message:", msg)
         M.load_config(msg)
         notification.notify(M.format_progress(msg))
       end

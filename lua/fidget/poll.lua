@@ -1,4 +1,5 @@
 local M = {}
+local logger = require("fidget.logger")
 
 --- Arbitrary point in time that timestamps are computed relative to.
 ---@type number
@@ -48,6 +49,8 @@ function Poller:start_polling(poll_rate, attack)
   attack = attack or 15
   self.timer = vim.loop.new_timer()
 
+  logger.info("Poller (", self.name, ") starting")
+
   self.timer:start(attack, math.ceil(1000 / poll_rate), vim.schedule_wrap(function()
     if not self.timer or self.err ~= nil then
       return
@@ -63,9 +66,11 @@ function Poller:start_polling(poll_rate, attack)
       self.timer = nil
       if not ok then
         -- Save error object and propagate it
+        logger.info("Poller (", self.name, ") stopping due to error", cont)
         self.err = cont
         error(cont)
       end
+      logger.info("Poller (", self.name, ") stopping due to completion")
     end
   end))
 end
