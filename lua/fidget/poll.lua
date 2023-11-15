@@ -49,7 +49,12 @@ function Poller:start_polling(poll_rate, attack)
   attack = attack or 15
   self.timer = vim.loop.new_timer()
 
-  logger.info("Poller (", self.name, ") starting")
+  local start_time
+
+  if logger.at_level(vim.log.levels.INFO) then
+    start_time = M.get_time()
+    logger.info("Poller (", self.name, ") starting at", string.format("%.3fs", start_time))
+  end
 
   self.timer:start(attack, math.ceil(1000 / poll_rate), vim.schedule_wrap(function()
     if not self.timer or self.err ~= nil then
@@ -64,13 +69,21 @@ function Poller:start_polling(poll_rate, attack)
       self.timer:stop()
       self.timer:close()
       self.timer = nil
+
+      if logger.at_level(vim.log.levels.INFO) then
+        -- NOTE: the timing info logged here is not tied to self.current_time
+        local end_time = M.get_time()
+        local duration = end_time - (start_time or math.huge)
+        local message = string.format("stopping at %.3fs (duration: %.3fs)", end_time, duration)
+        local reason = ok and "due to completion" or string.format("due to error: %s", tostring(cont))
+        logger.info("Poller (", self.name, ")", message, reason)
+      end
+
       if not ok then
         -- Save error object and propagate it
-        logger.info("Poller (", self.name, ") stopping due to error", cont)
         self.err = cont
         error(cont)
       end
-      logger.info("Poller (", self.name, ") stopping due to completion")
     end
   end))
 end

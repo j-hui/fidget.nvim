@@ -109,4 +109,14 @@ function M.error(...)
   do_log(vim.log.levels.ERROR, ...)
 end
 
+--- Whether a logging level is enabled.
+---
+--- Useful for guarding against computing log output that is thrown away.
+---
+---@param level 0|1|2|3|4|5
+---@return boolean at_level
+function M.at_level(level)
+  return level >= M.options.level
+end
+
 return M
