@@ -65,7 +65,7 @@ The following table shows the default options for this plugin:
     filter = vim.log.levels.INFO, -- Minimum notifications level
     override_vim_notify = false,  -- Automatically override vim.notify() with Fidget
     configs =                     -- How to configure notification groups when instantiated
-      { default = M.default_config },
+      { default = require("fidget.notification").default_config },
 
     -- Options related to how notifications are rendered as text
     view = {
