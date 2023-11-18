@@ -224,12 +224,14 @@ M.poller = poll.Poller {
 
 --- Dynamically add, overwrite, or delete a notification configuration.
 ---
+--- Inherits missing keys from the default config.
+---
 ---@param key     NotificationKey
 ---@param config  NotificationConfig?
 ---@param overwrite boolean
 function M.set_config(key, config, overwrite)
   if overwrite or not M.options.configs[key] then
-    M.options.configs[key] = config
+    M.options.configs[key] = vim.tbl_extend("keep", config, M.options.configs.default)
   end
 end
 
