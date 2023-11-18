@@ -69,6 +69,7 @@ require("fidget.options").declare(M, "progress", {
   ignore = {},
 
   display = M.display,
+  lsp = M.lsp,
 }, function()
   if autocmd_id ~= nil then
     vim.api.nvim_del_autocmd(autocmd_id)

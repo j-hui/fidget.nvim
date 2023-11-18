@@ -1,5 +1,6 @@
 --- Fidget shim layer to Neovim's lsp API.
-local M = {}
+local M              = {}
+local logger         = require("fidget.logger")
 
 ---@class ProgressMessage
 ---@field token       any       Unique identifier used to accumulate updates
@@ -10,6 +11,39 @@ local M = {}
 ---@field cancellable boolean   Whether this task can be cancelled (though doing so is unsupported with Fidget)
 ---@field lsp_name    string    Name of the LSP client that sent this message
 ---@field lsp_id      number    ID of the LSP client that sent this message
+
+--- Autocmd ID for the LSPAttach event.
+---@type number?
+local lsp_attach_autocmd = nil
+
+require("fidget.options").declare(M, "progress.lsp", {
+  --- Configure the nvim's LSP progress ring buffer size
+  ---
+  --- Useful for avoiding progress message overflow when the LSP server blasts
+  --- more messages than the ring buffer can handle (see #167).
+  ---
+  --- Leaves the progress ringbuf size at its default if this setting is 0 or
+  --- less. Doesn't do anything for Neovim pre-v0.10.0.
+  ---
+  ---@type number
+  progress_ringbuf_size = 0,
+}, function()
+  if lsp_attach_autocmd ~= nil then
+    vim.api.nvim_del_autocmd(lsp_attach_autocmd)
+    lsp_attach_autocmd = nil
+  end
+  if vim.ringbuf and M.options.progress_ringbuf_size > 0 then
+    logger.warn("Setting LSP progress ringbuf size to", M.options.progress_ringbuf_size)
+    lsp_attach_autocmd = vim.api.nvim_create_autocmd("LspAttach", {
+      callback = function(args)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        logger.warn("Doing it now", M.options.progress_ringbuf_size)
+        client.progress = vim.ringbuf(M.options.progress_ringbuf_size)
+        client.progress.pending = {}
+      end
+    })
+  end
+end)
 
 --- Consumes LSP progress messages from each client.progress ring buffer.
 ---

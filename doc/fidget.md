@@ -57,6 +57,11 @@ The following table shows the default options for this plugin:
         rust_analyzer = { name = "rust-analyzer" },
       },
     },
+
+    -- Options related to Neovim's built-in LSP client
+    lsp = {
+      progress_ringbuf_size = 0,  -- Configure the nvim's LSP progress ring buffer size
+    },
   },
 
   -- Options related to notification subsystem
@@ -307,6 +312,17 @@ overrides = {
 ```
 
 Type: `{ [NotificationKey]: NotificationConfig }` (default: `{ rust_analyzer = { name = "rust-analyzer" } }`)
+
+progress.lsp.progress_ringbuf_size
+: Configure the nvim's LSP progress ring buffer size
+
+Useful for avoiding progress message overflow when the LSP server blasts more
+messages than the ring buffer can handle (see #167).
+
+Leaves the progress ringbuf size at its default if this setting is 0 or less.
+Doesn't do anything for Neovim pre-v0.10.0.
+
+Type: `number` (default: `0`)
 
 notification.poll_rate
 : How frequently to poll and render notifications
