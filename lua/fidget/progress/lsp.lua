@@ -33,11 +33,10 @@ require("fidget.options").declare(M, "progress.lsp", {
     lsp_attach_autocmd = nil
   end
   if vim.ringbuf and M.options.progress_ringbuf_size > 0 then
-    logger.warn("Setting LSP progress ringbuf size to", M.options.progress_ringbuf_size)
+    logger.info("Setting LSP progress ringbuf size to", M.options.progress_ringbuf_size)
     lsp_attach_autocmd = vim.api.nvim_create_autocmd("LspAttach", {
       callback = function(args)
         local client = vim.lsp.get_client_by_id(args.data.client_id)
-        logger.warn("Doing it now", M.options.progress_ringbuf_size)
         client.progress = vim.ringbuf(M.options.progress_ringbuf_size)
         client.progress.pending = {}
       end
