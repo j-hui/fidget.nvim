@@ -39,14 +39,27 @@ Poller.__index = Poller
 --- Only does so after waiting for attack milliseconds; if no attack is
 --- specified, it defaults to 15ms.
 ---
----@param poll_rate number
----@param attack number?
+---@param poll_rate number    must be greater than 0
+---@param attack    number?   must be greater than or equal to 0
 function Poller:start_polling(poll_rate, attack)
   if self.timer then
     return
   end
 
   attack = attack or 15
+
+  if poll_rate <= 0 then
+    local msg = string.format("Poller ( %s ) could not start due to non-positive poll_rate: %s", self.name, poll_rate)
+    logger.error(msg)
+    error(msg)
+  end
+
+  if attack < 0 then
+    local msg = string.format("Poller ( %s ) could not start due to negative poll_rate: %s", self.name, poll_rate)
+    logger.error(msg)
+    error(msg)
+  end
+
   self.timer = vim.loop.new_timer()
 
   local start_time
@@ -86,6 +99,25 @@ function Poller:start_polling(poll_rate, attack)
       end
     end
   end))
+end
+
+--- Call the poll() function once, if the poller isn't already running.
+function Poller:poll_once()
+  if self.timer then
+    return
+  end
+
+  vim.schedule(function()
+    self.current_time = M.get_time()
+    if logger.at_level(vim.log.levels.INFO) then
+      logger.info("Poller (", self.name, ") polling once at", string.format("%.3fs", self.current_time))
+    end
+    local ok, err = pcall(self.poll, self)
+    if not ok then
+      self.err = err
+      error(err)
+    end
+  end)
 end
 
 --- Get the timestamp of the most recent poll frame.
