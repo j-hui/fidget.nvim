@@ -675,6 +675,18 @@ Parameters:
 
 -   `{suppress}`: (`boolean?`) Whether to suppress or toggle suppression
 
+fidget.notification.clear({group_key})
+: Clear notifications.
+
+If the given `group_key` is `nil`, then all groups are cleared.
+
+Parameters:
+
+-   `{group_key}`: (`NotificationKey?`) Which group to clear
+
+fidget.notification.reset()
+: Reset notification subsystem state.
+
 fidget.spinner.animate({pattern}, {period})
 : Generate an `:h fidget-Anime` function.
 

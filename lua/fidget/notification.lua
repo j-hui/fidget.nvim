@@ -183,13 +183,31 @@ function M.close()
   end)
 end
 
+--- Clear notifications.
+---
+--- If the given `group_key` is `nil`, then all groups are cleared.
+---
+---@param group_key NotificationKey?  Which group to clear
+function M.clear(group_key)
+  if group_key == nil then
+    groups = {}
+  else
+    for idx, group in ipairs(groups) do
+      if group.key == group_key then
+        table.remove(groups, idx)
+        break
+      end
+    end
+  end
+  if #groups == 0 then
+    M.window.guard(M.window.close)
+  end
+end
+
 --- Reset notification subsystem state.
 function M.reset()
+  M.clear()
   M.poller:reset_error() -- Clear error if previously encountered one
-  M.window.guard(function()
-    M.window.close()
-  end)
-  groups = {}
 end
 
 --- The poller for the notification subsystem.
