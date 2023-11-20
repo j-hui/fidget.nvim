@@ -12,15 +12,26 @@ local autocmd_id   = nil
 
 --- Options related to LSP progress notification subsystem
 require("fidget.options").declare(M, "progress", {
-  --- How frequently to poll for progress messages
+  --- How and when to poll for progress messages
   ---
-  --- Set to 0 to disable polling; you can still manually poll progress messages
-  --- by calling `fidget.progress.poll()`.
+  --- Set to `0` to immediately poll on each `LspProgress` event.
   ---
-  --- Measured in Hertz (frames per second).
+  --- Set to a positive number to poll for progress messages at the specified
+  --- frequency (Hz, i.e., polls per second). Combining a slow `poll_rate`
+  --- (e.g., `0.5`) with the `ignore_done_already` setting can be used to filter
+  --- out short-lived progress tasks, de-cluttering notifications.
   ---
-  ---@type number
-  poll_rate = 5,
+  --- Note that if too many LSP progress messages are sent between polls,
+  --- Neovim's progress ring buffer will overflow and messages will be
+  --- overwritten (dropped), possibly causing stale progress notifications.
+  --- Workarounds include using the `progress.lsp.progress_ringbuf_size` option,
+  --- or manually calling `fidget.notification.reset()` (see #167).
+  ---
+  --- Set to `false` to disable polling altogether; you can still manually poll
+  --- progress messages by calling `fidget.progress.poll()`.
+  ---
+  ---@type number|false
+  poll_rate = 0,
 
   --- Suppress new messages while in insert mode
   ---
@@ -75,9 +86,13 @@ require("fidget.options").declare(M, "progress", {
     vim.api.nvim_del_autocmd(autocmd_id)
     autocmd_id = nil
   end
-  if M.options.poll_rate > 0 then
+  if M.options.poll_rate ~= false then
     autocmd_id = M.lsp.on_progress_message(function()
-      M.poller:start_polling(M.options.poll_rate)
+      if M.options.poll_rate > 0 then
+        M.poller:start_polling(M.options.poll_rate)
+      else
+        M.poller:poll_once()
+      end
     end)
   end
 end)

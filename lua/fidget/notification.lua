@@ -81,7 +81,7 @@ M.default_config = {
 
 --- Options related to notification subsystem
 require("fidget.options").declare(M, "notification", {
-  --- How frequently to poll and render notifications
+  --- How frequently to update and render notifications
   ---
   --- Measured in Hertz (frames per second).
   ---
