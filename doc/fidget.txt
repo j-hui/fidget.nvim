@@ -943,6 +943,26 @@ Parameters:
 - `{suppress}`: (`boolean?`) Whether to suppress or toggle suppression
 
 
+                                        *fidget-fidget.notification.clear()*
+
+
+fidget.notification.clear({group_key}) Clear notifications.
+
+
+
+If the given `group_key` is `nil`, then all groups are cleared.
+
+Parameters:
+
+- `{group_key}`: (`NotificationKey?`) Which group to clear
+
+
+                                        *fidget-fidget.notification.reset()*
+
+
+fidget.notification.reset()            Reset notification subsystem state.
+
+
                                            *fidget-fidget.spinner.animate()*
 
 
