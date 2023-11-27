@@ -91,9 +91,8 @@ The following table shows the default options for this plugin:
       max_height = 0,             -- Maximum height of the notification window
       x_padding = 1,              -- Padding from right edge of window boundary
       y_padding = 0,              -- Padding from bottom edge of window boundary
-      align_bottom = true,        -- Whether to bottom-align the notification window
+      align = "bottom",           -- How to align the notification window
       relative = "editor",        -- What the notification window position is relative to
-      dynamic_positioning = false,-- Align the window depending on the cursor position (overrides align_bottom)
     },
   },
 
@@ -493,10 +492,10 @@ notification.window.y_padding
 
 Type: `integer` (default: `0`)
 
-notification.window.align_bottom
-: Whether to bottom-align the notification window
+notification.window.align
+: How to align the notification window
 
-Type: `boolean` (default: `true`)
+Type: `"top"|"bottom"|"avoid_cursor"` (default: `"bottom"`)
 
 notification.window.relative
 : What the notification window position is relative to

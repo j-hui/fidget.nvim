@@ -83,10 +83,10 @@ require("fidget.options").declare(M, "notification.window", {
   ---@type integer
   y_padding = 0,
 
-  --- Whether to bottom-align the notification window
+  --- How to align the notification window
   ---
-  ---@type boolean
-  align_bottom = true,
+  ---@type "top" | "bottom" | "avoid_cursor"
+  align = "bottom",
 
   --- What the notification window position is relative to
   ---
@@ -94,12 +94,6 @@ require("fidget.options").declare(M, "notification.window", {
   ---
   ---@type "editor" | "win"
   relative = "editor",
-
-  --- Aligns the window at the top or bottom depending on the cursor position
-  ---
-  --- Overrites `align_bottom` if true
-  ---@type boolean
-  dynamic_positioning = false,
 })
 
 --- Local state maintained by this module.
@@ -212,10 +206,12 @@ function M.get_window_position()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
 
   local function should_align_bottom(cursor_pos, rows)
-    if M.options.dynamic_positioning then
-      return cursor_pos <= (rows / 2)
+    if M.options.align == "top" then
+      return false
+    elseif M.options.align == "bottom" then
+      return true
     else
-      return M.options.align_bottom
+      return cursor_pos <= (rows / 2)
     end
   end
 
@@ -242,7 +238,7 @@ function M.get_window_position()
       -- When winbar is set, effective win height is reduced by 1 (see :help winbar)
       row_max = row_max - 1
     end
-    local align_bottom = should_align_bottom(cursor_pos, row_max)
+    align_bottom = should_align_bottom(cursor_pos, row_max)
 
     row = align_bottom and row_max or 1
   end
