@@ -207,8 +207,7 @@ end
 ---@return number       col
 ---@return ("NE"|"SE")  anchor
 function M.get_window_position()
-  local align_bottom
-  local col, row, row_max
+  local align_bottom, col, row, row_max
   local first_line = vim.fn.line("w0")
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
 
