@@ -30,6 +30,11 @@ The following table shows the default options for this plugin:
     suppress_on_insert = false,   -- Suppress new messages while in insert mode
     ignore_done_already = false,  -- Ignore new tasks that are already complete
     ignore_empty_message = false, -- Ignore new tasks that don't contain a message
+    clear_on_detach =             -- Clear notification group when LSP server detaches
+      function(client_id)
+        local client = vim.lsp.get_client_by_id(client_id)
+        return client and client.name or nil
+      end,
     notification_group =          -- How to get a progress message's notification group key
       function(msg) return msg.lsp_client.name end,
     ignore = {},                  -- List of LSP servers to ignore
@@ -173,6 +178,30 @@ end
 ```
 
 Type: `fun(msg: ProgressMessage): NotificationKey` (default: `msg.lsp_client.name`)
+
+progress.clear_on_detach
+: Clear notification group when LSP server detaches
+
+This option should be set to a function that, given a client ID number,
+returns the notification group to clear. No group will be cleared if the
+the function returns `nil`.
+
+The default setting looks up and returns the LSP client name, which is also used
+by `progress.notification_group`.
+
+Set this option to `nil` to disable this feature entirely (no `LspDetach`
+callback will be registered).
+
+Default value:
+
+```lua
+clear_on_detach = function(client_id)
+  local client = vim.lsp.get_client_by_id(client_id)
+  return client and client.name or nil
+end
+```
+
+Type: `(fun(client_id: number): NotificationKey)?` (default: `client.name`)
 
 progress.ignore
 : List of LSP servers to ignore

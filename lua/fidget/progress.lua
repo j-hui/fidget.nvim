@@ -6,9 +6,8 @@ local poll         = require("fidget.poll")
 local notification = require("fidget.notification")
 local logger       = require("fidget.logger")
 
---- Used to ensure only a single autocmd callback exists.
----@type number?
-local autocmd_id   = nil
+--- Table of progress-related autocmds, used to ensure setup() re-entrancy.
+local autocmds     = {}
 
 --- Options related to LSP progress notification subsystem
 require("fidget.options").declare(M, "progress", {
@@ -81,6 +80,25 @@ require("fidget.options").declare(M, "progress", {
     return msg.lsp_client.name
   end,
 
+  --- Clear notification group when LSP server detaches
+  ---
+  --- This option should be set to a function that, given a client ID number,
+  --- returns the notification group to clear. No group will be cleared if the
+  --- the function returns `nil`.
+  ---
+  --- The default setting looks up and returns the LSP client name, which is
+  --- also used by `progress.notification_group`.
+  ---
+  --- Set this option to `nil` to disable this feature entirely (no `LspDetach`
+  --- callback will be registered).
+  ---
+  ---
+  ---@type (fun(client_id: number): NotificationKey)?
+  clear_on_detach = function(client_id)
+    local client = vim.lsp.get_client_by_id(client_id)
+    return client and client.name or nil
+  end,
+
   --- List of LSP servers to ignore
   ---
   --- Example:
@@ -95,18 +113,29 @@ require("fidget.options").declare(M, "progress", {
   display = M.display,
   lsp = M.lsp,
 }, function()
-  if autocmd_id ~= nil then
-    vim.api.nvim_del_autocmd(autocmd_id)
-    autocmd_id = nil
+  -- Ensure setup() reentrancy
+  for _, autocmd in pairs(autocmds) do
+    vim.api.nvim_del_autocmd(autocmd)
   end
+  autocmds = {}
+
   if M.options.poll_rate ~= false then
-    autocmd_id = M.lsp.on_progress_message(function()
+    autocmds["LspProgress"] = M.lsp.on_progress_message(function()
       if M.options.poll_rate > 0 then
         M.poller:start_polling(M.options.poll_rate)
       else
         M.poller:poll_once()
       end
     end)
+  end
+
+  if M.options.clear_on_detach then
+    autocmds["LspDetach"] = vim.api.nvim_create_autocmd("LspDetach", {
+      desc = "Fidget LSP detach handler",
+      callback = function(args)
+        M.on_detach(args.data.client_id)
+      end,
+    })
   end
 end)
 
@@ -208,6 +237,19 @@ function M.suppress(suppress)
   else
     progress_suppressed = suppress
   end
+end
+
+--- Called upon `LspDetach` event.
+---
+--- Clears notification group given by `options.clear_on_detach`.
+---
+---@param client_id number
+function M.on_detach(client_id)
+  local group_key = M.options.clear_on_detach(client_id)
+  if group_key == nil then
+    return
+  end
+  notification.clear(group_key)
 end
 
 return M
