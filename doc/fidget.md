@@ -93,7 +93,7 @@ The following table shows the default options for this plugin:
       y_padding = 0,              -- Padding from bottom edge of window boundary
       align_bottom = true,        -- Whether to bottom-align the notification window
       relative = "editor",        -- What the notification window position is relative to
-      dynamic_positioning = false,-- Align the window depending on the cursor position
+      dynamic_positioning = false,-- Align the window depending on the cursor position (overrides align_bottom)
     },
   },
 
