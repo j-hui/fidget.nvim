@@ -72,9 +72,9 @@ who doesn't love a little bit of terminal eye candy, as a treat?
 Fidget requires Neovim v0.8.0+.
 
 If you would like to see progress notifications, you must have configured Neovim
-with an LSP server that uses the [`$/progress`][lsp-progress] handler. For an
-up-to-date list of LSP servers this plugin is known to work with, see
-[this pinned issue](https://github.com/j-hui/fidget.nvim/issues/17).
+with an LSP server that uses the [`$/progress`][lsp-progress] handler.
+For an up-to-date list of LSP servers this plugin is known to work with, see
+[this Wiki page](https://github.com/j-hui/fidget.nvim/wiki/Known-compatible-LSP-servers).
 
 
 ### Installation
@@ -94,7 +94,7 @@ See the [documentation](doc/fidget.md) for `setup()` options.
 }
 ```
 
-#### [vim-plug](https://github.com/junegunn/vim-plug):
+#### [vim-plug](https://github.com/junegunn/vim-plug)
 
 ```vim
 Plug 'j-hui/fidget.nvim'
