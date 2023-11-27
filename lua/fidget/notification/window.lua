@@ -94,6 +94,12 @@ require("fidget.options").declare(M, "notification.window", {
   ---
   ---@type "editor" | "win"
   relative = "editor",
+
+  --- Aligns the window at the top or bottom depending on the cursor position
+  ---
+  --- Overrites `align_bottom` if true
+  ---@type boolean
+  dynamic_positioning = false,
 })
 
 --- Local state maintained by this module.
@@ -202,10 +208,23 @@ end
 ---@return ("NE"|"SE")  anchor
 function M.get_window_position()
   local col, row, row_max
+  local first_line = vim.fn.line("w0")
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+
+  local function should_align_bottom(cursor_pos, rows)
+    if M.options.dynamic_positioning then
+      return cursor_pos <= (rows / 2)
+    else
+      return M.options.align_bottom
+    end
+  end
 
   if M.options.relative == "editor" then
     col, row_max = M.get_editor_dimensions()
-    if M.options.align_bottom then
+    local window_pos = vim.api.nvim_win_get_position(0)
+    local cursor_pos = window_pos[1] + (current_line - first_line)
+
+    if should_align_bottom(cursor_pos, row_max) then
       row = row_max
     else
       -- When the layout is anchored at the top, need to check &tabline height
@@ -214,6 +233,8 @@ function M.get_window_position()
       row = tabline_shown and 1 or 0
     end
   else -- fidget relative to "window" (currently unreachable)
+    local cursor_pos = current_line - first_line
+
     col = vim.api.nvim_win_get_width(0)
     row_max = vim.api.nvim_win_get_height(0)
     if vim.fn.exists("+winbar") > 0 and vim.opt.winbar:get() ~= "" then
@@ -221,7 +242,8 @@ function M.get_window_position()
       row_max = row_max - 1
     end
 
-    row = M.options.align_bottom and row_max or 1
+    local align_bottom = should_align_bottom(cursor_pos, row_max)
+    row = align_bottom and row_max or 1
   end
 
   col = math.max(0, col - M.options.x_padding - state.x_offset)
