@@ -129,7 +129,7 @@ function M.format_progress(msg)
   local annote = M.options.display.format_annote(msg)
 
   local update_only = false
-  if M.options.suppress_done_already and msg.done then
+  if M.options.ignore_done_already and msg.done then
     update_only = true
   elseif M.options.suppress_on_insert and string.find(vim.fn.mode(), "i") then
     update_only = true
