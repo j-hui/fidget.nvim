@@ -50,6 +50,19 @@ require("fidget.options").declare(M, "progress", {
   ---@type boolean
   ignore_done_already = false,
 
+  --- Ignore new tasks that don't contain a message
+  ---
+  --- Some servers may send empty messages for tasks that don't actually exist.
+  --- And if those tasks are never completed, they will become stale in Fidget.
+  --- This option tells Fidget to ignore such messages unless the LSP server has
+  --- anything meaningful to say. (See #171)
+  ---
+  --- Note that progress messages for new empty tasks will be dropped, but
+  --- existing tasks will be processed to completion.
+  ---
+  ---@type boolean
+  ignore_empty_message = true,
+
   --- How to get a progress message's notification group key
   ---
   --- Set this to return a constant to group all LSP progress messages together,
@@ -130,6 +143,8 @@ function M.format_progress(msg)
 
   local update_only = false
   if M.options.ignore_done_already and msg.done then
+    update_only = true
+  elseif M.options.ignore_empty_message and msg.message == nil then
     update_only = true
   elseif M.options.suppress_on_insert and string.find(vim.fn.mode(), "i") then
     update_only = true
