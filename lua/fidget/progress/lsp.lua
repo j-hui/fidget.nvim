@@ -1,6 +1,6 @@
 --- Fidget shim layer to Neovim's lsp API.
-local M              = {}
-local logger         = require("fidget.logger")
+local M                  = {}
+local logger             = require("fidget.logger")
 
 ---@class ProgressMessage
 ---@field token       any       Unique identifier used to accumulate updates
@@ -49,10 +49,11 @@ end)
 --- Based on vim.lsp.status(), except this implementation does not format the
 --- reports into strings.
 ---
----@return ProgressMessage[]? # LSP progress messages received since last called.
+---@return ProgressMessage[] progress_messages
 function M.poll_for_messages()
   local messages = {}
-  for _, client in ipairs(vim.lsp.get_active_clients()) do
+  for _, client in ipairs(vim.lsp.get_clients()) do
+    logger.info("Polling messages from", client.id, "(", client.name, ")")
     for progress in client.progress do
       local value = progress.value
       if type(value) == 'table' and value.kind then
@@ -67,12 +68,19 @@ function M.poll_for_messages()
           lsp_id = client.id,
         }
         table.insert(messages, message)
+      elseif progress.value ~= nil then
+        -- Doesn't look like work done progress and can be in any format
+        -- Ignore it as there is no sensible way to display it, but we log it
+        logger.warn("Dropped message from client", client.id, "(", client.name, ") of type", type(value))
+        logger.info("Dropped message contents:", vim.inspect(value))
+      else -- progress.value == nil; nothing to display, nothing interesting to log
+        -- Log at INFO level, not at WARN, because apparently some servers do
+        -- send these kinds of messages spuriously.
+        logger.info("Dropped nil message from client", client.id, "(", client.name, ")")
       end
-      -- else: Doesn't look like work done progress and can be in any format
-      -- Just ignore it as there is no sensible way to display it
     end
   end
-  return #messages > 0 and messages or nil
+  return messages
 end
 
 --- Register handler for LSP progress updates.
@@ -117,12 +125,13 @@ if not vim.lsp.status then
   --- [get_progress_messages]: https://github.com/neovim/neovim/blob/v0.9.4/runtime/lua/vim/lsp/util.lua#L354-L385
   --- [lsp-status-pr]: https://github.com/neovim/neovim/pull/23958
   ---
-  ---@return ProgressMessage[]? # LSP progress messages received since last called.
+  ---@return ProgressMessage[] progress_messages
   function M.poll_for_messages()
     local messages = {}
     local to_remove = {}
 
     for _, client in ipairs(vim.lsp.get_active_clients()) do
+      logger.info("Polling messages from", client.id, "(", client.name, ")")
       for token, ctx in pairs(client.messages.progress) do
         local seen = seen_messages[ctx]
         if not seen                              -- brand new table
@@ -154,7 +163,7 @@ if not vim.lsp.status then
       item.client.messages.progress[item.token] = nil
     end
 
-    return #messages > 0 and messages or nil
+    return messages
   end
 
   --- Register autocmd callback for LspProgressUpdate event (v0.8.0--v0.9.4).

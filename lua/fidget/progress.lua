@@ -154,7 +154,8 @@ M.poller = poll.Poller {
     end
 
     local messages = M.lsp.poll_for_messages()
-    if messages == nil then
+    if #messages == 0 then
+      logger.info("No LSP messages (that can be displayed)")
       return false
     end
 
