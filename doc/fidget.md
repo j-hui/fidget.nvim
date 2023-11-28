@@ -29,7 +29,7 @@ The following table shows the default options for this plugin:
     poll_rate = 0,                -- How and when to poll for progress messages
     suppress_on_insert = false,   -- Suppress new messages while in insert mode
     ignore_done_already = false,  -- Ignore new tasks that are already complete
-    ignore_empty_message = true,  -- Ignore new tasks that don't contain a message
+    ignore_empty_message = false, -- Ignore new tasks that don't contain a message
     notification_group =          -- How to get a progress message's notification group key
       function(msg) return msg.lsp_name end,
     ignore = {},                  -- List of LSP servers to ignore
@@ -156,7 +156,7 @@ anything meaningful to say. (See #171)
 Note that progress messages for new empty tasks will be dropped, but
 existing tasks will be processed to completion.
 
-Type: `boolean` (default: `true`)
+Type: `boolean` (default: `false`)
 
 progress.notification_group
 : How to get a progress message's notification group key

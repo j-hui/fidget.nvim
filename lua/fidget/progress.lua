@@ -61,7 +61,7 @@ require("fidget.options").declare(M, "progress", {
   --- existing tasks will be processed to completion.
   ---
   ---@type boolean
-  ignore_empty_message = true,
+  ignore_empty_message = false,
 
   --- How to get a progress message's notification group key
   ---
