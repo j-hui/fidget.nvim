@@ -357,9 +357,10 @@ end
 ---
 ---@param width   number
 ---@param height  number
+---@return number window_id
 function M.show(width, height)
   local row, col, anchor = M.get_window_position()
-  M.get_window(row, col, anchor, width, height)
+  return M.get_window(row, col, anchor, width, height)
 end
 
 --- Replace the set of lines in the Fidget window, right-justify them, and apply
