@@ -83,10 +83,10 @@ require("fidget.options").declare(M, "notification.window", {
   ---@type integer
   y_padding = 0,
 
-  --- Whether to bottom-align the notification window
+  --- How to align the notification window
   ---
-  ---@type boolean
-  align_bottom = true,
+  ---@type "top" | "bottom" | "avoid_cursor"
+  align = "bottom",
 
   --- What the notification window position is relative to
   ---
@@ -201,11 +201,27 @@ end
 ---@return number       col
 ---@return ("NE"|"SE")  anchor
 function M.get_window_position()
-  local col, row, row_max
+  local align_bottom, col, row, row_max
+  local first_line = vim.fn.line("w0")
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+
+  local function should_align_bottom(cursor_pos, rows)
+    if M.options.align == "top" then
+      return false
+    elseif M.options.align == "bottom" then
+      return true
+    else
+      return cursor_pos <= (rows / 2)
+    end
+  end
 
   if M.options.relative == "editor" then
     col, row_max = M.get_editor_dimensions()
-    if M.options.align_bottom then
+    local window_pos = vim.api.nvim_win_get_position(0)
+    local cursor_pos = window_pos[1] + (current_line - first_line)
+    align_bottom = should_align_bottom(cursor_pos, row_max)
+
+    if align_bottom then
       row = row_max
     else
       -- When the layout is anchored at the top, need to check &tabline height
@@ -214,25 +230,28 @@ function M.get_window_position()
       row = tabline_shown and 1 or 0
     end
   else -- fidget relative to "window" (currently unreachable)
+    local cursor_pos = current_line - first_line
+
     col = vim.api.nvim_win_get_width(0)
     row_max = vim.api.nvim_win_get_height(0)
     if vim.fn.exists("+winbar") > 0 and vim.opt.winbar:get() ~= "" then
       -- When winbar is set, effective win height is reduced by 1 (see :help winbar)
       row_max = row_max - 1
     end
+    align_bottom = should_align_bottom(cursor_pos, row_max)
 
-    row = M.options.align_bottom and row_max or 1
+    row = align_bottom and row_max or 1
   end
 
   col = math.max(0, col - M.options.x_padding - state.x_offset)
 
-  if M.options.align_bottom then
+  if align_bottom then
     row = math.max(0, row - M.options.y_padding)
   else
     row = math.min(row_max, row + M.options.y_padding)
   end
 
-  return row, col, (M.options.align_bottom and "S" or "N") .. "E"
+  return row, col, (align_bottom and "S" or "N") .. "E"
 end
 
 --- Set local options on a window.
