@@ -42,8 +42,13 @@ The following table shows the default options for this plugin:
         suppress_on_insert = false,   -- Suppress new messages while in insert mode
         ignore_done_already = false,  -- Ignore new tasks that are already complete
         ignore_empty_message = false, -- Ignore new tasks that don't contain a message
+        clear_on_detach =             -- Clear notification group when LSP server detaches
+          function(client_id)
+            local client = vim.lsp.get_client_by_id(client_id)
+            return client and client.name or nil
+          end,
         notification_group =          -- How to get a progress message's notification group key
-          function(msg) return msg.lsp_name end,
+          function(msg) return msg.lsp_client.name end,
         ignore = {},                  -- List of LSP servers to ignore
     
         -- Options related to how LSP progress messages are displayed as notifications
@@ -209,7 +214,37 @@ e.g.,
     end
 <
 
-Type: `fun(msg: ProgressMessage): NotificationKey` (default: `msg.lsp_name`)
+Type: `fun(msg: ProgressMessage): NotificationKey` (default:
+`msg.lsp_client.name`)
+
+
+                                           *fidget-progress.clear_on_detach*
+
+
+progress.clear_on_detach               Clear notification group when LSP server detaches
+
+
+
+This option should be set to a function that, given a client ID number, returns
+the notification group to clear. No group will be cleared if the the function
+returns `nil`.
+
+The default setting looks up and returns the LSP client name, which is also
+used by `progress.notification_group`.
+
+Set this option to `nil` to disable this feature entirely (no `LspDetach`
+callback will be registered).
+
+Default value:
+
+>lua
+    clear_on_detach = function(client_id)
+      local client = vim.lsp.get_client_by_id(client_id)
+      return client and client.name or nil
+    end
+<
+
+Type: `(fun(client_id: number): NotificationKey)?` (default: `client.name`)
 
 
                                                     *fidget-progress.ignore*
@@ -899,6 +934,24 @@ Fields:
 
 - `pattern`: (`string[] | string`) The name of pattern (see |fidget-Spinners|)
 - `period`: (`number`) How long one cycle of the animation should take, in seconds
+
+
+                                                    *fidget-ProgressMessage*
+
+
+ProgressMessage                        Used to configure the behavior of notification groups.
+
+
+
+Fields:
+
+- `token`: (`any`) Unique identifier used to accumulate updates
+- `title`: (`string?`) Name of the task in progress
+- `message`: (`string?`) Message describing the progress
+- `percentage: (`number?`) How much of the progress is complete (out of 100).
+- `done`: (`boolean`) Whether this progress completed. Ignore percentage if done is true.
+- `cancellable`: (`boolean`) Whether this task can be canceled (though doing so is currently unsupported using Fidget)
+- `lsp_client`: (`table`) LSP client table this message came from
 
 
 FUNCTIONS                                    *fidget-fidget-lua-api-functions*
