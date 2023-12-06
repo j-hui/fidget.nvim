@@ -20,6 +20,8 @@ require("fidget.options").declare(M, "notification.window", {
   --- Note that we use this blanket highlight for all messages to avoid adding
   --- separate highlights to each line (whose lengths may vary).
   ---
+  --- Set to empty string to keep your theme defaults.
+  ---
   --- With `winblend` set to anything less than `100`, this will also affect the
   --- background color in the notification box area (see `winblend` docs).
   ---
@@ -49,6 +51,13 @@ require("fidget.options").declare(M, "notification.window", {
   ---
   ---@type "none" | "single" | "double" | "rounded" | "solid" | "shadow" | string[]
   border = "none",
+
+  --- Highlight group for notification window border
+  ---
+  --- Set to empty string to keep your theme's default `FloatBorder` highlight.
+  ---
+  ---@type string
+  border_hl = "",
 
   --- Stacking priority of the notification window
   ---
@@ -353,9 +362,20 @@ function M.get_window(row, col, anchor, width, height)
     })
   end
 
+  local winhighlight = ""
+
+  if M.options.normal_hl ~= "" then
+    -- Instead of NormalFloat
+    winhighlight = winhighlight .. "NormalNC:" .. M.options.normal_hl
+  end
+
+  if M.options.border_hl ~= "" then
+    winhighlight = winhighlight .. ",FloatBorder:" .. M.options.border_hl
+  end
+
   M.win_set_local_options(state.window_id, {
     winblend = M.options.winblend,                     -- Transparent background
-    winhighlight = "NormalNC:" .. M.options.normal_hl, -- Instead of NormalFloat
+    winhighlight = winhighlight ~= "" and winhighlight or nil,
   })
   return state.window_id
 end

@@ -473,6 +473,8 @@ i.e., message text.
 Note that we use this blanket highlight for all messages to avoid adding
 separate highlights to each line (whose lengths may vary).
 
+Set to empty string to keep your theme defaults.
+
 With `winblend` set to anything less than `100`, this will also affect the
 background color in the notification box area (see `winblend` docs).
 
@@ -501,6 +503,13 @@ notification.window.border
 See also: options for [nvim_open_win()](<https://neovim.io/doc/user/api.html#nvim_open_win()>).
 
 Type: `"none" | "single" | "double" | "rounded" | "solid" | "shadow" | string[]` (default: `"none"`)
+
+notification.window.border_hl
+: Highlight group for notification window border
+
+Set to empty string to keep your theme's default `FloatBorder` highlight.
+
+Type: `string` (default: `""`)
 
 notification.window.zindex
 : Stacking priority of the notification window
