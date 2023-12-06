@@ -8,9 +8,10 @@ local logger             = require("fidget.logger")
 ---@field message     string?   Message describing the progress
 ---@field percentage  number?   How much of the progress is complete (out of 100).
 ---@field done        boolean   Whether this progress completed. Ignore percentage if done is true.
----@field cancellable boolean   Whether this task can be cancelled (though doing so is unsupported with Fidget)
----@field lsp_name    string    Name of the LSP client that sent this message
----@field lsp_id      number    ID of the LSP client that sent this message
+---@field cancellable boolean   Whether this task can be canceled (though doing so is unsupported with Fidget)
+---@field lsp_name    string    Name of the LSP client that sent this message (deprecated)
+---@field lsp_id      number    ID of the LSP client that sent this message (deprecated)
+---@field lsp_client  table     LSP client table this message came from
 
 --- Autocmd ID for the LSPAttach event.
 ---@type number?
@@ -64,8 +65,9 @@ function M.poll_for_messages()
           percentage = value.done and nil or value.percentage,
           done = value.kind == "end",
           cancellable = value.cancellable or false,
-          lsp_name = client.name,
-          lsp_id = client.id,
+          lsp_name = client.name, -- TODO: deprecate
+          lsp_id = client.id,     -- TODO: deprecate
+          lsp_client = client,
         }
         table.insert(messages, message)
       elseif progress.value ~= nil then
@@ -147,6 +149,7 @@ if not vim.lsp.status then
             cancellable = ctx.cancellable or false,
             lsp_name = client.name,
             lsp_id = client.id,
+            lsp_client = client,
           }
           table.insert(messages, message)
 

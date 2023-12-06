@@ -31,7 +31,7 @@ The following table shows the default options for this plugin:
     ignore_done_already = false,  -- Ignore new tasks that are already complete
     ignore_empty_message = false, -- Ignore new tasks that don't contain a message
     notification_group =          -- How to get a progress message's notification group key
-      function(msg) return msg.lsp_name end,
+      function(msg) return msg.lsp_client.name end,
     ignore = {},                  -- List of LSP servers to ignore
 
     -- Options related to how LSP progress messages are displayed as notifications
@@ -172,7 +172,7 @@ notification_group = function(msg)
 end
 ```
 
-Type: `fun(msg: ProgressMessage): NotificationKey` (default: `msg.lsp_name`)
+Type: `fun(msg: ProgressMessage): NotificationKey` (default: `msg.lsp_client.name`)
 
 progress.ignore
 : List of LSP servers to ignore
@@ -646,6 +646,18 @@ Fields:
 -   `pattern`: (`string[] | string`) The name of pattern (see `:h fidget-Spinners`)
 -   `period`: (`number`) How long one cycle of the animation should take, in seconds
 
+ProgressMessage
+: Used to configure the behavior of notification groups.
+
+Fields:
+
+-   `token`: (`any`) Unique identifier used to accumulate updates
+-   `title`: (`string?`) Name of the task in progress
+-   `message`: (`string?`) Message describing the progress
+-   `percentage: (`number?`) How much of the progress is complete (out of 100).
+-   `done`: (`boolean`) Whether this progress completed. Ignore percentage if done is true.
+-   `cancellable`: (`boolean`) Whether this task can be canceled (though doing so is currently unsupported using Fidget)
+-   `lsp_client`: (`table`) LSP client table this message came from
 
 ## Functions
 

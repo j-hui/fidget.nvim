@@ -78,7 +78,7 @@ require("fidget.options").declare(M, "progress", {
   ---
   ---@type fun(msg: ProgressMessage): NotificationKey
   notification_group = function(msg)
-    return msg.lsp_name
+    return msg.lsp_client.name
   end,
 
   --- List of LSP servers to ignore
@@ -180,7 +180,7 @@ M.poller = poll.Poller {
       for _, lsp_name in ipairs(M.options.ignore) do
         -- NOTE: hopefully this loop isn't too expensive.
         -- But if it is, consider indexing by hash.
-        if msg.lsp_name == lsp_name then
+        if msg.lsp_client.name == lsp_name then
           ignore = true
           logger.info("Ignoring LSP progress message:", msg)
           break
