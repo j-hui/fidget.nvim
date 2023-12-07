@@ -36,3 +36,4 @@ jobs:
       with:
         commit_message: "Auto generate docs"
         branch: ${{ github.head_ref }}
+        file_pattern: 'doc/*.txt'
