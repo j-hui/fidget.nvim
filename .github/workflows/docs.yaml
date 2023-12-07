@@ -4,7 +4,6 @@ on:
   push:
     branches:
     - main
-    - gen-docs
     paths:
     - '.github/**'
     - 'doc/**'
