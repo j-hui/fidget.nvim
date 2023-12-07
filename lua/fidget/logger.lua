@@ -3,7 +3,10 @@ local M = {}
 
 local PLUGIN_PATH_PATTERN = "(/lua/fidget.+)"
 
-require("fidget.options").declare(M, "logger", {
+---@options fidget.logger [[
+---@protected
+--- Options related to logger
+M.options = {
   --- Minimum logging level
   ---
   --- Set to `vim.log.levels.OFF` to disable logging, or `vim.log.levels.TRACE`
@@ -27,7 +30,10 @@ require("fidget.options").declare(M, "logger", {
   ---
   ---@type string
   path = string.format("%s/fidget.nvim.log", vim.fn.stdpath("cache")),
-})
+}
+---@options ]]
+
+require("fidget.options").declare(M, "logger", M.options)
 
 function M.fmt_level(level)
   if level == vim.log.levels.DEBUG then

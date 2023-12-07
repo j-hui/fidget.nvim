@@ -36,18 +36,20 @@ end
 ---       SM.post_bar = SM.options.bar * 2
 ---     end
 ---
----     options(SM, {
+---     SM.options = {
 ---       foo = true,
 ---       bar = 0,
----     }, post_setup)
+---     }
+---     options.declare(SM, SM.options, post_setup)
 ---
 ---     ...
 ---
 ---     local M = {}
----     options(M, {
+---     M.options = {
 ---       baz = "baz",
 ---       sub_module = SM,
----     })
+---     }
+---     options.declare(M, M.options)
 ---
 ---     ...
 ---

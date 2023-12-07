@@ -15,7 +15,10 @@ local logger             = require("fidget.logger")
 ---@type number?
 local lsp_attach_autocmd = nil
 
-require("fidget.options").declare(M, "progress.lsp", {
+---@options fidget.progress.lsp [[
+---@protected
+--- Options related to Neovim's built-in LSP client
+M.options                = {
   --- Configure the nvim's LSP progress ring buffer size
   ---
   --- Useful for avoiding progress message overflow when the LSP server blasts
@@ -26,7 +29,10 @@ require("fidget.options").declare(M, "progress.lsp", {
   ---
   ---@type number
   progress_ringbuf_size = 0,
-}, function()
+}
+---@options ]]
+
+require("fidget.options").declare(M, "progress.lsp", M.options, function()
   if lsp_attach_autocmd ~= nil then
     vim.api.nvim_del_autocmd(lsp_attach_autocmd)
     lsp_attach_autocmd = nil

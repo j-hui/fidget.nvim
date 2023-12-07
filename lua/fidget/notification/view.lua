@@ -18,8 +18,10 @@ local M = {}
 ---@field col_start   number    (byte-indexed) column to start highlight
 ---@field col_end     number    (byte-indexed) column to end highlight
 
+---@options fidget.notification.view [[
+---@protected
 --- Options related to how notifications are rendered as text
-require("fidget.options").declare(M, "notification.view", {
+M.options = {
   --- Display notification items from bottom to top
   ---
   --- Setting this to true tends to lead to more stable animations when the
@@ -47,8 +49,10 @@ require("fidget.options").declare(M, "notification.view", {
   ---
   ---@type string|false
   group_separator_hl = "Comment",
-})
+}
+---@options ]]
 
+require("fidget.options").declare(M, "notification.view", M.options)
 
 --- Render group separator item.
 ---
