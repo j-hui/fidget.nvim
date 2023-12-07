@@ -2,6 +2,9 @@
 
 # 💫 Fidget
 
+[![Docs](https://github.com/j-hui/fidget.nvim/actions/workflows/docs.yaml/badge.svg)](blob/main/doc/fidget.txt)
+[![LuaRocks](https://img.shields.io/luarocks/v/j-hui/fidget.nvim?logo=lua&color=purple)](https://luarocks.org/modules/j-hui/fidget.nvim)
+
 Extensible UI for Neovim notifications and LSP progress messages.
 
 ![fidget.nvim demo](https://github.com/j-hui/fidget.nvim/blob/media/gifs/fidget-demo-rust-analyzer.gif?raw=true)
@@ -111,8 +114,6 @@ EOF
 ```
 
 #### [rocks.nvim](https://github.com/nvim-neorocks/rocks.nvim)
-
-[![LuaRocks](https://img.shields.io/luarocks/v/j-hui/fidget.nvim?logo=lua&color=purple)](https://luarocks.org/modules/j-hui/fidget.nvim)
 
 ```vim
 :Rocks install fidget.nvim

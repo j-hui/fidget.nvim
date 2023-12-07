@@ -1,4 +1,4 @@
-name: Generate docs
+name: Docs
 
 on:
   push:
