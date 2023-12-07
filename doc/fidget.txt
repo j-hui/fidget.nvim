@@ -6,6 +6,7 @@ Table of Contents                                   *fidget-table-of-contents*
 1. Getting Started                                    |fidget-getting-started|
   - Requirements                         |fidget-getting-started-requirements|
   - Installation                         |fidget-getting-started-installation|
+  - Versioning                             |fidget-getting-started-versioning|
 2. Options                                                    |fidget-options|
 3. Lua API                                                    |fidget-lua-api|
 4. Highlights                                              |fidget-highlights|
@@ -58,6 +59,27 @@ VIM-PLUG ~
       -- options
     }
     EOF
+<
+
+
+VERSIONING                                 *fidget-getting-started-versioning*
+
+Fidget is actively developed on the `main` branch, and may occasionally undergo
+breaking changes.
+
+If you would like to ensure configuration/API stability, you can pin your tag
+to one of the release tags <https://github.com/j-hui/fidget.nvim/releases/>.
+
+For instance, using Lazy <https://github.com/folke/lazy.nvim>
+
+>lua
+    {
+      "j-hui/fidget.nvim",
+      tag = "v0.0.0",
+      opts = {
+        -- options
+      },
+    }
 <
 
 
@@ -154,7 +176,7 @@ VIM-PLUG ~
     }
 <
 
-For more details, see |fidget-option.txt|.
+Formore details, see |fidget-option.txt|.
 
 
 ==============================================================================
