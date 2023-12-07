@@ -110,6 +110,14 @@ require("fidget").setup {
 EOF
 ```
 
+#### [rocks.nvim](https://github.com/nvim-neorocks/rocks.nvim)
+
+[![LuaRocks](https://img.shields.io/luarocks/v/j-hui/fidget.nvim?logo=lua&color=purple)](https://luarocks.org/modules/j-hui/fidget.nvim)
+
+```vim
+:Rocks install fidget.nvim
+```
+
 ### Versioning
 
 Fidget is actively developed on the `main` branch, and may occasionally undergo
