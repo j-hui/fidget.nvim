@@ -123,7 +123,7 @@ For instance, using [Lazy](https://github.com/folke/lazy.nvim):
 ```lua
 {
   "j-hui/fidget.nvim",
-  tag = "v0.0.0",
+  tag = "v1.0.0",
   opts = {
     -- options
   },
