@@ -1,6 +1,6 @@
 <!-- panvimdoc-ignore-start -->
 
-# 😵 Fidget
+# 💫 Fidget
 
 Extensible UI for Neovim notifications and LSP progress messages.
 
