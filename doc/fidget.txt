@@ -33,7 +33,7 @@ INSTALLATION                             *fidget-getting-started-installation*
 
 Install this plugin using your favorite plugin manager.
 
-See the documentation <doc/fidget.md> for `setup()` options.
+See the |fidget-documentation| for `setup()` options.
 
 
 LAZY ~
