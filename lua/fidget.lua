@@ -1,33 +1,61 @@
---- Fidget's top-level module.
-local M        = {}
-M.progress     = require("fidget.progress")
-M.notification = require("fidget.notification")
-M.spinner      = require("fidget.spinner")
-M.logger       = require("fidget.logger")
+---@diagnostic disable: unused-local
 
-require("fidget.options").declare(M, "", {
-  progress = M.progress,
-  notification = M.notification,
-  logger = M.logger,
+---@brief [[
+---*fidget-api.txt*     For Neovim version 0.8+            Last change: see Git log
+---@brief ]]
+---
+---@toc fidget.api.toc
+---
+---@brief [[
+---                                                                    *fidget.api*
+--- This file contains generated documentation for Fidget's Lua API, though of
+--- course you will also find plenty more detail documented in the source code.
+---
+--- For help setting up this plugin, see |fidget.txt| and |fidget-option.txt|.
+---@brief ]]
+
+---Fidget's top-level module.
+local fidget        = {}
+fidget.progress     = require("fidget.progress")
+fidget.notification = require("fidget.notification")
+fidget.spinner      = require("fidget.spinner")
+fidget.logger       = require("fidget.logger")
+
+--- Set up Fidget plugin.
+---
+---@param opts table Plugin options. See |fidget-options| or |fidget-option.txt|.
+function fidget.setup(opts) end
+
+require("fidget.options").declare(fidget, "", {
+  progress = fidget.progress,
+  notification = fidget.notification,
+  logger = fidget.logger,
 }, function(warn_log)
-  if M.options.notification.override_vim_notify then
-    M.logger.info("overriding vim.notify() with fidget.notify()")
-    vim.notify = M.notify
+  if fidget.options.notification.override_vim_notify then
+    fidget.logger.info("overriding vim.notify() with fidget.notify()")
+    vim.notify = fidget.notify
   end
 
-  M.logger.info("fidget.nvim setup() complete.")
+  fidget.logger.info("fidget.nvim setup() complete.")
   if #warn_log > 0 then
-    M.logger.warn("Encountered unknown options during setup():")
+    fidget.logger.warn("Encountered unknown options during setup():")
     for _, w in ipairs(warn_log) do
-      M.logger.warn("-", w)
+      fidget.logger.warn("-", w)
     end
     local warn_msg = string.format(
       "Encountered %d unknown options during setup().\nSee log (%s) for details.",
-      #warn_log, M.options.logger.path)
-    M.notification.notify(warn_msg, vim.log.levels.WARN, { annote = "fidget.nvim" })
+      #warn_log, fidget.options.logger.path)
+    fidget.notification.notify(warn_msg, vim.log.levels.WARN, { annote = "fidget.nvim" })
   end
 end)
 
-M.notify = M.notification.notify
+--- Alias for |fidget.notification.notify|.
+---@param msg   string|nil  Content of the notification to show to the user.
+---@param level Level|nil   How to format the notification.
+---@param opts  Options|nil Optional parameters (see |fidget.notification.Options|).
+function fidget.notify(msg, level, opts)
+  fidget.notification.notify(msg, level, opts)
+end
+fidget.notify = fidget.notification.notify
 
-return M
+return fidget

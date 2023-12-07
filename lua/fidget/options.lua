@@ -1,3 +1,4 @@
+--- Declarative options for this plugin (not specific to Fidget).
 local M = {}
 
 --- Declare a table as a fidget module, so we can tell using is_fidget_module().

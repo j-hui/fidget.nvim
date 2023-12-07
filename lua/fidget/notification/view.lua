@@ -31,38 +31,38 @@ require("fidget.options").declare(M, "notification.view", {
   --- Separator between group name and icon
   ---
   --- Must not contain any newlines. Set to `""` to remove the gap between names
-  --- and icons in _all_ notification groups.
+  --- and icons in all notification groups.
   ---
   ---@type string
   icon_separator = " ",
 
   --- Separator between notification groups
   ---
-  --- Must not contain any newlines. Set to `nil` to omit separator entirely.
+  --- Must not contain any newlines. Set to `false` to omit separator entirely.
   ---
-  ---@type string?
+  ---@type string|false
   group_separator = "---",
 
   --- Highlight group used for group separator
   ---
-  ---@type string?
+  ---@type string|false
   group_separator_hl = "Comment",
 })
 
 
 --- Render group separator item.
 ---
----@return NotificationRenderItem? group_separator
+---@return NotificationRenderItem|nil group_separator
 function M.render_group_separator()
   if not M.options.group_separator then
     return nil
   end
 
   return {
-    lines = { M.options.group_separator },
+    lines = { M.options.group_separator or nil },
     highlights = {
       M.options.group_separator_hl and {
-        hl_group = M.options.group_separator_hl,
+        hl_group = M.options.group_separator_hl or nil,
         line = 0,
         col_start = 0,
         col_end = -1,
@@ -73,9 +73,9 @@ end
 
 --- Render the header of a group, containing group name and icon.
 ---
----@param         now   number    timestamp of current render frame
----@param         group NotificationGroup
----@return              NotificationRenderItem? group_header
+---@param   now   number    timestamp of current render frame
+---@param   group Group
+---@return  NotificationRenderItem|nil group_header
 function M.render_group_header(now, group)
   local group_name = group.config.name
   if type(group_name) == "function" then
@@ -154,9 +154,9 @@ end
 
 --- Render a notification item, containing message and annote.
 ---
----@param item   NotificationItem
----@param config NotificationConfig
----@return       NotificationRenderItem? render_item
+---@param item   Item
+---@param config Config
+---@return       NotificationRenderItem|nil render_item
 function M.render_item(item, config)
   local lines, highlights = {}, {}
 
@@ -190,7 +190,7 @@ end
 --- Render notifications into lines and highlights.
 ---
 ---@param now number timestamp of current render frame
----@param groups NotificationGroup[]
+---@param groups Group[]
 ---@return NotificationView view
 function M.render(now, groups)
   ---@type NotificationRenderItem[]

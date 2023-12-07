@@ -1,11 +1,12 @@
-local M = {}
-M.patterns = require("fidget.spinner.patterns")
+---@mod fidget.spinner Spinner animations
+local spinner    = {}
+spinner.patterns = require("fidget.spinner.patterns")
 
 --- A Manga is a table specifying an Anime to generate.
 ---
 --- The period is specified in seconds; if omitted, it defaults to 1.
 ---
----@alias Manga { pattern: string[]|string, period: number? } | { [1]: string[]|string }
+---@alias Manga { pattern: string[]|string, period: number|nil } | { [1]: string[]|string }
 
 --- An Anime is a function that takes a timestamp and renders a frame (string).
 ---
@@ -17,13 +18,13 @@ M.patterns = require("fidget.spinner.patterns")
 --- The period is specified in seconds; if omitted, it defaults to 1.
 ---
 ---@param pattern string[]|string Either an array of frames, or the name of a known pattern
----@param period number? How long one cycle of the animation should take, in seconds
----@return Anime anime Call this function to compute the frame at some timestamp
-function M.animate(pattern, period)
+---@param period number|nil       How long one cycle of the animation should take, in seconds
+---@return Anime anime            Call this function to compute the frame at some timestamp
+function spinner.animate(pattern, period)
   period = period or 1
   if type(pattern) == "string" then
     local pattern_name = pattern
-    pattern = M.patterns[pattern_name]
+    pattern = spinner.patterns[pattern_name]
     assert(pattern ~= nil, "Unknown pattern: " .. pattern_name)
   end
 
@@ -43,4 +44,4 @@ function M.animate(pattern, period)
   end
 end
 
-return M
+return spinner

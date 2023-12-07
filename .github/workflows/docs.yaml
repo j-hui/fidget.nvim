@@ -1,0 +1,39 @@
+name: Generate docs
+
+on:
+  push:
+    branches:
+    - main
+    - gen-docs
+    paths:
+    - '.github/**'
+    - 'doc/**'
+    - 'lua/**'
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    name: Generate Fidget documentation
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: API docs from code
+      run: |
+        curl -Lq https://github.com/numToStr/lemmy-help/releases/latest/download/lemmy-help-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./lemmy-help -f -a -c -t lua/{fidget.lua,fidget/notification.lua,fidget/progress.lua,fidget/progress/lsp.lua,fidget/spinner.lua} > doc/fidget-api.txt
+
+    - name: Usage docs from README (panvimdoc)
+      uses: kdheepak/panvimdoc@main
+      with:
+        pandoc: README.md
+        vimdoc: fidget
+        description: Extensible UI for Neovim notifications and LSP progress messages.
+        version: "NVIM v0.8.0"
+        demojify: true
+        treesitter: true
+        shiftheadinglevelby: -1
+
+    - uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: "Auto generate docs"
+        branch: ${{ github.head_ref }}
