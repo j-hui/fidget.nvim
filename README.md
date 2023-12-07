@@ -87,7 +87,7 @@ For an up-to-date list of LSP servers this plugin is known to work with, see
 
 Install this plugin using your favorite plugin manager.
 
-See the [documentation](doc/fidget.md) for `setup()` options.
+See the [documentation](#options) for `setup()` options.
 
 #### [Lazy](https://github.com/folke/lazy.nvim)
 
