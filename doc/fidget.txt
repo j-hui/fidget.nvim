@@ -62,6 +62,13 @@ VIM-PLUG ~
 <
 
 
+ROCKS.NVIM ~
+
+>vim
+    :Rocks install fidget.nvim
+<
+
+
 VERSIONING                                 *fidget-getting-started-versioning*
 
 Fidget is actively developed on the `main` branch, and may occasionally undergo
