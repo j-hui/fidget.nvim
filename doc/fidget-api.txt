@@ -1,0 +1,284 @@
+*fidget-api.txt*     For Neovim version 0.8+            Last change: see Git log
+
+==============================================================================
+Table of Contents                                               *fidget.api.toc*
+
+Notification subsystem ··································· |fidget.notification|
+LSP progress subsystem ······································· |fidget.progress|
+Neovim LSP shim layer ···································· |fidget.progress.lsp|
+Spinner animations ············································ |fidget.spinner|
+
+                                                                    *fidget.api*
+ This file contains generated documentation for Fidget's Lua API, though of
+ course you will also find plenty more detail documented in the source code.
+
+ For help setting up this plugin, see |fidget.txt| and |fidget-option.txt|.
+
+fidget.setup({opts})                                              *fidget.setup*
+     Set up Fidget plugin.
+
+
+    Parameters: ~
+        {opts}  (table)  Plugin options. See |fidget-options| or |fidget-option.txt|.
+
+
+fidget.notify({msg}, {level}, {opts})                            *fidget.notify*
+     Alias for |fidget.notification.notify|.
+
+    Parameters: ~
+        {msg}    (string|nil)   Content of the notification to show to the user.
+        {level}  (Level|nil)    How to format the notification.
+        {opts}   (Options|nil)  Optional parameters (see |fidget.notification.Options|).
+
+
+==============================================================================
+Notification subsystem                                     *fidget.notification*
+
+Key                                                    *fidget.notification.Key*
+     Used to determine the identity of notification items and groups.
+
+    Type: ~
+        any
+
+
+Level                                                *fidget.notification.Level*
+     Second (level) paramter passed to |fidget.notification.notify|.
+
+     `string` indicates highlight group name; otherwise, `number` indicates
+     the |vim.log.levels| value (that will resolve to a highlight group as
+     determined by the |fidget.notification.Config|).
+
+    Type: ~
+        number|string
+
+
+Options                                            *fidget.notification.Options*
+     Third (opts) parameter passed to |fidget.notification.notify|.
+
+    Fields: ~
+        {key}          (Key|nil)      Replace existing notification item of the same key
+        {group}        (any|nil)      Group that this notification item belongs to
+        {annote}       (string|nil)   Optional single-line title that accompanies the message
+        {hidden}       (boolean|nil)  Whether this item should be shown
+        {ttl}          (number|nil)   How long after a notification item should exist; pass 0 to use default value
+        {update_only}  (boolean|nil)  If true, don't create new notification items
+        {data}         (any|nil)      Arbitrary data attached to notification item
+
+
+Display                                            *fidget.notification.Display*
+     Something that can be displayed in a |fidget.notification.Group|.
+
+     If a callable `function`, it is invoked every render cycle with the items
+     list; useful for rendering animations and other dynamic content.
+
+    Type: ~
+        string|fun(now:number,items:Item[]):string
+
+
+Config                                              *fidget.notification.Config*
+     Used to configure the behavior of notification groups.
+
+     If both name and icon are nil, then no group header is rendered.
+
+     Note that the actual `|fidget.notification.default_config|` defines a few
+     more defaults than what is documented here, which pertain to the fallback
+     used if the corresponding field in the `default` config table is `nil`.
+
+
+    Fields: ~
+        {name}              (Display|nil)  Name of the group
+        {icon}              (Display|nil)  Icon of the group
+        {icon_on_left}      (boolean|nil)  If `true`, icon is rendered on the left instead of right
+        {annote_separator}  (string|nil)   Separator between message from annote; defaults to `" "`
+        {ttl}               (number|nil)   How long a notification item should exist; defaults to `5`
+        {render_limit}      (number|nil)   How many notification items to show at once
+        {group_style}       (string|nil)   Style used to highlight group name; defaults to `"Title"`
+        {icon_style}        (string|nil)   Style used to highlight icon; if nil, use `group_style`
+        {annote_style}      (string|nil)   Default style used to highlight item annotes; defaults to `"Question"`
+        {debug_style}       (string|nil)   Style used to highlight debug item annotes
+        {info_style}        (string|nil)   Style used to highlight info item annotes
+        {warn_style}        (string|nil)   Style used to highlight warn item annotes
+        {error_style}       (string|nil)   Style used to highlight error item annotes
+        {debug_annote}      (string|nil)   Default annotation for debug items
+        {info_annote}       (string|nil)   Default annotation for info items
+        {warn_annote}       (string|nil)   Default annotation for warn items
+        {error_annote}      (string|nil)   Default annotation for error items
+        {priority}          (number|nil)   Order in which group should be displayed; defaults to `50`
+
+
+notification.default_config                 *fidget.notification.default_config*
+     Default notification configuration.
+
+     Exposed publicly because it might be useful for users to integrate for when
+     they are adding their own configs.
+
+     To see the default values, run:
+
+     >vim
+     :lua print(vim.inspect(require("fidget.notification").default_config))
+     <
+
+
+    Type: ~
+        (Config)
+
+
+                                                    *fidget.notification.notify*
+notification.notify({msg}, {level}, {opts})
+     Send a notification to the Fidget notifications subsystem.
+
+     Can be used to override `vim.notify()`, e.g.,
+
+    >lua
+     vim.notify = require("fidget.notifications").notify
+    <
+
+
+    Parameters: ~
+        {msg}    (string|nil)   Content of the notification to show to the user.
+        {level}  (Level|nil)    How to format the notification.
+        {opts}   (Options|nil)  Optional parameters (see |fidget.notification.Options|).
+
+
+notification.close()                                 *fidget.notification.close*
+     Close the notification window.
+
+     Note that it the window will pop open again as soon as there is any reason
+     to (e.g., if another notification or LSP progress message is received).
+
+     To temporarily stop the window from opening, see |fidget.notification.suppress|.
+
+
+    Returns: ~
+        (boolean)  Whether the window closed successfully.
+
+
+notification.clear({group_key})                      *fidget.notification.clear*
+     Clear notifications.
+
+     If the given `group_key` is `nil`, then all groups are cleared.
+
+
+    Parameters: ~
+        {group_key}  (Key|nil)  Which group to clear
+
+
+notification.reset()                                 *fidget.notification.reset*
+     Reset notification subsystem state.
+
+
+                                                *fidget.notification.set_config*
+notification.set_config({key}, {config}, {overwrite})
+     Dynamically add, overwrite, or delete a notification configuration.
+
+     Inherits missing keys from the default config.
+
+
+    Parameters: ~
+        {key}        (Key)         Which config to set.
+        {config}     (Config|nil)  What to set as config.
+        {overwrite}  (boolean)     Whether to overwrite existing config, if any.
+
+
+    See: ~
+        |fidget.notification.Config|
+
+
+notification.suppress({suppress})                 *fidget.notification.suppress*
+     Suppress whether the notification window is shown.
+
+     Pass `true` as argument to turn on suppression, or `false` to turn it off.
+
+     If no argument is given, suppression state is toggled.
+
+
+    Parameters: ~
+        {suppress}  (boolean|nil)  Whether to suppress or toggle suppression
+
+
+==============================================================================
+LSP progress subsystem                                         *fidget.progress*
+
+progress.poll()                                           *fidget.progress.poll*
+     Poll for progress messages once.
+
+     Potentially useful if you're planning on "driving" Fidget yourself.
+
+
+progress.suppress({suppress})                         *fidget.progress.suppress*
+     Suppress consumption of progress messages.
+
+     Pass `false` as argument to turn off suppression.
+
+     If no argument is given, suppression state is toggled.
+
+    Parameters: ~
+        {suppress}  (boolean|nil)  Whether to suppress or toggle suppression
+
+
+==============================================================================
+Neovim LSP shim layer                                      *fidget.progress.lsp*
+
+ProgressMessage                            *fidget.progress.lsp.ProgressMessage*
+
+    Fields: ~
+        {token}        (Key)         Unique identifier used to accumulate updates
+        {title}        (string|nil)  Name of the task in progress
+        {message}      (string|nil)  Message describing the progress
+        {percentage}   (number|nil)  How much of the progress is complete (out of 100)
+        {done}         (boolean)     Whether this progress completed; ignore `percentage` if `done` is `true`
+        {cancellable}  (boolean)     Whether this task can be canceled (though doing so is unsupported with Fidget)
+        {lsp_client}   (table)       LSP client table this message came from
+
+
+M.poll_for_messages()                    *fidget.progress.lsp.poll_for_messages*
+     Consumes LSP progress messages from each client.progress ring buffer.
+
+     Based on vim.lsp.status(), except this implementation does not format the
+     reports into strings.
+
+
+    Returns: ~
+        (ProgressMessage[])  progress_messages
+
+    See: ~
+        |fidget.progress.lsp.ProgressMessage|
+
+
+==============================================================================
+Spinner animations                                              *fidget.spinner*
+
+Manga                                                     *fidget.spinner.Manga*
+     A Manga is a table specifying an Anime to generate.
+
+     The period is specified in seconds; if omitted, it defaults to 1.
+
+
+    Type: ~
+        {pattern:string[]|string,period:number|nil}|
+
+
+Anime                                                     *fidget.spinner.Anime*
+     An Anime is a function that takes a timestamp and renders a frame (string).
+
+     Note that Anime is a subtype of Display.
+
+    Type: ~
+        fun(now:number):string
+
+
+spinner.animate({pattern}, {period})                    *fidget.spinner.animate*
+     Generate an Anime function that can be polled for spinner animation frames.
+
+     The period is specified in seconds; if omitted, it defaults to 1.
+
+
+    Parameters: ~
+        {pattern}  (string[]|string)  Either an array of frames, or the name of a known pattern
+        {period}   (number|nil)       How long one cycle of the animation should take, in seconds
+
+    Returns: ~
+        (Anime)  Call this function to compute the frame at some timestamp
+
+
+vim:tw=78:ts=8:noet:ft=help:norl:
