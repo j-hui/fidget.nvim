@@ -110,6 +110,26 @@ require("fidget").setup {
 EOF
 ```
 
+### Versioning
+
+Fidget is actively developed on the `main` branch, and may occasionally undergo
+breaking changes.
+
+If you would like to ensure configuration/API stability, you can pin your tag to
+one of the [release tags](https://github.com/j-hui/fidget.nvim/releases/).
+
+For instance, using [Lazy](https://github.com/folke/lazy.nvim):
+
+```lua
+{
+  "j-hui/fidget.nvim",
+  tag = "v0.0.0",
+  opts = {
+    -- options
+  },
+}
+```
+
 ## Options
 
 ```lua
