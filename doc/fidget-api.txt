@@ -115,9 +115,9 @@ notification.default_config                 *fidget.notification.default_config*
 
      To see the default values, run:
 
-     >vim
+    >vim
      :lua print(vim.inspect(require("fidget.notification").default_config))
-     <
+    <
 
 
     Type: ~
