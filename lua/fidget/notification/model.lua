@@ -1,3 +1,5 @@
+---Fidget notification abstract state (internal)
+---
 --- Type definitions and helper methods for the notifications model
 --- (i.e., its abstract state).
 ---
@@ -9,27 +11,27 @@
 local M = {}
 
 --- A collection of NotificationItems.
----@class NotificationGroup
----@field key           NotificationKey     used to distinguish this group from others
----@field config        NotificationConfig  configuration for this group
----@field items         NotificationItem[]  items displayed in the group
+---@class Group
+---@field key           Key     used to distinguish this group from others
+---@field config        Config  configuration for this group
+---@field items         Item[]  items displayed in the group
 
 --- Notification element containing a message and optional annotation.
----@class NotificationItem
----@field key         NotificationKey  used to distinguish this item from others
----@field message     string    displayed message for the item
----@field annote      string?   optional title that accompanies the message
----@field style       string    style used to render the annote/title, if any
----@field hidden      boolean   whether this item should be shown
----@field expires_at  number    what time this item should be removed; math.huge means never
----@field data        any?      arbitrary data attached to notification item
+---@class Item
+---@field key         Key         used to distinguish this item from others
+---@field message     string      displayed message for the item
+---@field annote      string|nil  optional title that accompanies the message
+---@field style       string      style used to render the annote/title, if any
+---@field hidden      boolean     whether this item should be shown
+---@field expires_at  number      what time this item should be removed; math.huge means never
+---@field data        any|nil     arbitrary data attached to notification item
 
 --- Get the notification group indexed by group_key; create one if none exists.
 ---
----@param   configs     { [NotificationKey]: NotificationConfig }
----@param   groups      NotificationGroup[]
----@param   group_key   NotificationKey
----@return              NotificationGroup group
+---@param   configs     { [Key]: Config }
+---@param   groups      Group[]
+---@param   group_key   Key
+---@return              Group group
 local function get_group(configs, groups, group_key)
   for _, group in ipairs(groups) do
     if group.key == group_key then
@@ -39,7 +41,7 @@ local function get_group(configs, groups, group_key)
 
   -- Group not found; create it and insert it into list of active groups.
 
-  ---@type NotificationGroup
+  ---@type Group
   local group = {
     key = group_key,
     items = {},
@@ -51,9 +53,9 @@ end
 
 --- Search for an item with the given key among a notification group.
 ---
----@param group NotificationGroup
----@param key NotificationKey
----@return NotificationItem?
+---@param group Group
+---@param key Key
+---@return Item|nil
 local function find_item(group, key)
   if key == nil then
     return nil
@@ -72,9 +74,9 @@ end
 --- Obtain the style specified by the level parameter of a .update(),
 --- reading from config if necessary.
 ---
----@param config  NotificationConfig
----@param level   number | string | nil
----@return        string?
+---@param config  Config
+---@param level   number|string|nil
+---@return        string|nil
 local function style_from_level(config, level)
   if type(level) == "number" then
     if level == vim.log.levels.INFO and config.info_style then
@@ -93,9 +95,9 @@ end
 
 --- Obtain the annotation from the specified level of an .update() call.
 ---
----@param config NotificationConfig
----@param level   number | string | nil
----@return string?
+---@param config Config
+---@param level  number|string|nil
+---@return string|nil
 local function annote_from_level(config, level)
   if type(level) == "number" then
     if level == vim.log.levels.INFO then
@@ -113,8 +115,8 @@ local function annote_from_level(config, level)
 end
 
 --- Compute the expiry time based on the given TTL (from notify() options) and the default TTL (from config).
----@param ttl         number?
----@param default_ttl number?
+---@param ttl         number|nil
+---@param default_ttl number|nil
 ---@return            number expiry_time
 local function compute_expiry(now, ttl, default_ttl)
   if not ttl or ttl == 0 then
@@ -128,12 +130,13 @@ end
 ---
 --- The API of this function is based on that of vim.notify().
 ---
+---@protected
 ---@param now     number
----@param configs table<string, NotificationConfig>
----@param groups  NotificationGroup[]
----@param msg     string?
----@param level   NotificationLevel?
----@param opts    NotificationOptions?
+---@param configs table<string, Config>
+---@param groups  Group[]
+---@param msg     string|nil
+---@param level   Level|nil
+---@param opts    Options|nil
 function M.update(now, configs, groups, msg, level, opts)
   opts = opts or {}
   local group_key = opts.group ~= nil and opts.group or "default"
@@ -145,7 +148,7 @@ function M.update(now, configs, groups, msg, level, opts)
     if msg == nil or opts.update_only then
       return
     end
-    ---@type NotificationItem
+    ---@type Item
     local new_item = {
       key = opts.key,
       message = msg,
@@ -172,9 +175,10 @@ end
 --- Updates each group in-place (i.e., removes items from them), but returns
 --- a list of groups that still have items left.
 ---
+---@protected
 ---@param now number timestamp of current frame.
----@param groups NotificationGroup[]
----@return NotificationGroup[]
+---@param groups Group[]
+---@return Group[]
 function M.tick(now, groups)
   local new_groups = {}
   for _, group in ipairs(groups) do

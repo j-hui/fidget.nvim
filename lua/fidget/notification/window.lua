@@ -112,17 +112,17 @@ require("fidget.options").declare(M, "notification.window", {
 local state = {
   --- ID of the buffer that notifications are rendered to.
   ---
-  ---@type number?
+  ---@type number|nil
   buffer_id = nil,
 
   --- ID of the window that the notification buffer is shown in.
   ---
-  ---@type number?
+  ---@type number|nil
   window_id = nil,
 
   --- ID of the namespace on which highlights are created.
   ---
-  ---@type number?
+  ---@type number|nil
   namespace_id = nil,
 
   --- Additional, temporary offset.
@@ -130,7 +130,7 @@ local state = {
   --- Useful for temporarily adding additional padding to account for space
   --- taken up by other plugins' windows.
   ---
-  ---@type number?
+  ---@type number|nil
   x_offset = 0,
 }
 
@@ -409,7 +409,7 @@ end
 ---
 ---@param lines       string[]                  lines to place into buffer
 ---@param highlights  NotificationHighlight[]   list of highlights to apply
----@param right_col   number?                   optional display width, to right-justify
+---@param right_col   number|nil                optional display width, to right-justify
 function M.set_lines(lines, highlights, right_col)
   local buffer_id = M.get_buffer()
   local namespace_id = M.get_namespace()

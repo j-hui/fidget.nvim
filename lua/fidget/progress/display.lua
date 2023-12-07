@@ -1,3 +1,4 @@
+--- Options and helpers for transforming
 local M       = {}
 local spinner = require("fidget.spinner")
 
@@ -22,10 +23,10 @@ require("fidget.options").declare(M, "progress.display", {
   ---
   --- If `false`, no limit.
   ---
-  --- This is used to configure each LSP notification group, so by default, this
-  --- is a per-server limit.
+  --- This is used to configure each LSP notification group, so by default,
+  --- this is a per-server limit.
   ---
-  ---@type number | false
+  ---@type number|false
   render_limit = 16,
 
   --- How long a message should persist after completion
@@ -46,7 +47,9 @@ require("fidget.options").declare(M, "progress.display", {
   --- specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`),
   --- it is used as the animation function.
   ---
-  ---@type string | Manga | Anime
+  --- See also: |fidget.spinner.Manga| and |fidget.spinner.Anime|.
+  ---
+  ---@type string|Manga|Anime
   done_icon = "✔",
 
   --- Highlight group for completed LSP tasks
@@ -72,7 +75,7 @@ require("fidget.options").declare(M, "progress.display", {
   --- specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`),
   --- it is used as the animation function.
   ---
-  ---@type string | Manga | Anime
+  ---@type string|Manga|Anime
   progress_icon = { "dots" },
 
   --- Highlight group for in-progress LSP tasks
@@ -92,14 +95,14 @@ require("fidget.options").declare(M, "progress.display", {
 
   --- Ordering priority for LSP notification group
   ---
-  ---@type number?
+  ---@type number|false
   priority = 30,
 
   --- How to format a progress message
   ---
   --- Example:
   ---
-  --- ```lua
+  --->lua
   --- format_message = function(msg)
   ---   if string.find(msg.title, "Indexing") then
   ---     return nil -- Ignore "Indexing..." progress messages
@@ -110,7 +113,7 @@ require("fidget.options").declare(M, "progress.display", {
   ---     return msg.done and "Completed" or "In progress..."
   ---   end
   --- end
-  --- ```
+  ---<
   ---
   ---@type fun(msg: ProgressMessage): string
   format_message = M.default_format_message,
@@ -126,13 +129,13 @@ require("fidget.options").declare(M, "progress.display", {
   ---
   --- Example:
   ---
-  --- ```lua
+  --->lua
   --- format_group_name = function(group)
   ---   return "lsp:" .. tostring(group)
   --- end
-  --- ```
+  ---<
   ---
-  ---@type fun(group: NotificationKey): NotificationDisplay
+  ---@type fun(group: Key): Display
   format_group_name = tostring,
 
   --- Override options from the default notification config
@@ -141,7 +144,7 @@ require("fidget.options").declare(M, "progress.display", {
   ---
   --- Example:
   ---
-  --- ```lua
+  --->lua
   --- overrides = {
   ---   hls = {
   ---     name = "Haskell Language Server",
@@ -153,9 +156,9 @@ require("fidget.options").declare(M, "progress.display", {
   ---     icon = fidget.progress.display.for_icon(fidget.spinner.animate("arrow", 2.5), "🦀"),
   ---   },
   --- }
-  --- ```
+  ---<
   ---
-  ---@type { [NotificationKey]: NotificationConfig }
+  ---@type { [Key]: Config }
   overrides = {
     rust_analyzer = { name = "rust-analyzer" },
   }
@@ -165,7 +168,7 @@ require("fidget.options").declare(M, "progress.display", {
 ---
 ---@param progress  string|Anime progress icon/animation function
 ---@param done      string|Anime completion icon/animation function
----@return NotificationDisplay icon_display
+---@return Display icon_display
 function M.for_icon(progress, done)
   return function(now, items)
     for _, item in ipairs(items) do
@@ -179,8 +182,8 @@ function M.for_icon(progress, done)
 end
 
 --- Create the config for a language server indexed by the given group key.
----@param group NotificationKey
----@return NotificationConfig
+---@param group Key
+---@return Config
 function M.make_config(group)
   local progress = M.options.progress_icon
   if type(progress) == "table" then
@@ -202,7 +205,7 @@ function M.make_config(group)
     annote_style = M.options.progress_style,
     warn_style = M.options.progress_style,
     info_style = M.options.done_style,
-    priority = M.options.priority,
+    priority = M.options.priority or nil,
   }
 
   if M.options.overrides[group] then

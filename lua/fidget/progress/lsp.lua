@@ -1,15 +1,15 @@
---- Fidget shim layer to Neovim's lsp API.
+---@mod fidget.progress.lsp Neovim LSP shim layer
 local M                  = {}
 local logger             = require("fidget.logger")
 
 ---@class ProgressMessage
----@field token       any       Unique identifier used to accumulate updates
----@field title       string?   Name of the task in progress
----@field message     string?   Message describing the progress
----@field percentage  number?   How much of the progress is complete (out of 100).
----@field done        boolean   Whether this progress completed. Ignore percentage if done is true.
----@field cancellable boolean   Whether this task can be canceled (though doing so is unsupported with Fidget)
----@field lsp_client  table     LSP client table this message came from
+---@field token       Key         Unique identifier used to accumulate updates
+---@field title       string|nil  Name of the task in progress
+---@field message     string|nil  Message describing the progress
+---@field percentage  number|nil  How much of the progress is complete (out of 100)
+---@field done        boolean     Whether this progress completed; ignore `percentage` if `done` is `true`
+---@field cancellable boolean     Whether this task can be canceled (though doing so is unsupported with Fidget)
+---@field lsp_client  table       LSP client table this message came from
 
 --- Autocmd ID for the LSPAttach event.
 ---@type number?
@@ -49,6 +49,7 @@ end)
 --- reports into strings.
 ---
 ---@return ProgressMessage[] progress_messages
+---@see fidget.progress.lsp.ProgressMessage
 function M.poll_for_messages()
   local messages = {}
   for _, client in ipairs(vim.lsp.get_clients()) do
@@ -83,6 +84,7 @@ end
 
 --- Register handler for LSP progress updates.
 ---
+---@protected
 ---@param fn function
 ---@return number
 function M.on_progress_message(fn)
@@ -123,6 +125,7 @@ if not vim.lsp.status then
   --- [get_progress_messages]: https://github.com/neovim/neovim/blob/v0.9.4/runtime/lua/vim/lsp/util.lua#L354-L385
   --- [lsp-status-pr]: https://github.com/neovim/neovim/pull/23958
   ---
+  ---@protected
   ---@return ProgressMessage[] progress_messages
   function M.poll_for_messages()
     local messages = {}
@@ -165,6 +168,7 @@ if not vim.lsp.status then
 
   --- Register autocmd callback for LspProgressUpdate event (v0.8.0--v0.9.4).
   ---
+  ---@protected
   ---@param fn function
   ---@return number
   function M.on_progress_message(fn)
