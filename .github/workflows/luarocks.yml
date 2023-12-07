@@ -1,0 +1,44 @@
+name: Push to Luarocks
+
+on:
+  push:
+    tags:
+      - '*'
+  release: 
+    types:
+      - created # Triggered by release-please
+  pull_request: # Tests a local luarocks install without publishing on PRs
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  luarocks-upload:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Required to count the commits
+      - name: Get Version
+        # Tags created by GitHub releases don't trigger push: tags workflows
+        # So we have to determine the tag manually.
+        run: echo "LUAROCKS_VERSION=$(git describe --abbrev=0 --tags)" >> $GITHUB_ENV
+      - name: LuaRocks Upload
+        uses: nvim-neorocks/luarocks-tag-release@v5
+        env:
+          LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
+        with:
+          version: ${{ env.LUAROCKS_VERSION }}
+          labels: |
+            neovim
+          summary: "Extensible UI for Neovim notifications and LSP progress messages."
+          detailed_description: |
+            Fidget is an unintrusive window in the corner of your editor that manages its own lifetime.
+
+            Its goals are:
+
+              - to provide a UI for Neovim's $/progress handler
+              - to provide a configurable vim.notify() backend
+              - to support basic ASCII animations (Fidget spinners!) to indicate signs of life
+              - to be easy to configure, sane to maintain, and fun to hack on
+            
+            There's only so much information one can stash into the status line. 
+            Besides, who doesn't love a little bit of terminal eye candy, as a treat?
