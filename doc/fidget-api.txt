@@ -6,6 +6,7 @@ Table of Contents                                               *fidget.api.toc*
 Notification subsystem ··································· |fidget.notification|
 LSP progress subsystem ······································· |fidget.progress|
 Neovim LSP shim layer ···································· |fidget.progress.lsp|
+Non-LSP progress messages ····························· |fidget.progress.handle|
 Spinner animations ············································ |fidget.spinner|
 
                                                                     *fidget.api*
@@ -243,6 +244,63 @@ M.poll_for_messages()                    *fidget.progress.lsp.poll_for_messages*
 
     See: ~
         |fidget.progress.lsp.ProgressMessage|
+
+
+==============================================================================
+Non-LSP progress messages                               *fidget.progress.handle*
+
+ProgressHandle : ProgressMessage         *fidget.progress.handle.ProgressHandle*
+     A handle for a progress message, reactive to changes
+
+    Fields: ~
+        {cancel}  (fun(self:ProgressHandle))                                        Cancel the task
+        {finish}  (fun(self:ProgressHandle))                                        Mark the task as complete
+        {report}  (fun(self:ProgressHandle,msg:ProgressMessage|table<string,any>))  Update one or more properties of the progress message
+
+
+handle.create({message})                         *fidget.progress.handle.create*
+     Create a new progress message, and return a handle to it for updating.
+     The handle is a reactive object, so you can update its properties and the
+     message will be updated accordingly. You can also use the `report` method to
+     update multiple properties at once.
+
+     Example:
+
+    >lua
+     local progress = require("fidget.progress")
+
+     local handle = progress.handle.create({
+       title = "My Task",
+       message = "Doing something...",
+       lsp_client = { name = "my_fake_lsp" },
+       percentage = 0,
+     })
+
+     -- You can update properties directly and the
+     -- progress message will be updated accordingly
+     handle.message = "Doing something else..."
+
+     -- Or you can use the `report` method to bulk-update
+     -- properties.
+     handle:report({
+       title = "The task status changed"
+       message = "Doing another thing...",
+       percentage = 50,
+     })
+
+     -- You can also cancel the task (errors if not cancellable)
+     handle:cancel()
+
+     -- Or mark it as complete (updates percentage to 100 automatically)
+     handle:finish()
+    <
+
+
+    Parameters: ~
+        {message}  (ProgressMessage|table<string,any>)  The initial progress message
+
+    Returns: ~
+        (ProgressHandle)  @nodiscard
 
 
 ==============================================================================

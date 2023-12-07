@@ -23,6 +23,7 @@ esac
   lua/fidget/notification.lua \
   lua/fidget/progress.lua \
   lua/fidget/progress/lsp.lua \
+  lua/fidget/progress/handle.lua \
   lua/fidget/spinner.lua \
   > doc/fidget-api.txt
 

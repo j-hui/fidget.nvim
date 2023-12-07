@@ -2,6 +2,7 @@
 local progress     = {}
 progress.display   = require("fidget.progress.display")
 progress.lsp       = require("fidget.progress.lsp")
+progress.handle    = require("fidget.progress.handle")
 local poll         = require("fidget.poll")
 local notification = require("fidget.notification")
 local logger       = require("fidget.logger")
