@@ -26,11 +26,17 @@ fidget.logger       = require("fidget.logger")
 ---@param opts table Plugin options. See |fidget-options| or |fidget-option.txt|.
 function fidget.setup(opts) end
 
-require("fidget.options").declare(fidget, "", {
+---@options fidget [[
+---@protected
+--- Options for |fidget.setup|.
+fidget.options = {
   progress = fidget.progress,
   notification = fidget.notification,
   logger = fidget.logger,
-}, function(warn_log)
+}
+---@options ]]
+
+require("fidget.options").declare(fidget, "", fidget.options, function(warn_log)
   if fidget.options.notification.override_vim_notify then
     fidget.logger.info("overriding vim.notify() with fidget.notify()")
     vim.notify = fidget.notify
@@ -56,6 +62,7 @@ end)
 function fidget.notify(msg, level, opts)
   fidget.notification.notify(msg, level, opts)
 end
+
 fidget.notify = fidget.notification.notify
 
 return fidget

@@ -17,8 +17,10 @@ function M.default_format_message(msg)
   return message
 end
 
+---@options fidget.progress.display [[
+---@protected
 --- Options related to how LSP progress messages are displayed as notifications
-require("fidget.options").declare(M, "progress.display", {
+M.options = {
   --- How many LSP messages to show at once
   ---
   --- If `false`, no limit.
@@ -162,7 +164,9 @@ require("fidget.options").declare(M, "progress.display", {
   overrides = {
     rust_analyzer = { name = "rust-analyzer" },
   }
-})
+}
+---@options ]]
+require("fidget.options").declare(M, "progress.display", M.options)
 
 --- Construct the icon display function, based on two animation functions.
 ---

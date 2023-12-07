@@ -10,8 +10,10 @@ local logger       = require("fidget.logger")
 --- Table of progress-related autocmds, used to ensure setup() re-entrancy.
 local autocmds     = {}
 
+---@options fidget.progres [[
+---@protected
 --- Options related to LSP progress notification subsystem
-require("fidget.options").declare(progress, "progress", {
+progress.options   = {
   --- How and when to poll for progress messages
   ---
   --- Set to `0` to immediately poll on each |LspProgress| event.
@@ -113,7 +115,10 @@ require("fidget.options").declare(progress, "progress", {
 
   display = progress.display,
   lsp = progress.lsp,
-}, function()
+}
+---@options ]]
+
+require("fidget.options").declare(progress, "progress", progress.options, function()
   -- Ensure setup() reentrancy
   for _, autocmd in pairs(autocmds) do
     vim.api.nvim_del_autocmd(autocmd)

@@ -10,8 +10,10 @@
 --- ported from the legacy version still supports window-relative floats.
 local M = {}
 
--- Options related to the notification window and buffer
-require("fidget.options").declare(M, "notification.window", {
+---@options fidget.notification.window [[
+---@protected
+--- Options related to the notification window and buffer
+M.options = {
   --- Base highlight group in the notification window
   ---
   --- Used by any Fidget notification text that is not otherwise highlighted,
@@ -49,7 +51,7 @@ require("fidget.options").declare(M, "notification.window", {
   ---
   --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
   ---
-  ---@type "none" | "single" | "double" | "rounded" | "solid" | "shadow" | string[]
+  ---@type "none"|"single"|"double"|"rounded"|"solid"|"shadow"|string[]
   border = "none",
 
   --- Highlight group for notification window border
@@ -94,16 +96,19 @@ require("fidget.options").declare(M, "notification.window", {
 
   --- How to align the notification window
   ---
-  ---@type "top" | "bottom" | "avoid_cursor"
+  ---@type "top"|"bottom"|"avoid_cursor"
   align = "bottom",
 
   --- What the notification window position is relative to
   ---
   --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
   ---
-  ---@type "editor" | "win"
+  ---@type "editor"|"win"
   relative = "editor",
-})
+}
+---@options ]]
+
+require("fidget.options").declare(M, "notification.window", M.options)
 
 --- Local state maintained by this module.
 ---
@@ -374,7 +379,7 @@ function M.get_window(row, col, anchor, width, height)
   end
 
   M.win_set_local_options(state.window_id, {
-    winblend = M.options.winblend,                     -- Transparent background
+    winblend = M.options.winblend, -- Transparent background
     winhighlight = winhighlight ~= "" and winhighlight or nil,
   })
   return state.window_id

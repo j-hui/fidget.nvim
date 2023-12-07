@@ -67,9 +67,9 @@ local logger                = require("fidget.logger")
 ---
 --- To see the default values, run:
 ---
---- >vim
+--->vim
 --- :lua print(vim.inspect(require("fidget.notification").default_config))
---- <
+---<
 ---
 ---@type Config
 notification.default_config = {
@@ -89,8 +89,10 @@ notification.default_config = {
   error_annote = "ERROR",
 }
 
+---@options fidget.notification [[
+---@protected
 --- Options related to notification subsystem
-require("fidget.options").declare(notification, "notification", {
+notification.options        = {
   --- How frequently to update and render notifications
   ---
   --- Measured in Hertz (frames per second).
@@ -126,12 +128,15 @@ require("fidget.options").declare(notification, "notification", {
   --- A configuration with the key `"default"` should always be specified, and
   --- is used as the fallback for notifications lacking a group key.
   ---
-  ---@type { [Key]: Config }
+  ---@type table<Key, Config>
   configs = { default = notification.default_config },
 
   view = notification.view,
   window = notification.window,
-}, function()
+}
+---@options ]]
+
+require("fidget.options").declare(notification, "notification", notification.options, function()
   -- Need to ensure that there is some sane default config.
   if not notification.options.configs.default then
     logger.warn("no default notification config specified; using default")
