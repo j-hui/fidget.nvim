@@ -47,7 +47,7 @@ Visible elements:
 
 -   Terminal + font: [Kitty](https://sw.kovidgoyal.net/kitty/) + [Comic Shanns Mono](https://github.com/shannpersand/comic-shanns)
 -   Editor: [Neovim v0.9.4](https://github.com/neovim/neovim/tree/v0.9.4)
--   Theme: [folke/twilight.nvim](https://github.com/folke/twilight.nvim)
+-   Theme: [catppuccin/nvim (mocha, dark)](https://github.com/catppuccin/nvim)
 -   Status line: [nvim-lualine/lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
 -   Color columns: `:set colorcolumn=81,121,+1,+2` (sorry)
 -   Scrollbar: [petertriho/nvim-scrollbar](https://github.com/petertriho/nvim-scrollbar)
