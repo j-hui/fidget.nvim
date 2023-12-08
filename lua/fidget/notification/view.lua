@@ -18,9 +18,9 @@ local M = {}
 ---@field col_start   number    (byte-indexed) column to start highlight
 ---@field col_end     number    (byte-indexed) column to end highlight
 
----@options fidget.notification.view [[
+---@options notification.view [[
 ---@protected
---- Options related to how notifications are rendered as text
+--- Notifications rendering options
 M.options = {
   --- Display notification items from bottom to top
   ---

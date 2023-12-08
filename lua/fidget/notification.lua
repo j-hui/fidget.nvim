@@ -89,9 +89,9 @@ notification.default_config = {
   error_annote = "ERROR",
 }
 
----@options fidget.notification [[
+---@options notification [[
 ---@protected
---- Options related to notification subsystem
+--- Notification options
 notification.options        = {
   --- How frequently to update and render notifications
   ---

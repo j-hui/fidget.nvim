@@ -10,9 +10,9 @@ local logger       = require("fidget.logger")
 --- Table of progress-related autocmds, used to ensure setup() re-entrancy.
 local autocmds     = {}
 
----@options fidget.progres [[
+---@options progress [[
 ---@protected
---- Options related to LSP progress notification subsystem
+--- Progress options
 progress.options   = {
   --- How and when to poll for progress messages
   ---
@@ -92,9 +92,8 @@ progress.options   = {
   --- The default setting looks up and returns the LSP client name, which is
   --- also used by |fidget.option.progress.notification_group|.
   ---
-  --- Set this option to `false` to disable this feature entirely (no
-  --- |LspDetach| callback will be installed).
-  ---
+  --- Set this option to `false` to disable this feature entirely
+  --- (no |LspDetach| callback will be installed).
   ---
   ---@type false|fun(client_id: number): Key
   clear_on_detach = function(client_id)
@@ -105,9 +104,8 @@ progress.options   = {
   --- List of LSP servers to ignore
   ---
   --- Example:
-  ---
   --->lua
-  --- ignore = { "rust_analyzer" }
+  ---     ignore = { "rust_analyzer" }
   ---<
   ---
   ---@type Key[]

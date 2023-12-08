@@ -26,9 +26,9 @@ fidget.logger       = require("fidget.logger")
 ---@param opts table Plugin options. See |fidget-options| or |fidget-option.txt|.
 function fidget.setup(opts) end
 
----@options fidget [[
+---@options [[
 ---@protected
---- Options for |fidget.setup|.
+--- Options for |fidget.setup|
 fidget.options = {
   progress = fidget.progress,
   notification = fidget.notification,

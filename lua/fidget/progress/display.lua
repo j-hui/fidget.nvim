@@ -17,9 +17,9 @@ function M.default_format_message(msg)
   return message
 end
 
----@options fidget.progress.display [[
+---@options progress.display [[
 ---@protected
---- Options related to how LSP progress messages are displayed as notifications
+--- Progress display options
 M.options = {
   --- How many LSP messages to show at once
   ---

@@ -3,9 +3,9 @@ local M = {}
 
 local PLUGIN_PATH_PATTERN = "(/lua/fidget.+)"
 
----@options fidget.logger [[
+---@options logger [[
 ---@protected
---- Options related to logger
+--- Logging options
 M.options = {
   --- Minimum logging level
   ---

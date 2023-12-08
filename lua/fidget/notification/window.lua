@@ -10,9 +10,9 @@
 --- ported from the legacy version still supports window-relative floats.
 local M = {}
 
----@options fidget.notification.window [[
+---@options notification.window [[
 ---@protected
---- Options related to the notification window and buffer
+--- Notifications window options
 M.options = {
   --- Base highlight group in the notification window
   ---

@@ -15,9 +15,9 @@ local logger             = require("fidget.logger")
 ---@type number?
 local lsp_attach_autocmd = nil
 
----@options fidget.progress.lsp [[
+---@options progress.lsp [[
 ---@protected
---- Options related to Neovim's built-in LSP client
+--- Nvim LSP client options
 M.options                = {
   --- Configure the nvim's LSP progress ring buffer size
   ---
