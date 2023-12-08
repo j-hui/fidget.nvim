@@ -159,19 +159,18 @@ M.options = {
   --- Keys of the table are each notification group's `key`.
   ---
   --- Example:
-  ---
   --->lua
-  --- overrides = {
-  ---   hls = {
-  ---     name = "Haskell Language Server",
-  ---     priority = 60,
-  ---     icon = fidget.progress.display.for_icon(fidget.spinner.animate("triangle", 3), "💯"),
-  ---   },
-  ---   rust_analyzer = {
-  ---     name = "Rust Analyzer",
-  ---     icon = fidget.progress.display.for_icon(fidget.spinner.animate("arrow", 2.5), "🦀"),
-  ---   },
-  --- }
+  ---     overrides = {
+  ---       hls = {
+  ---         name = "Haskell Language Server",
+  ---         priority = 60,
+  ---         icon = fidget.progress.display.for_icon(fidget.spinner.animate("triangle", 3), "💯"),
+  ---       },
+  ---       rust_analyzer = {
+  ---         name = "Rust Analyzer",
+  ---         icon = fidget.progress.display.for_icon(fidget.spinner.animate("arrow", 2.5), "🦀"),
+  ---       },
+  ---     }
   ---<
   ---
   ---@type { [Key]: Config }
