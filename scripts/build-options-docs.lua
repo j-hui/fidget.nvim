@@ -20,6 +20,7 @@ options:
 ---@field options Option[]|nil
 ---@field shortname string
 ---@field tag string
+---@field link string
 ---@field title_line string
 
 ---@class Option
@@ -105,7 +106,14 @@ for _, filename in ipairs(files) do
   else
     --- Current module
     ---@type OptionsModule
-    local module = { filename = filename, docs = {}, shortname = "Options from " .. filename, tag = "", title_line = "" }
+    local module = {
+      filename = filename,
+      docs = {},
+      shortname = "Options from " .. filename,
+      tag = "",
+      link = "",
+      title_line = ""
+    }
 
     --- Current option
     ---@type Option
@@ -218,6 +226,7 @@ for _, module in ipairs(modules) do
 
   module.tag = #opts.tag_prefix > 0 and string.format("%s.%s", opts.tag_prefix, module.prefix) or module.prefix or
       "ERROR.NO.TAG"
+  module.link = string.format("|%s|", module.tag)
   module.tag = string.format("*%s*", module.tag)
   module.title_line = string.format("%s%s%s", module.shortname,
     string.rep(" ", math.max(opts.width_num - (#module.shortname + #module.tag), 2)), module.tag)
@@ -301,7 +310,7 @@ if opts.toc then
   for _, module in ipairs(modules) do
     if #module.options > 0 then
       print(string.format("%s %s %s", module.shortname,
-        string.rep(".", math.max(opts.width_num - 2 - (#module.shortname + #module.tag), 0)), module.tag))
+        string.rep(".", math.max(opts.width_num - 2 - (#module.shortname + #module.link), 0)), module.link))
     end
   end
   blank()
