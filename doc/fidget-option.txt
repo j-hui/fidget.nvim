@@ -10,6 +10,20 @@ For general documentation, see |fidget.txt|.
 For Fidget's Lua API documentation, see |fidget-api.txt|.
 
 ==============================================================================
+Table of Contents                                          *fidget.option.toc*
+
+Progress options .................................... *fidget.option.progress*
+Progress display options .................... *fidget.option.progress.display*
+Nvim LSP client options ......................... *fidget.option.progress.lsp*
+Notification options ............................ *fidget.option.notification*
+Notifications rendering options ............ *fidget.option.notification.view*
+Notifications window options ............. *fidget.option.notification.window*
+Logging options ....................................... *fidget.option.logger*
+
+
+==============================================================================
+Progress options                                      *fidget.option.progress*
+
 
 progress.poll_rate                          *fidget.option.progress.poll_rate*
 
@@ -69,12 +83,12 @@ progress.ignore_done_already      *fidget.option.progress.ignore_done_already*
 
 progress.ignore_empty_message    *fidget.option.progress.ignore_empty_message*
 
-    Ignore new tasks that don’t contain a message
+    Ignore new tasks that don't contain a message
 
-    Some servers may send empty messages for tasks that don’t actually exist.
+    Some servers may send empty messages for tasks that don't actually exist.
     And if those tasks are never completed, they will become stale in Fidget.
-    This option tells Fidget to ignore such messages unless the LSP server
-    has anything meaningful to say. (See #171)
+    This option tells Fidget to ignore such messages unless the LSP server has
+    anything meaningful to say. (See #171)
 
     Note that progress messages for new empty tasks will be dropped, but
     existing tasks will be processed to completion.
@@ -88,17 +102,17 @@ progress.ignore_empty_message    *fidget.option.progress.ignore_empty_message*
 
 progress.notification_group        *fidget.option.progress.notification_group*
 
-    How to get a progress message’s notification group key
+    How to get a progress message's notification group key
 
     Set this to return a constant to group all LSP progress messages together,
     e.g.,
 
 >lua
-        notification_group = function(msg)
-          -- N.B. you may also want to configure this group key ("lsp_progress")
-          -- using progress.display.overrides or notification.configs
-          return "lsp_progress"
-        end
+    notification_group = function(msg)
+      -- N.B. you may also want to configure this group key ("lsp_progress")
+      -- using progress.display.overrides or notification.configs
+      return "lsp_progress"
+    end
 <
 
     Type: ~
@@ -107,10 +121,9 @@ progress.notification_group        *fidget.option.progress.notification_group*
     Default: ~
 >lua
         function(msg)
-            return msg.lsp_client.name
+          return msg.lsp_client.name
         end
 <
-
 
 progress.clear_on_detach              *fidget.option.progress.clear_on_detach*
 
@@ -123,22 +136,19 @@ progress.clear_on_detach              *fidget.option.progress.clear_on_detach*
     The default setting looks up and returns the LSP client name, which is
     also used by |fidget.option.progress.notification_group|.
 
-    Set this option to `false` to disable this feature entirely (no
-    |LspDetach| callback will be installed).
-
-    Default value:
+    Set this option to `false` to disable this feature entirely
+    (no |LspDetach| callback will be installed).
 
     Type: ~
         `false|fun(client_id: number): Key`
 
     Default: ~
 >lua
-        clear_on_detach = function(client_id)
+        function(client_id)
           local client = vim.lsp.get_client_by_id(client_id)
           return client and client.name or nil
         end
 <
-
 
 progress.ignore                                *fidget.option.progress.ignore*
 
@@ -154,6 +164,10 @@ progress.ignore                                *fidget.option.progress.ignore*
 
     Default: ~
         `{}`
+
+
+==============================================================================
+Progress display options                      *fidget.option.progress.display*
 
 
 progress.display.render_limit    *fidget.option.progress.display.render_limit*
@@ -186,6 +200,7 @@ progress.display.done_ttl            *fidget.option.progress.display.done_ttl*
 
     Default: ~
         `3`
+
 
 progress.display.done_icon          *fidget.option.progress.display.done_icon*
 
@@ -244,13 +259,13 @@ progress.display.progress_icon  *fidget.option.progress.display.progress_icon*
     it is used as the animation function.
 
     Type: ~
-        `string|Manga`
+        `string|Manga|Anime`
 
     Default: ~
         `{ "dots" }`
 
 
-progress.display.progress_style *fidget.option.progress.display.progress_style*
+progress.display.progress_style  *fidget.option.progress.display.progress_style*
 
     Highlight group for in-progress LSP tasks
 
@@ -283,7 +298,6 @@ progress.display.icon_style        *fidget.option.progress.display.icon_style*
         `"Question"`
 
 
-
 progress.display.priority            *fidget.option.progress.display.priority*
 
     Ordering priority for LSP notification group
@@ -295,11 +309,9 @@ progress.display.priority            *fidget.option.progress.display.priority*
         `30`
 
 
-progress.display.format_message *fidget.option.progress.display.format_message*
-
+progress.display.format_message  *fidget.option.progress.display.format_message*
 
     How to format a progress message
-
 
     Example:
 
@@ -320,21 +332,8 @@ progress.display.format_message *fidget.option.progress.display.format_message*
         `fun(msg: ProgressMessage): string`
 
     Default: ~
-        `fidget.display.default_format_message`
+        `M.default_format_message`
 
-    where
->lua
-        function fidget.display.default_format_message(msg)
-          local message = msg.message
-          if not message then
-            message = msg.done and "Completed" or "In progress..."
-          end
-          if msg.percentage ~= nil then
-            message = string.format("%s (%.0f%%)", message, msg.percentage)
-          end
-          return message
-        end
-<
 
 progress.display.format_annote  *fidget.option.progress.display.format_annote*
 
@@ -344,64 +343,44 @@ progress.display.format_annote  *fidget.option.progress.display.format_annote*
         `fun(msg: ProgressMessage): string`
 
     Default: ~
-        `msg.title`
-
-
-
-progress.display.format_group_name *fidget.option.progress.display.format_group_name*
-
-    How to format a progress notification group’s name
-
-    Example:
 >lua
-        format_group_name = function(group)
-          return "lsp:" .. tostring(group)
+        function(msg)
+          return msg.title
         end
 <
 
+progress.display.format_group_name  *fidget.option.progress.display.format_group_name*
+
+    How to format a progress notification group's name
+
+    Example:
+
+>lua
+    format_group_name = function(group)
+      return "lsp:" .. tostring(group)
+    end
+<
+
     Type: ~
-        `fun(group: NotificationKey): NotificationDisplay`
+        `fun(group: Key): Display`
 
     Default: ~
         `tostring`
 
-progress.display.overrides          *fidget.option.progress.display.overrides*
 
-    Override options from the default notification config
-
-    Keys of the table are each notification group’s `key`.
-
-    Example:
->lua
-        overrides = {
-          hls = {
-            name = "Haskell Language Server",
-            priority = 60,
-            icon = fidget.progress.display.for_icon(fidget.spinner.animate("triangle", 3), "💯"),
-          },
-          rust_analyzer = {
-            name = "Rust Analyzer",
-            icon = fidget.progress.display.for_icon(fidget.spinner.animate("arrow", 2.5), "🦀"),
-          },
-        }
-<
-
-    Type: ~
-        `{ [NotificationKey]: NotificationConfig }`
-
-    Default: ~
-        `{ rust_analyzer = { name = "rust-analyzer" } }`
+==============================================================================
+Nvim LSP client options                           *fidget.option.progress.lsp*
 
 
-progress.lsp.progress_ringbuf_size *fidget.option.progress.lsp.progress_ringbuf_size*
+progress.lsp.progress_ringbuf_size  *fidget.option.progress.lsp.progress_ringbuf_size*
 
-    Configure the nvim’s LSP progress ring buffer size
+    Configure the nvim's LSP progress ring buffer size
 
     Useful for avoiding progress message overflow when the LSP server blasts
     more messages than the ring buffer can handle (see #167).
 
     Leaves the progress ringbuf size at its default if this setting is 0 or
-    less. Doesn’t do anything for Neovim pre-v0.10.0.
+    less. Doesn't do anything for Neovim pre-v0.10.0.
 
     Type: ~
         `number`
@@ -409,9 +388,14 @@ progress.lsp.progress_ringbuf_size *fidget.option.progress.lsp.progress_ringbuf_
     Default: ~
         `0`
 
+
+==============================================================================
+Notification options                              *fidget.option.notification*
+
+
 notification.poll_rate                  *fidget.option.notification.poll_rate*
 
-    How frequently to poll and render notifications
+    How frequently to update and render notifications
 
     Measured in Hertz (frames per second).
 
@@ -426,7 +410,6 @@ notification.filter                        *fidget.option.notification.filter*
 
     Minimum notifications level
 
-
     Note that this filter only applies to notifications with an explicit
     numeric level (i.e., `vim.log.levels`).
 
@@ -434,20 +417,21 @@ notification.filter                        *fidget.option.notification.filter*
     numeric level, or `vim.log.levels.TRACE` to turn off filtering.
 
     Type: ~
-        `vim.log.levels`
+        `0|1|2|3|4|5`
 
     Default: ~
         `vim.log.levels.INFO`
 
 
-notification.override_vim_notify *fidget.option.notification.override_vim_notify*
+notification.override_vim_notify  *fidget.option.notification.override_vim_notify*
 
     Automatically override vim.notify() with Fidget
 
     Equivalent to the following:
+
 >lua
-        fidget.setup({ --[[ options ]] })
-        vim.notify = fidget.notify
+    fidget.setup({ --[[ options ]] })
+    vim.notify = fidget.notify
 <
 
     Type: ~
@@ -461,35 +445,21 @@ notification.configs                      *fidget.option.notification.configs*
 
     How to configure notification groups when instantiated
 
-    A configuration with the key `"default"` should always be specified, and is
-    used as the fallback for notifications lacking a group key.
+    A configuration with the key `"default"` should always be specified, and
+    is used as the fallback for notifications lacking a group key.
 
     Type: ~
-        `{ [NotificationKey]: NotificationConfig }`
+        `table<Key, Config>`
 
     Default: ~
-        `{ default = fidget.notification.default_config }`)
-
-    where
->lua
-        fidget.notification.default_config = {
-          name = "Notifications",
-          icon = "❰❰",
-          ttl = 5,
-          group_style = "Title",
-          icon_style = "Special",
-          annote_style = "Question",
-          debug_style = "Comment",
-          warn_style = "WarningMsg",
-          error_style = "ErrorMsg",
-          debug_annote = "DEBUG",
-          info_annote = "INFO",
-          warn_annote = "WARN",
-          error_annote = "ERROR",
-        }
+        `{ default = notification.default_config }`
 
 
-notification.view.stack_upwards *fidget.option.notification.view.stack_upwards*
+==============================================================================
+Notifications rendering options              *fidget.option.notification.view*
+
+
+notification.view.stack_upwards  *fidget.option.notification.view.stack_upwards*
 
     Display notification items from bottom to top
 
@@ -503,13 +473,12 @@ notification.view.stack_upwards *fidget.option.notification.view.stack_upwards*
         `true`
 
 
-notification.view.icon_separator *fidget.option.notification.view.icon_separator*
+notification.view.icon_separator  *fidget.option.notification.view.icon_separator*
 
     Separator between group name and icon
 
-    Must not contain any newlines. Set to `""` to remove the gap between names and
-    icons in all notification groups.
-
+    Must not contain any newlines. Set to `""` to remove the gap between names
+    and icons in all notification groups.
 
     Type: ~
         `string`
@@ -518,28 +487,24 @@ notification.view.icon_separator *fidget.option.notification.view.icon_separator
         `" "`
 
 
-notification.view.group_separator *fidget.option.notification.view.group_separator*
+notification.view.group_separator_hl  *fidget.option.notification.view.group_separator_hl*
 
     Separator between notification groups
 
-    Must not contain any newlines. Set to `nil` to omit separator entirely.
+    Must not contain any newlines. Set to `false` to omit separator entirely.
 
-    Type: ~
-        `string|nil`
-
-    Default: ~
-        `"---"`
-
-
-notification.view.group_separator_hl *fidget.option.notification.view.group_separator_hl*
-
+    ",
     Highlight group used for group separator
 
     Type: ~
-        `string|nil`
+        `string|false`
 
     Default: ~
         `"Comment"`
+
+
+==============================================================================
+Notifications window options               *fidget.option.notification.window*
 
 
 notification.window.normal_hl    *fidget.option.notification.window.normal_hl*
@@ -551,6 +516,8 @@ notification.window.normal_hl    *fidget.option.notification.window.normal_hl*
 
     Note that we use this blanket highlight for all messages to avoid adding
     separate highlights to each line (whose lengths may vary).
+
+    Set to empty string to keep your theme defaults.
 
     With `winblend` set to anything less than `100`, this will also affect the
     background color in the notification box area (see `winblend` docs).
@@ -576,7 +543,7 @@ notification.window.winblend      *fidget.option.notification.window.winblend*
     "boxed" area (especially if you are using a non-"none" `border`), you may
     consider setting `winblend` to something less than `100`.
 
-    See also: options for |nvim_open_win()|.
+    See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
 
     Type: ~
         `number`
@@ -589,13 +556,26 @@ notification.window.border          *fidget.option.notification.window.border*
 
     Border around the notification window
 
-    See also: options for |nvim_open_win()|.
+    See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
 
     Type: ~
-        `"none" | "single" | "double" | "rounded" | "solid" | "shadow" | string[]`
+        `"none"|"single"|"double"|"rounded"|"solid"|"shadow"|string[]`
 
     Default: ~
         `"none"`
+
+
+notification.window.border_hl    *fidget.option.notification.window.border_hl*
+
+    Highlight group for notification window border
+
+    Set to empty string to keep your theme's default `FloatBorder` highlight.
+
+    Type: ~
+        `string`
+
+    Default: ~
+        `""`
 
 
 notification.window.zindex          *fidget.option.notification.window.zindex*
@@ -604,7 +584,7 @@ notification.window.zindex          *fidget.option.notification.window.zindex*
 
     Note that the default priority for Vim windows is 50.
 
-    See also: options for |nvim_open_win()|.
+    See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
 
     Type: ~
         `number`
@@ -613,7 +593,7 @@ notification.window.zindex          *fidget.option.notification.window.zindex*
         `45`
 
 
-notification.window.width            *fidget.option.notification.window.width*
+notification.window.max_width    *fidget.option.notification.window.max_width*
 
     Maximum width of the notification window
 
@@ -626,8 +606,7 @@ notification.window.width            *fidget.option.notification.window.width*
         `0`
 
 
-
-notification.window.height          *fidget.option.notification.window.height*
+notification.window.max_height  *fidget.option.notification.window.max_height*
 
     Maximum height of the notification window
 
@@ -677,7 +656,7 @@ notification.window.relative      *fidget.option.notification.window.relative*
 
     What the notification window position is relative to
 
-    See also: options for |nvim_open_win()|.
+    See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
 
     Type: ~
         `"editor"|"win"`
@@ -686,7 +665,11 @@ notification.window.relative      *fidget.option.notification.window.relative*
         `"editor"`
 
 
-logger.level                                             *fidget-logger.level*
+==============================================================================
+Logging options                                         *fidget.option.logger*
+
+
+logger.level                                      *fidget.option.logger.level*
 
     Minimum logging level
 
@@ -697,13 +680,13 @@ logger.level                                             *fidget-logger.level*
     different from `notification.filter`, which filters `notify()` messages.
 
     Type: ~
-        `vim.log.levels`
+        `0|1|2|3|4|5`
 
     Default: ~
         `vim.log.levels.WARN`
 
 
-logger.float_precision                         *fidget-logger.float_precision*
+logger.float_precision                  *fidget.option.logger.float_precision*
 
     Limit the number of decimals displayed for floats
 
@@ -714,7 +697,7 @@ logger.float_precision                         *fidget-logger.float_precision*
         `0.01`
 
 
-logger.path                                               *fidget-logger.path*
+logger.path                                        *fidget.option.logger.path*
 
     Where Fidget writes its logs to
 
@@ -727,4 +710,5 @@ logger.path                                               *fidget-logger.path*
     Default: ~
         `string.format("%s/fidget.nvim.log", vim.fn.stdpath("cache"))`
 
-vim:tw=78:ts=4:ft=help:norl:
+
+vim:tw=78:ts=8:noet:ft=help:norl:
