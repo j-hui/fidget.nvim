@@ -18,6 +18,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install luajit
+      run: sudo apt install -y luajit
+
+    - name: Options docs from code
+      run: ./scripts/build-options-docs.sh
+
     - name: API docs from code
       run: ./scripts/build-api-docs.sh
 
