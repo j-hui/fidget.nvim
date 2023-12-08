@@ -39,4 +39,4 @@ $lua scripts/build-options-docs.lua --strip 1 --tag fidget.option \
   lua/fidget/logger.lua \
   >> "$txt"
 
-echo "vim:tw=78:ts=8:noet:ft=help:norl:" >> "$txt"
+echo "vim:tw=78:ts=4:ft=help:norl:" >> "$txt"
