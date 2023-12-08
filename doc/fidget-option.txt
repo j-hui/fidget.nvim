@@ -12,13 +12,13 @@ For Fidget's Lua API documentation, see |fidget-api.txt|.
 ==============================================================================
 Table of Contents                                          *fidget.option.toc*
 
-Progress options .................................... *fidget.option.progress*
-Progress display options .................... *fidget.option.progress.display*
-Nvim LSP client options ......................... *fidget.option.progress.lsp*
-Notification options ............................ *fidget.option.notification*
-Notifications rendering options ............ *fidget.option.notification.view*
-Notifications window options ............. *fidget.option.notification.window*
-Logging options ....................................... *fidget.option.logger*
+Progress options .................................... |fidget.option.progress|
+Progress display options .................... |fidget.option.progress.display|
+Nvim LSP client options ......................... |fidget.option.progress.lsp|
+Notification options ............................ |fidget.option.notification|
+Notifications rendering options ............ |fidget.option.notification.view|
+Notifications window options ............. |fidget.option.notification.window|
+Logging options ....................................... |fidget.option.logger|
 
 
 ==============================================================================
