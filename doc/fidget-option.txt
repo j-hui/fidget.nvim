@@ -106,13 +106,12 @@ progress.notification_group        *fidget.option.progress.notification_group*
 
     Set this to return a constant to group all LSP progress messages together,
     e.g.,
-
 >lua
-    notification_group = function(msg)
-      -- N.B. you may also want to configure this group key ("lsp_progress")
-      -- using progress.display.overrides or notification.configs
-      return "lsp_progress"
-    end
+        notification_group = function(msg)
+          -- N.B. you may also want to configure this group key ("lsp_progress")
+          -- using progress.display.overrides or notification.configs
+          return "lsp_progress"
+        end
 <
 
     Type: ~
@@ -313,20 +312,34 @@ progress.display.format_message  *fidget.option.progress.display.format_message*
 
     How to format a progress message
 
-    Example:
-
+    Example: ~
 >lua
-    format_message = function(msg)
-      if string.find(msg.title, "Indexing") then
-        return nil -- Ignore "Indexing..." progress messages
-      end
-      if msg.message then
-        return msg.message
-      else
-        return msg.done and "Completed" or "In progress..."
-      end
-    end
+        format_message = function(msg)
+          if string.find(msg.title, "Indexing") then
+            return nil -- Ignore "Indexing..." progress messages
+          end
+          if msg.message then
+            return msg.message
+          else
+            return msg.done and "Completed" or "In progress..."
+          end
+        end
 <
+
+    Note that the default value is something like:
+>lua
+        function fidget.display.default_format_message(msg)
+          local message = msg.message
+          if not message then
+            message = msg.done and "Completed" or "In progress..."
+          end
+          if msg.percentage ~= nil then
+            message = string.format("%s (%.0f%%)", message, msg.percentage)
+          end
+          return message
+        end
+<
+    (See plugin source code for ground truth in case docs are out of date.)
 
     Type: ~
         `fun(msg: ProgressMessage): string`
@@ -367,6 +380,38 @@ progress.display.format_group_name  *fidget.option.progress.display.format_group
     Default: ~
         `tostring`
 
+
+progress.display.overrides          *fidget.option.progress.display.overrides*
+
+    Override options from the default notification config
+
+    Keys of the table are each notification group's `key`.
+
+    Example:
+
+>lua
+    overrides = {
+      hls = {
+        name = "Haskell Language Server",
+        priority = 60,
+        icon = fidget.progress.display.for_icon(fidget.spinner.animate("triangle", 3), "💯"),
+      },
+      rust_analyzer = {
+        name = "Rust Analyzer",
+        icon = fidget.progress.display.for_icon(fidget.spinner.animate("arrow", 2.5), "🦀"),
+      },
+    }
+<
+
+    Type: ~
+        `{ [Key]: Config }`
+
+    Default: ~
+>lua
+        {
+          rust_analyzer = { name = "rust-analyzer" },
+        }
+<
 
 ==============================================================================
 Nvim LSP client options                           *fidget.option.progress.lsp*
@@ -428,10 +473,9 @@ notification.override_vim_notify  *fidget.option.notification.override_vim_notif
     Automatically override vim.notify() with Fidget
 
     Equivalent to the following:
-
 >lua
-    fidget.setup({ --[[ options ]] })
-    vim.notify = fidget.notify
+        fidget.setup({ --[[ options ]] })
+        vim.notify = fidget.notify
 <
 
     Type: ~
@@ -447,6 +491,11 @@ notification.configs                      *fidget.option.notification.configs*
 
     A configuration with the key `"default"` should always be specified, and
     is used as the fallback for notifications lacking a group key.
+
+    To see the default config, run:
+>vim
+        :lua print(vim.inspect(require("fidget.notification").default_config))
+<
 
     Type: ~
         `table<Key, Config>`
@@ -487,13 +536,21 @@ notification.view.icon_separator  *fidget.option.notification.view.icon_separato
         `" "`
 
 
-notification.view.group_separator_hl  *fidget.option.notification.view.group_separator_hl*
+notification.view.group_separator  *fidget.option.notification.view.group_separator*
 
     Separator between notification groups
 
     Must not contain any newlines. Set to `false` to omit separator entirely.
 
-    ",
+    Type: ~
+        `string|false`
+
+    Default: ~
+        `"--"`
+
+
+notification.view.group_separator_hl  *fidget.option.notification.view.group_separator_hl*
+
     Highlight group used for group separator
 
     Type: ~
@@ -543,7 +600,7 @@ notification.window.winblend      *fidget.option.notification.window.winblend*
     "boxed" area (especially if you are using a non-"none" `border`), you may
     consider setting `winblend` to something less than `100`.
 
-    See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+    See also: options for |nvim_open_win()|
 
     Type: ~
         `number`
@@ -556,7 +613,7 @@ notification.window.border          *fidget.option.notification.window.border*
 
     Border around the notification window
 
-    See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+    See also: options for |nvim_open_win()|
 
     Type: ~
         `"none"|"single"|"double"|"rounded"|"solid"|"shadow"|string[]`
@@ -584,7 +641,7 @@ notification.window.zindex          *fidget.option.notification.window.zindex*
 
     Note that the default priority for Vim windows is 50.
 
-    See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+    See also: options for |nvim_open_win()|
 
     Type: ~
         `number`
@@ -656,7 +713,7 @@ notification.window.relative      *fidget.option.notification.window.relative*
 
     What the notification window position is relative to
 
-    See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+    See also: options for |nvim_open_win()|
 
     Type: ~
         `"editor"|"win"`
@@ -711,4 +768,4 @@ logger.path                                        *fidget.option.logger.path*
         `string.format("%s/fidget.nvim.log", vim.fn.stdpath("cache"))`
 
 
-vim:tw=78:ts=8:noet:ft=help:norl:
+vim:tw=78:ts=4:ft=help:norl:
