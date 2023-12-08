@@ -43,7 +43,7 @@ M.options = {
   --- Must not contain any newlines. Set to `false` to omit separator entirely.
   ---
   ---@type string|false
-  group_separator = "---",
+  group_separator = "--",
 
   --- Highlight group used for group separator
   ---

@@ -102,20 +102,34 @@ M.options = {
 
   --- How to format a progress message
   ---
-  --- Example:
-  ---
+  --- Example: ~
   --->lua
-  --- format_message = function(msg)
-  ---   if string.find(msg.title, "Indexing") then
-  ---     return nil -- Ignore "Indexing..." progress messages
-  ---   end
-  ---   if msg.message then
-  ---     return msg.message
-  ---   else
-  ---     return msg.done and "Completed" or "In progress..."
-  ---   end
-  --- end
+  ---     format_message = function(msg)
+  ---       if string.find(msg.title, "Indexing") then
+  ---         return nil -- Ignore "Indexing..." progress messages
+  ---       end
+  ---       if msg.message then
+  ---         return msg.message
+  ---       else
+  ---         return msg.done and "Completed" or "In progress..."
+  ---       end
+  ---     end
   ---<
+  ---
+  --- Note that the default value is something like:
+  --->lua
+  ---     function fidget.display.default_format_message(msg)
+  ---       local message = msg.message
+  ---       if not message then
+  ---         message = msg.done and "Completed" or "In progress..."
+  ---       end
+  ---       if msg.percentage ~= nil then
+  ---         message = string.format("%s (%.0f%%)", message, msg.percentage)
+  ---       end
+  ---       return message
+  ---     end
+  ---<
+  --- (See plugin source code for ground truth in case docs are out of date.)
   ---
   ---@type fun(msg: ProgressMessage): string
   format_message = M.default_format_message,
@@ -163,7 +177,7 @@ M.options = {
   ---@type { [Key]: Config }
   overrides = {
     rust_analyzer = { name = "rust-analyzer" },
-  }
+  },
 }
 ---@options ]]
 require("fidget.options").declare(M, "progress.display", M.options)

@@ -69,13 +69,12 @@ progress.options   = {
   ---
   --- Set this to return a constant to group all LSP progress messages together,
   --- e.g.,
-  ---
   --->lua
-  --- notification_group = function(msg)
-  ---   -- N.B. you may also want to configure this group key ("lsp_progress")
-  ---   -- using progress.display.overrides or notification.configs
-  ---   return "lsp_progress"
-  --- end
+  ---     notification_group = function(msg)
+  ---       -- N.B. you may also want to configure this group key ("lsp_progress")
+  ---       -- using progress.display.overrides or notification.configs
+  ---       return "lsp_progress"
+  ---     end
   ---<
   ---
   ---@type fun(msg: ProgressMessage): Key

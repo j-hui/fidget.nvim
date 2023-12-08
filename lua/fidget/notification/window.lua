@@ -42,14 +42,14 @@ M.options = {
   --- "boxed" area (especially if you are using a non-"none" `border`), you may
   --- consider setting `winblend` to something less than `100`.
   ---
-  --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+  --- See also: options for |nvim_open_win()|
   ---
   ---@type number
   winblend = 100,
 
   --- Border around the notification window
   ---
-  --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+  --- See also: options for |nvim_open_win()|
   ---
   ---@type "none"|"single"|"double"|"rounded"|"solid"|"shadow"|string[]
   border = "none",
@@ -65,7 +65,7 @@ M.options = {
   ---
   --- Note that the default priority for Vim windows is 50.
   ---
-  --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+  --- See also: options for |nvim_open_win()|
   ---
   ---@type number
   zindex = 45,
@@ -101,7 +101,7 @@ M.options = {
 
   --- What the notification window position is relative to
   ---
-  --- See also: options for [nvim_open_win()](https://neovim.io/doc/user/api.html#nvim_open_win()).
+  --- See also: options for |nvim_open_win()|
   ---
   ---@type "editor"|"win"
   relative = "editor",
@@ -207,7 +207,7 @@ function M.get_editor_dimensions()
   return width, height
 end
 
---- Compute the row, col, anchor for nvim_open_win() to align the window.
+--- Compute the row, col, anchor for |nvim_open_win()| to align the window.
 ---
 --- (Thanks @levouh!)
 ---

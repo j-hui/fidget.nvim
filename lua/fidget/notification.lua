@@ -114,10 +114,9 @@ notification.options        = {
   --- Automatically override vim.notify() with Fidget
   ---
   --- Equivalent to the following:
-  ---
   --->lua
-  --- fidget.setup({ --[[ options ]] })
-  --- vim.notify = fidget.notify
+  ---     fidget.setup({ --[[ options ]] })
+  ---     vim.notify = fidget.notify
   ---<
   ---
   ---@type boolean
@@ -127,6 +126,11 @@ notification.options        = {
   ---
   --- A configuration with the key `"default"` should always be specified, and
   --- is used as the fallback for notifications lacking a group key.
+  ---
+  --- To see the default config, run:
+  --->vim
+  ---     :lua print(vim.inspect(require("fidget.notification").default_config))
+  ---<
   ---
   ---@type table<Key, Config>
   configs = { default = notification.default_config },
