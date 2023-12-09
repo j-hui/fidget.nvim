@@ -36,6 +36,7 @@ $lua scripts/build-options-docs.lua --strip 1 --tag fidget.option \
   lua/fidget/notification.lua \
   lua/fidget/notification/view.lua \
   lua/fidget/notification/window.lua \
+  lua/fidget/integration/nvim-tree.lua \
   lua/fidget/logger.lua \
   >> "$txt"
 

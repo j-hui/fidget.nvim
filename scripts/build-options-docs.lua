@@ -129,7 +129,7 @@ for _, filename in ipairs(files) do
       done = false
 
       -- Look for ---@options (prefix) [[
-      found, _, cap1 = string.find(line, "%-%-%-@options%s*([%w%.]*)%s*%[%[")
+      found, _, cap1 = string.find(line, "%-%-%-@options%s*([%w%._-]*)%s*%[%[")
       if found then
         if module.prefix ~= nil then
           print("Error: file contains multiple @options tags: " .. filename)

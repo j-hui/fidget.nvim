@@ -12,7 +12,7 @@ Extensible UI for Neovim notifications and LSP progress messages.
 <details>
   <summary>Demo setup</summary>
 
-*Note that this demo may not always reflect the exact behavior of the latest release.*
+_Note that this demo may not always reflect the exact behavior of the latest release._
 
 This screen recording was taken as I opened a Rust file I'm working on,
 triggering `rust-analyzer` to send me some LSP progress messages.
@@ -45,12 +45,12 @@ rendering and make the demo look glitchy...)
 
 Visible elements:
 
--   Terminal + font: [Kitty](https://sw.kovidgoyal.net/kitty/) + [Comic Shanns Mono](https://github.com/shannpersand/comic-shanns)
--   Editor: [Neovim v0.9.4](https://github.com/neovim/neovim/tree/v0.9.4)
--   Theme: [catppuccin/nvim (mocha, dark)](https://github.com/catppuccin/nvim)
--   Status line: [nvim-lualine/lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
--   Color columns: `:set colorcolumn=81,121,+1,+2` (sorry)
--   Scrollbar: [petertriho/nvim-scrollbar](https://github.com/petertriho/nvim-scrollbar)
+- Terminal + font: [Kitty](https://sw.kovidgoyal.net/kitty/) + [Comic Shanns Mono](https://github.com/shannpersand/comic-shanns)
+- Editor: [Neovim v0.9.4](https://github.com/neovim/neovim/tree/v0.9.4)
+- Theme: [catppuccin/nvim (mocha, dark)](https://github.com/catppuccin/nvim)
+- Status line: [nvim-lualine/lualine.nvim](https://github.com/nvim-lualine/lualine.nvim)
+- Color columns: `:set colorcolumn=81,121,+1,+2` (sorry)
+- Scrollbar: [petertriho/nvim-scrollbar](https://github.com/petertriho/nvim-scrollbar)
 
 </details>
 
@@ -218,6 +218,13 @@ For instance, using [Lazy](https://github.com/folke/lazy.nvim):
       y_padding = 0,              -- Padding from bottom edge of window boundary
       align = "bottom",           -- How to align the notification window
       relative = "editor",        -- What the notification window position is relative to
+    },
+  },
+
+  -- Options related to integrating with other plugins
+  integration = {
+    ["nvim-tree"] = {
+      enable = true,              -- Integrate with nvim-tree/nvim-tree.lua (if installed)
     },
   },
 

@@ -135,7 +135,7 @@ local state = {
   --- Useful for temporarily adding additional padding to account for space
   --- taken up by other plugins' windows.
   ---
-  ---@type number|nil
+  ---@type number
   x_offset = 0,
 }
 

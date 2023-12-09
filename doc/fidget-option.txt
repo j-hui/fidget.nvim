@@ -18,6 +18,7 @@ Nvim LSP client options ......................... |fidget.option.progress.lsp|
 Notification options ............................ |fidget.option.notification|
 Notifications rendering options ............ |fidget.option.notification.view|
 Notifications window options ............. |fidget.option.notification.window|
+nvim-tree integration .................. |fidget.option.integration.nvim-tree|
 Logging options ....................................... |fidget.option.logger|
 
 
@@ -719,6 +720,24 @@ notification.window.relative      *fidget.option.notification.window.relative*
 
     Default: ~
         `"editor"`
+
+
+==============================================================================
+nvim-tree integration                    *fidget.option.integration.nvim-tree*
+
+
+integration.nvim-tree.enable      *fidget.option.integration.nvim-tree.enable*
+
+    Integrate with nvim-tree/nvim-tree.lua (if installed)
+
+    Dynamically offset Fidget's notifications window when the nvim-tree window
+    is open on the right side + the Fidget window is "editor"-relative.
+
+    Type: ~
+        `boolean`
+
+    Default: ~
+        `true`
 
 
 ==============================================================================
