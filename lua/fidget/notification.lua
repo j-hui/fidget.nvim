@@ -19,7 +19,7 @@ local logger                = require("fidget.logger")
 --- Third (opts) parameter passed to |fidget.notification.notify|.
 ---@class Options
 ---@field key           Key|nil       Replace existing notification item of the same key
----@field group         any|nil       Group that this notification item belongs to
+---@field group         Key|nil       Group that this notification item belongs to
 ---@field annote        string|nil    Optional single-line title that accompanies the message
 ---@field hidden        boolean|nil   Whether this item should be shown
 ---@field ttl           number|nil    How long after a notification item should exist; pass 0 to use default value
@@ -297,6 +297,15 @@ function notification.suppress(suppress)
   if view_suppressed then
     notification.close()
   end
+end
+
+--- Remove an item from a particular group.
+---
+---@param group_key Key
+---@param item_key Key
+---@return boolean successfully_removed
+function notification.remove(group_key, item_key)
+  return notification.model.remove(groups, group_key, item_key)
 end
 
 return notification

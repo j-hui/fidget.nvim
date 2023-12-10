@@ -170,6 +170,32 @@ function M.update(now, configs, groups, msg, level, opts)
   end
 end
 
+--- Remove an item from a particular group.
+---
+---@param groups Group[]
+---@param group_key Key
+---@param item_key Key
+---@return boolean successfully_removed
+function M.remove(groups, group_key, item_key)
+  for g, group in ipairs(groups) do
+    if group.key == group_key then
+      for i, item in ipairs(group.items) do
+        if item.key == item_key then
+          -- Note that it should be safe to perform destructive updates to the
+          -- arrays here since we're no longer iterating.
+          table.remove(group.items, i)
+          if #group.items == 0 then
+            table.remove(groups, g)
+          end
+          return true
+        end
+      end
+      return false -- Found group, but didn't find item
+    end
+  end
+  return false -- Did not find group
+end
+
 --- Prune out all items (and groups) for which the ttl has elapsed.
 ---
 --- Updates each group in-place (i.e., removes items from them), but returns
