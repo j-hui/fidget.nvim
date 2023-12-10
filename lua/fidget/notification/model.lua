@@ -8,34 +8,33 @@
 --- (2) to accumulate repeated, asynchronous in-place-updating notifications,
 ---     and avoid building strings for no reason; and
 --- (3) to enable fine-grained cacheing of rendered elements.
+---
+--- Types and functions defined in this module are considered private, and won't
+--- be added to code documentation.
 local M = {}
 
---- A collection of NotificationItems.
+--- The abstract state of the notifications subsystem.
+---@class State
+---@field groups          Group[] active notification groups
+---@field view_suppressed boolean whether the notification window is suppressed.
+
+--- A collection of notification Items.
 ---@class Group
 ---@field key           Key     used to distinguish this group from others
 ---@field config        Config  configuration for this group
 ---@field items         Item[]  items displayed in the group
 
---- Notification element containing a message and optional annotation.
----@class Item
----@field key         Key         used to distinguish this item from others
----@field message     string      displayed message for the item
----@field annote      string|nil  optional title that accompanies the message
----@field style       string      style used to render the annote/title, if any
----@field hidden      boolean     whether this item should be shown
----@field expires_at  number      what time this item should be removed; math.huge means never
----@field data        any|nil     arbitrary data attached to notification item
-
 --- Get the notification group indexed by group_key; create one if none exists.
 ---
----@param   configs     { [Key]: Config }
+---@param   configs     table<Key, Config>
 ---@param   groups      Group[]
 ---@param   group_key   Key
----@return              Group group
+---@return              Group      group
+---@return              number|nil new_index
 local function get_group(configs, groups, group_key)
   for _, group in ipairs(groups) do
     if group.key == group_key then
-      return group
+      return group, nil
     end
   end
 
@@ -48,7 +47,7 @@ local function get_group(configs, groups, group_key)
     config = configs[group_key] or configs.default
   }
   table.insert(groups, group)
-  return group
+  return group, #groups
 end
 
 --- Search for an item with the given key among a notification group.
@@ -133,19 +132,22 @@ end
 ---@protected
 ---@param now     number
 ---@param configs table<string, Config>
----@param groups  Group[]
+---@param state   State
 ---@param msg     string|nil
 ---@param level   Level|nil
 ---@param opts    Options|nil
-function M.update(now, configs, groups, msg, level, opts)
+function M.update(now, configs, state, msg, level, opts)
   opts = opts or {}
   local group_key = opts.group ~= nil and opts.group or "default"
-  local group = get_group(configs, groups, group_key)
+  local group, new_index = get_group(configs, state.groups, group_key)
   local item = find_item(group, opts.key)
 
   if item == nil then
     -- Item doesn't yet exist; create new item and to insert into the group
     if msg == nil or opts.update_only then
+      if new_index then
+        table.remove(state.groups, new_index)
+      end
       return
     end
     ---@type Item
@@ -156,6 +158,7 @@ function M.update(now, configs, groups, msg, level, opts)
       style = style_from_level(group.config, level) or group.config.annote_style or "Question",
       hidden = opts.hidden or false,
       expires_at = compute_expiry(now, opts.ttl, group.config.ttl),
+      last_updated = now,
       data = opts.data,
     }
     table.insert(group.items, new_item)
@@ -166,18 +169,24 @@ function M.update(now, configs, groups, msg, level, opts)
     item.annote = opts.annote or annote_from_level(group.config, level) or item.annote
     item.hidden = opts.hidden or item.hidden
     item.expires_at = opts.ttl and compute_expiry(now, opts.ttl, group.config.ttl) or item.expires_at
+    item.last_updated = now
     item.data = opts.data ~= nil and opts.data or item.data
+  end
+
+  if new_index then
+    -- NOTE: we use vim.fn.sort() here because it is stable, and does so in-place.
+    vim.fn.sort(state.groups, function(a, b) return (a.config.priority or 50) - (b.config.priority or 50) end)
   end
 end
 
 --- Remove an item from a particular group.
 ---
----@param groups Group[]
+---@param state  State
 ---@param group_key Key
 ---@param item_key Key
 ---@return boolean successfully_removed
-function M.remove(groups, group_key, item_key)
-  for g, group in ipairs(groups) do
+function M.remove(state, group_key, item_key)
+  for g, group in ipairs(state.groups) do
     if group.key == group_key then
       for i, item in ipairs(group.items) do
         if item.key == item_key then
@@ -185,7 +194,7 @@ function M.remove(groups, group_key, item_key)
           -- arrays here since we're no longer iterating.
           table.remove(group.items, i)
           if #group.items == 0 then
-            table.remove(groups, g)
+            table.remove(state.groups, g)
           end
           return true
         end
@@ -198,16 +207,12 @@ end
 
 --- Prune out all items (and groups) for which the ttl has elapsed.
 ---
---- Updates each group in-place (i.e., removes items from them), but returns
---- a list of groups that still have items left.
----
 ---@protected
 ---@param now number timestamp of current frame.
----@param groups Group[]
----@return Group[]
-function M.tick(now, groups)
+---@param state  State
+function M.tick(now, state)
   local new_groups = {}
-  for _, group in ipairs(groups) do
+  for _, group in ipairs(state.groups) do
     local new_items = {}
     for _, item in ipairs(group.items) do
       if item.expires_at > now then
@@ -221,7 +226,7 @@ function M.tick(now, groups)
     else
     end
   end
-  return new_groups
+  state.groups = new_groups
 end
 
 return M

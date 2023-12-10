@@ -60,6 +60,19 @@ local logger                = require("fidget.logger")
 ---@field error_annote      string|nil    Default annotation for error items
 ---@field priority          number|nil    Order in which group should be displayed; defaults to `50`
 
+--- Notification element containing a message and optional annotation.
+---
+---@class Item
+---@field key           Key         Used to distinguish this item from others
+---@field message       string      Displayed message for the item
+---@field annote        string|nil  Optional title that accompanies the message
+---@field style         string      Style used to render the annote/title, if any
+---@field hidden        boolean     Whether this item should be shown
+---@field expires_at    number      What time this item should be removed; math.huge means never
+---@field last_updated  number      What time this item was last updated
+---@field removed       true|nil    Whether this item is deleted
+---@field data          any|nil     Arbitrary data attached to notification item
+
 --- Default notification configuration.
 ---
 --- Exposed publicly because it might be useful for users to integrate for when
@@ -148,12 +161,13 @@ require("fidget.options").declare(notification, "notification", notification.opt
   end
 end)
 
---- The "model" of notifications: a list of notification groups.
----@type Group[]
-local groups = {}
+--- The "model" (abstract state) of notifications.
+---@type State
+local state = {
+  groups          = {},
+  view_suppressed = false,
+}
 
---- Whether the notification window is suppressed.
-local view_suppressed = false
 
 --- Send a notification to the Fidget notifications subsystem.
 ---
@@ -185,11 +199,7 @@ function notification.notify(msg, level, opts)
   end
 
   local now = poll.get_time()
-  local n_groups = #groups
-  notification.model.update(now, notification.options.configs, groups, msg, level, opts)
-  if n_groups ~= #groups then
-    groups = vim.fn.sort(groups, function(a, b) return (a.config.priority or 50) - (b.config.priority or 50) end)
-  end
+  notification.model.update(now, notification.options.configs, state, msg, level, opts)
   notification.poller:start_polling(notification.options.poll_rate)
 end
 
@@ -214,16 +224,16 @@ end
 ---@param group_key Key|nil  Which group to clear
 function notification.clear(group_key)
   if group_key == nil then
-    groups = {}
+    state.groups = {}
   else
-    for idx, group in ipairs(groups) do
+    for idx, group in ipairs(state.groups) do
       if group.key == group_key then
-        table.remove(groups, idx)
+        table.remove(state.groups, idx)
         break
       end
     end
   end
-  if #groups == 0 then
+  if #state.groups == 0 then
     notification.window.guard(notification.window.close)
   end
 end
@@ -239,13 +249,13 @@ end
 notification.poller = poll.Poller {
   name = "notification",
   poll = function(self)
-    groups = notification.model.tick(self:now(), groups)
+    notification.model.tick(self:now(), state)
 
     -- TODO: if not modified, don't re-render
-    local v = notification.view.render(self:now(), groups)
+    local v = notification.view.render(self:now(), state.groups)
 
     if #v.lines > 0 then
-      if view_suppressed then
+      if state.view_suppressed then
         return true
       end
 
@@ -255,7 +265,7 @@ notification.poller = poll.Poller {
       end)
       return true
     else
-      if view_suppressed then
+      if state.view_suppressed then
         return false
       end
 
@@ -289,12 +299,12 @@ end
 ---@param suppress boolean|nil Whether to suppress or toggle suppression
 function notification.suppress(suppress)
   if suppress == nil then
-    view_suppressed = not view_suppressed
+    state.view_suppressed = not state.view_suppressed
   else
-    view_suppressed = suppress
+    state.view_suppressed = suppress
   end
 
-  if view_suppressed then
+  if state.view_suppressed then
     notification.close()
   end
 end
@@ -305,7 +315,7 @@ end
 ---@param item_key Key
 ---@return boolean successfully_removed
 function notification.remove(group_key, item_key)
-  return notification.model.remove(groups, group_key, item_key)
+  return notification.model.remove(state, group_key, item_key)
 end
 
 return notification
