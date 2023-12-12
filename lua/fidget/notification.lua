@@ -60,6 +60,7 @@ local logger                = require("fidget.logger")
 ---@field warn_annote       string|nil    Default annotation for warn items
 ---@field error_annote      string|nil    Default annotation for error items
 ---@field priority          number|nil    Order in which group should be displayed; defaults to `50`
+---@field skip_history      boolean|nil   Whether messages should be preserved in history
 
 --- Notification element containing a message and optional annotation.
 ---

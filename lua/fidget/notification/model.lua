@@ -197,6 +197,16 @@ function M.update(now, configs, state, msg, level, opts)
       end
       return
     end
+
+    local skip_history = false
+    if group.config.skip_history ~= nil then
+      skip_history = group.config.skip_history
+    end
+    if opts.skip_history ~= nil then
+      skip_history = opts.skip_history
+    end
+    ---@cast skip_history boolean
+
     ---@type Item
     local new_item = {
       key = opts.key,
@@ -206,7 +216,7 @@ function M.update(now, configs, state, msg, level, opts)
       style = style_from_level(group.config, level) or group.config.annote_style or "Question",
       hidden = opts.hidden or false,
       expires_at = compute_expiry(now, opts.ttl, group.config.ttl),
-      skip_history = opts.skip_history or false,
+      skip_history = skip_history,
       removed = false,
       last_updated = now,
       data = opts.data,
