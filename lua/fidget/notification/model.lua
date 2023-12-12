@@ -11,12 +11,16 @@
 ---
 --- Types and functions defined in this module are considered private, and won't
 --- be added to code documentation.
-local M = {}
+local M      = {}
+local logger = require("fidget.logger")
 
 --- The abstract state of the notifications subsystem.
 ---@class State
 ---@field groups          Group[] active notification groups
----@field view_suppressed boolean whether the notification window is suppressed.
+---@field view_suppressed boolean whether the notification window is suppressed
+---@field removed         Item[]  ring buffer of removed notifications, kept around for history
+---@field removed_cap     number  capacity of removed ring buffer
+---@field removed_first   number  index of first item in removed ring buffer (1-indexed)
 
 --- A collection of notification Items.
 ---@class Group
@@ -48,6 +52,49 @@ local function get_group(configs, groups, group_key)
   }
   table.insert(groups, group)
   return group, #groups
+end
+
+--- Add item to the removed history
+---
+---@param state State
+---@param now   number
+---@param item  Item
+local function add_removed(state, now, item)
+  if not item.skip_history then
+    item.last_updated, item.removed = now, true
+    state.removed[state.removed_first] = item
+    state.removed_first = (state.removed_first % state.removed_cap) + 1
+  end
+end
+
+--- Whether an item matches the filter.
+---
+---@param filter HistoryFilter
+---@param now number
+---@param item Item
+---@return boolean
+local function matches_filter(filter, now, item)
+  if filter.group_key ~= nil and filter.group_key ~= item.group_key then
+    return false
+  end
+
+  if filter.since and now - filter.since < item.last_updated then
+    return false
+  end
+
+  if filter.before and now - filter.before > item.last_updated then
+    return false
+  end
+
+  if filter.include_removed == false and item.removed == true then
+    return false
+  end
+
+  if filter.include_active == false and item.removed == false then
+    return false
+  end
+
+  return true
 end
 
 --- Search for an item with the given key among a notification group.
@@ -153,11 +200,14 @@ function M.update(now, configs, state, msg, level, opts)
     ---@type Item
     local new_item = {
       key = opts.key,
+      group_key = group_key,
       message = msg,
       annote = opts.annote or annote_from_level(group.config, level),
       style = style_from_level(group.config, level) or group.config.annote_style or "Question",
       hidden = opts.hidden or false,
       expires_at = compute_expiry(now, opts.ttl, group.config.ttl),
+      skip_history = opts.skip_history or false,
+      removed = false,
       last_updated = now,
       data = opts.data,
     }
@@ -169,23 +219,28 @@ function M.update(now, configs, state, msg, level, opts)
     item.annote = opts.annote or annote_from_level(group.config, level) or item.annote
     item.hidden = opts.hidden or item.hidden
     item.expires_at = opts.ttl and compute_expiry(now, opts.ttl, group.config.ttl) or item.expires_at
+    item.skip_history = opts.skip_history or item.skip_history
     item.last_updated = now
     item.data = opts.data ~= nil and opts.data or item.data
   end
 
   if new_index then
-    -- NOTE: we use vim.fn.sort() here because it is stable, and does so in-place.
-    vim.fn.sort(state.groups, function(a, b) return (a.config.priority or 50) - (b.config.priority or 50) end)
+    -- NOTE: we use vim.fn.sort() here because it is stable.
+    -- :h sort() docs claim that it does so in-place, but it doesn't.
+    state.groups = vim.fn.sort(state.groups, function(a, b)
+      return (a.config.priority or 50) - (b.config.priority or 50)
+    end)
   end
 end
 
 --- Remove an item from a particular group.
 ---
----@param state  State
+---@param state     State
+---@param now       number
 ---@param group_key Key
----@param item_key Key
+---@param item_key  Key
 ---@return boolean successfully_removed
-function M.remove(state, group_key, item_key)
+function M.remove(state, now, group_key, item_key)
   for g, group in ipairs(state.groups) do
     if group.key == group_key then
       for i, item in ipairs(group.items) do
@@ -193,6 +248,7 @@ function M.remove(state, group_key, item_key)
           -- Note that it should be safe to perform destructive updates to the
           -- arrays here since we're no longer iterating.
           table.remove(group.items, i)
+          add_removed(state, now, item)
           if #group.items == 0 then
             table.remove(state.groups, g)
           end
@@ -203,6 +259,36 @@ function M.remove(state, group_key, item_key)
     end
   end
   return false -- Did not find group
+end
+
+--- Clear active notifications.
+---
+--- If the given `group_key` is `nil`, then all groups are cleared. Otherwise,
+--- only that notification group is cleared.
+---
+---@param state     State
+---@param now       number
+---@param group_key Key|nil
+function M.clear(state, now, group_key)
+  if group_key == nil then
+    for _, group in ipairs(state.groups) do
+      for _, item in ipairs(group.items) do
+        add_removed(state, now, item)
+      end
+    end
+    state.groups = {}
+  else
+    for idx, group in ipairs(state.groups) do
+      if group.key == group_key then
+        for _, item in ipairs(group.items) do
+          add_removed(state, now, item)
+        end
+        table.remove(state.groups, idx)
+        -- We assume group keys are unique
+        break
+      end
+    end
+  end
 end
 
 --- Prune out all items (and groups) for which the ttl has elapsed.
@@ -218,6 +304,7 @@ function M.tick(now, state)
       if item.expires_at > now then
         table.insert(new_items, item)
       else
+        add_removed(state, now, item)
       end
     end
     if #group.items > 0 then
@@ -227,6 +314,86 @@ function M.tick(now, state)
     end
   end
   state.groups = new_groups
+end
+
+--- Generate a notifications history according to the provided filter.
+---
+--- The results are not sorted.
+---
+---@param state   State
+---@param filter  HistoryFilter
+---@param now     number
+---@return        Item[] history
+function M.make_history(state, now, filter)
+  ---@type Item[]
+  local history = {}
+
+  if filter.include_active ~= false then
+    for _, group in ipairs(state.groups) do
+      if filter.group_key == nil or group.key == filter.group_key then
+        for _, item in ipairs(group.items) do
+          if not item.skip_history and matches_filter(filter, now, item) then
+            table.insert(history, vim.deepcopy(item))
+          end
+        end
+        if filter.group_key ~= nil then
+          -- No need to search other groups, we assume keys are unique
+          break
+        end
+      end
+    end
+  end
+
+  if filter.include_removed ~= false then
+    for _, item in ipairs(state.removed) do
+      if matches_filter(filter, now, item) then
+        table.insert(history, vim.deepcopy(item))
+      end
+    end
+  end
+
+  return history
+end
+
+--- Clear notifications history, according to the specified filter.
+---
+--- Removes items that match the filter; equivalently, preserves items that do
+--- not match the filter.
+---
+---@param state   State
+---@param now     number
+---@param filter  HistoryFilter
+function M.clear_history(state, now, filter)
+  if filter.include_removed == false then
+    logger.warn("filter does not make any sense for clearing history:", vim.inspect(filter))
+    return
+  end
+
+  local new_removed = {}
+
+  if state.removed[state.removed_first] ~= nil then
+    -- History has already wrapped around
+    for i = state.removed_first, state.removed_cap do
+      local item = state.removed[i]
+      if not matches_filter(filter, now, item) then
+        table.insert(new_removed, item)
+      end
+    end
+  end
+
+  for i = 1, state.removed_first - 1 do
+    local item = state.removed[i]
+    if item == nil then
+      -- Reached end of ring buffer
+      break
+    end
+    if not matches_filter(filter, now, item) then
+      table.insert(new_removed, item)
+    end
+  end
+
+  state.removed = new_removed
+  state.removed_first = #new_removed + 1
 end
 
 return M

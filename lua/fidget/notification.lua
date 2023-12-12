@@ -24,6 +24,7 @@ local logger                = require("fidget.logger")
 ---@field hidden        boolean|nil   Whether this item should be shown
 ---@field ttl           number|nil    How long after a notification item should exist; pass 0 to use default value
 ---@field update_only   boolean|nil   If true, don't create new notification items
+---@field skip_history  boolean|nil   If true, don't include in notifications history
 ---@field data          any|nil       Arbitrary data attached to notification item
 
 --- Something that can be displayed in a |fidget.notification.Group|.
@@ -64,14 +65,37 @@ local logger                = require("fidget.logger")
 ---
 ---@class Item
 ---@field key           Key         Used to distinguish this item from others
+---@field group_key     Key         Key of the group this item belongs to
 ---@field message       string      Displayed message for the item
 ---@field annote        string|nil  Optional title that accompanies the message
 ---@field style         string      Style used to render the annote/title, if any
 ---@field hidden        boolean     Whether this item should be shown
 ---@field expires_at    number      What time this item should be removed; math.huge means never
 ---@field last_updated  number      What time this item was last updated
----@field removed       true|nil    Whether this item is deleted
+---@field skip_history  boolean     Whether this item should be included in history
+---@field removed       boolean     Whether this item is deleted
 ---@field data          any|nil     Arbitrary data attached to notification item
+
+--- Filter options when querying for notifications history.
+---
+--- Note that filters are conjunctive; all specified predicates need to be true.
+---
+---@class HistoryFilter
+---@field group_key       Key|nil     Items from this group
+---@field before          number|nil  Only items last updated at least this long ago
+---@field since           number|nil  Only items last updated at most this long ago
+---@field include_removed boolean|nil Include items that have been removed (default: true)
+---@field include_active  boolean|nil Include items that have not been removed (default: true)
+
+--- The "model" (abstract state) of notifications.
+---@type State
+local state                 = {
+  groups          = {},
+  view_suppressed = false,
+  removed         = {},
+  removed_cap     = 128,
+  removed_first   = 1,
+}
 
 --- Default notification configuration.
 ---
@@ -124,6 +148,13 @@ notification.options        = {
   ---@type 0|1|2|3|4|5
   filter = vim.log.levels.INFO,
 
+  --- Number of removed messages to keep around
+  ---
+  --- Set to 0 to keep around history indefinitely (until cleared).
+  ---
+  ---@type number
+  history_size = 128,
+
   --- Automatically override vim.notify() with Fidget
   ---
   --- Equivalent to the following:
@@ -159,22 +190,15 @@ require("fidget.options").declare(notification, "notification", notification.opt
     logger.warn("no default notification config specified; using default")
     notification.options.configs.default = notification.default_config
   end
+  state.removed_cap = notification.options.history_size
+  notification.reset()
 end)
-
---- The "model" (abstract state) of notifications.
----@type State
-local state = {
-  groups          = {},
-  view_suppressed = false,
-}
-
 
 --- Send a notification to the Fidget notifications subsystem.
 ---
 --- Can be used to override `vim.notify()`, e.g.,
----
 --->lua
---- vim.notify = require("fidget.notifications").notify
+---     vim.notify = require("fidget.notifications").notify
 ---<
 ---
 ---@param msg     string|nil  Content of the notification to show to the user.
@@ -217,30 +241,35 @@ function notification.close()
   end)
 end
 
---- Clear notifications.
+--- Clear active notifications.
 ---
---- If the given `group_key` is `nil`, then all groups are cleared.
+--- If the given `group_key` is `nil`, then all groups are cleared. Otherwise,
+--- only that notification group is cleared.
 ---
 ---@param group_key Key|nil  Which group to clear
 function notification.clear(group_key)
-  if group_key == nil then
-    state.groups = {}
-  else
-    for idx, group in ipairs(state.groups) do
-      if group.key == group_key then
-        table.remove(state.groups, idx)
-        break
-      end
-    end
-  end
+  notification.model.clear(state, poll.get_time(), group_key)
   if #state.groups == 0 then
     notification.window.guard(notification.window.close)
   end
 end
 
+--- Clear notifications history, according to the specified filter.
+---
+---@param filter HistoryFilter|Key|nil  What to clear
+function notification.clear_history(filter)
+  if filter == nil then
+    filter = {}
+  elseif type(filter) ~= "table" then
+    filter = { group_key = filter }
+  end
+  notification.model.clear_history(state, poll.get_time(), filter)
+end
+
 --- Reset notification subsystem state.
 function notification.reset()
   notification.clear()
+  notification.clear_history()
   notification.poller:reset_error() -- Clear error if previously encountered one
 end
 
@@ -315,7 +344,24 @@ end
 ---@param item_key Key
 ---@return boolean successfully_removed
 function notification.remove(group_key, item_key)
-  return notification.model.remove(state, group_key, item_key)
+  return notification.model.remove(state, poll.get_time(), group_key, item_key)
+end
+
+--- Query notifications history, according to an optional filter.
+---
+--- Note that this function may return more than |fidget.options.history_size|
+--- items, since it will also include current notifications, unless
+--- `filter.include_active` is set to `false`.
+---
+---@param filter  HistoryFilter|Key|nil  options or group_key for filtering history
+---@return        Item[] history
+function notification.get_history(filter)
+  if filter == nil then
+    filter = {}
+  elseif type(filter) ~= "table" then
+    filter = { group_key = filter }
+  end
+  return notification.model.make_history(state, poll.get_time(), filter)
 end
 
 return notification
