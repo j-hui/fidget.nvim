@@ -100,6 +100,11 @@ M.options = {
   ---@type number|false
   priority = 30,
 
+  --- Whether progress notifications should be retained in history.
+  ---
+  ---@type boolean
+  skip_history = true,
+
   --- How to format a progress message
   ---
   --- Example: ~
@@ -165,6 +170,7 @@ M.options = {
   ---         name = "Haskell Language Server",
   ---         priority = 60,
   ---         icon = fidget.progress.display.for_icon(fidget.spinner.animate("triangle", 3), "💯"),
+  ---         skip_history = false,
   ---       },
   ---       rust_analyzer = {
   ---         name = "Rust Analyzer",
@@ -223,6 +229,7 @@ function M.make_config(group)
     warn_style = M.options.progress_style,
     info_style = M.options.done_style,
     priority = M.options.priority or nil,
+    skip_history = M.options.skip_history,
   }
 
   if M.options.overrides[group] then
