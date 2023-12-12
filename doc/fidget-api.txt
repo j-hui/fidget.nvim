@@ -57,13 +57,14 @@ Options                                            *fidget.notification.Options*
      Third (opts) parameter passed to |fidget.notification.notify|.
 
     Fields: ~
-        {key}          (Key|nil)      Replace existing notification item of the same key
-        {group}        (any|nil)      Group that this notification item belongs to
-        {annote}       (string|nil)   Optional single-line title that accompanies the message
-        {hidden}       (boolean|nil)  Whether this item should be shown
-        {ttl}          (number|nil)   How long after a notification item should exist; pass 0 to use default value
-        {update_only}  (boolean|nil)  If true, don't create new notification items
-        {data}         (any|nil)      Arbitrary data attached to notification item
+        {key}           (Key|nil)      Replace existing notification item of the same key
+        {group}         (Key|nil)      Group that this notification item belongs to
+        {annote}        (string|nil)   Optional single-line title that accompanies the message
+        {hidden}        (boolean|nil)  Whether this item should be shown
+        {ttl}           (number|nil)   How long after a notification item should exist; pass 0 to use default value
+        {update_only}   (boolean|nil)  If true, don't create new notification items
+        {skip_history}  (boolean|nil)  If true, don't include in notifications history
+        {data}          (any|nil)      Arbitrary data attached to notification item
 
 
 Display                                            *fidget.notification.Display*
@@ -105,6 +106,39 @@ Config                                              *fidget.notification.Config*
         {warn_annote}       (string|nil)   Default annotation for warn items
         {error_annote}      (string|nil)   Default annotation for error items
         {priority}          (number|nil)   Order in which group should be displayed; defaults to `50`
+        {skip_history}      (boolean|nil)  Whether messages should be preserved in history
+
+
+Item                                                  *fidget.notification.Item*
+     Notification element containing a message and optional annotation.
+
+
+    Fields: ~
+        {key}           (Key)         Used to distinguish this item from others
+        {group_key}     (Key)         Key of the group this item belongs to
+        {message}       (string)      Displayed message for the item
+        {annote}        (string|nil)  Optional title that accompanies the message
+        {style}         (string)      Style used to render the annote/title, if any
+        {hidden}        (boolean)     Whether this item should be shown
+        {expires_at}    (number)      What time this item should be removed; math.huge means never
+        {last_updated}  (number)      What time this item was last updated
+        {skip_history}  (boolean)     Whether this item should be included in history
+        {removed}       (boolean)     Whether this item is deleted
+        {data}          (any|nil)     Arbitrary data attached to notification item
+
+
+HistoryFilter                                *fidget.notification.HistoryFilter*
+     Filter options when querying for notifications history.
+
+     Note that filters are conjunctive; all specified predicates need to be true.
+
+
+    Fields: ~
+        {group_key}        (Key|nil)      Items from this group
+        {before}           (number|nil)   Only items last updated at least this long ago
+        {since}            (number|nil)   Only items last updated at most this long ago
+        {include_removed}  (boolean|nil)  Include items that have been removed (default: true)
+        {include_active}   (boolean|nil)  Include items that have not been removed (default: true)
 
 
 notification.default_config                 *fidget.notification.default_config*
@@ -129,9 +163,8 @@ notification.notify({msg}, {level}, {opts})
      Send a notification to the Fidget notifications subsystem.
 
      Can be used to override `vim.notify()`, e.g.,
-
     >lua
-     vim.notify = require("fidget.notifications").notify
+         vim.notify = require("fidget.notifications").notify
     <
 
 
@@ -155,13 +188,22 @@ notification.close()                                 *fidget.notification.close*
 
 
 notification.clear({group_key})                      *fidget.notification.clear*
-     Clear notifications.
+     Clear active notifications.
 
-     If the given `group_key` is `nil`, then all groups are cleared.
+     If the given `group_key` is `nil`, then all groups are cleared. Otherwise,
+     only that notification group is cleared.
 
 
     Parameters: ~
         {group_key}  (Key|nil)  Which group to clear
+
+
+notification.clear_history({filter})         *fidget.notification.clear_history*
+     Clear notifications history, according to the specified filter.
+
+
+    Parameters: ~
+        {filter}  (HistoryFilter|Key|nil)  What to clear
 
 
 notification.reset()                                 *fidget.notification.reset*
@@ -195,6 +237,34 @@ notification.suppress({suppress})                 *fidget.notification.suppress*
 
     Parameters: ~
         {suppress}  (boolean|nil)  Whether to suppress or toggle suppression
+
+
+                                                    *fidget.notification.remove*
+notification.remove({group_key}, {item_key})
+     Remove an item from a particular group.
+
+
+    Parameters: ~
+        {group_key}  (Key)
+        {item_key}   (Key)
+
+    Returns: ~
+        (boolean)  successfully_removed
+
+
+notification.get_history({filter})             *fidget.notification.get_history*
+     Query notifications history, according to an optional filter.
+
+     Note that this function may return more than |fidget.options.history_size|
+     items, since it will also include current notifications, unless
+     `filter.include_active` is set to `false`.
+
+
+    Parameters: ~
+        {filter}  (HistoryFilter|Key|nil)  options or group_key for filtering history
+
+    Returns: ~
+        (Item[])  history
 
 
 ==============================================================================

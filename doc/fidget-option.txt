@@ -309,6 +309,17 @@ progress.display.priority            *fidget.option.progress.display.priority*
         `30`
 
 
+progress.display.skip_history    *fidget.option.progress.display.skip_history*
+
+    Whether progress notifications should be retained in history.
+
+    Type: ~
+        `boolean`
+
+    Default: ~
+        `true`
+
+
 progress.display.format_message  *fidget.option.progress.display.format_message*
 
     How to format a progress message
@@ -395,6 +406,7 @@ progress.display.overrides          *fidget.option.progress.display.overrides*
             name = "Haskell Language Server",
             priority = 60,
             icon = fidget.progress.display.for_icon(fidget.spinner.animate("triangle", 3), "💯"),
+            skip_history = false,
           },
           rust_analyzer = {
             name = "Rust Analyzer",
@@ -466,6 +478,19 @@ notification.filter                        *fidget.option.notification.filter*
 
     Default: ~
         `vim.log.levels.INFO`
+
+
+notification.history_size            *fidget.option.notification.history_size*
+
+    Number of removed messages to keep around
+
+    Set to 0 to keep around history indefinitely (until cleared).
+
+    Type: ~
+        `number`
+
+    Default: ~
+        `128`
 
 
 notification.override_vim_notify  *fidget.option.notification.override_vim_notify*
