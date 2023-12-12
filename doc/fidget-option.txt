@@ -311,7 +311,7 @@ progress.display.priority            *fidget.option.progress.display.priority*
 
 progress.display.skip_history    *fidget.option.progress.display.skip_history*
 
-    Whether progress notifications should be retained in history.
+    Whether progress notifications should be omitted from history
 
     Type: ~
         `boolean`
@@ -482,7 +482,7 @@ notification.filter                        *fidget.option.notification.filter*
 
 notification.history_size            *fidget.option.notification.history_size*
 
-    Number of removed messages to keep around
+    Number of removed messages to retain in history
 
     Set to 0 to keep around history indefinitely (until cleared).
 
