@@ -100,7 +100,7 @@ M.options = {
   ---@type number|false
   priority = 30,
 
-  --- Whether progress notifications should be retained in history.
+  --- Whether progress notifications should be omitted from history
   ---
   ---@type boolean
   skip_history = true,

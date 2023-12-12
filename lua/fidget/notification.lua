@@ -149,7 +149,7 @@ notification.options        = {
   ---@type 0|1|2|3|4|5
   filter = vim.log.levels.INFO,
 
-  --- Number of removed messages to keep around
+  --- Number of removed messages to retain in history
   ---
   --- Set to 0 to keep around history indefinitely (until cleared).
   ---
