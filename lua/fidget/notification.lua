@@ -66,7 +66,6 @@ local logger                = require("fidget.logger")
 ---
 ---@class Item
 ---@field key           Key         Used to distinguish this item from others
----@field group_key     Key         Key of the group this item belongs to
 ---@field message       string      Displayed message for the item
 ---@field annote        string|nil  Optional title that accompanies the message
 ---@field style         string      Style used to render the annote/title, if any
@@ -74,6 +73,11 @@ local logger                = require("fidget.logger")
 ---@field expires_at    number      What time this item should be removed; math.huge means never
 ---@field last_updated  number      What time this item was last updated
 ---@field skip_history  boolean     Whether this item should be included in history
+---@field data          any|nil     Arbitrary data attached to notification item
+
+--- A notification element in the notifications history.
+---
+---@class HistoryItem : Item
 ---@field removed       boolean     Whether this item is deleted
 ---@field data          any|nil     Arbitrary data attached to notification item
 
@@ -355,7 +359,7 @@ end
 --- `filter.include_active` is set to `false`.
 ---
 ---@param filter  HistoryFilter|Key|nil  options or group_key for filtering history
----@return        Item[] history
+---@return        HistoryItem[] history
 function notification.get_history(filter)
   if filter == nil then
     filter = {}

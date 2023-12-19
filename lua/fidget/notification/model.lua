@@ -16,17 +16,23 @@ local logger = require("fidget.logger")
 
 --- The abstract state of the notifications subsystem.
 ---@class State
----@field groups          Group[] active notification groups
----@field view_suppressed boolean whether the notification window is suppressed
----@field removed         Item[]  ring buffer of removed notifications, kept around for history
----@field removed_cap     number  capacity of removed ring buffer
----@field removed_first   number  index of first item in removed ring buffer (1-indexed)
+---@field groups          Group[]         active notification groups
+---@field view_suppressed boolean         whether the notification window is suppressed
+---@field removed         HistoryItem[]   ring buffer of removed notifications, kept around for history
+---@field removed_cap     number          capacity of removed ring buffer
+---@field removed_first   number          index of first item in removed ring buffer (1-indexed)
 
 --- A collection of notification Items.
 ---@class Group
 ---@field key           Key     used to distinguish this group from others
 ---@field config        Config  configuration for this group
 ---@field items         Item[]  items displayed in the group
+
+---@class HistoryExtra
+---@field removed   boolean
+---@field group_key Key
+---@field group_name string|nil
+---@field group_icon string|nil
 
 --- Get the notification group indexed by group_key; create one if none exists.
 ---
@@ -58,13 +64,41 @@ end
 ---
 ---@param state State
 ---@param now   number
+---@param group Group
 ---@param item  Item
-local function add_removed(state, now, item)
+local function add_removed(state, now, group, item)
   if not item.skip_history then
-    item.last_updated, item.removed = now, true
+    local group_name = group.config.name
+    if type(group_name) == "function" then
+      group_name = group_name(now, group.items)
+    end
+
+    local group_icon = group.config.icon
+    if type(group_icon) == "function" then
+      group_icon = group_icon(now, group.items)
+    end
+
+    ---@cast item HistoryItem
+    item.last_updated = now
+    item.removed = true
+    item.group_key = group.key
+    item.group_name = group_name
+    item.group_icon = group_icon
+
     state.removed[state.removed_first] = item
     state.removed_first = (state.removed_first % state.removed_cap) + 1
   end
+end
+
+--- Promote an item to a history item.
+---
+---@param item    Item
+---@param extra   HistoryExtra
+---@return        HistoryItem
+local function item_to_history(item, extra)
+  ---@type HistoryItem
+  item = vim.tbl_extend("force", item, extra)
+  return item
 end
 
 --- Whether an item matches the filter.
@@ -74,23 +108,11 @@ end
 ---@param item Item
 ---@return boolean
 local function matches_filter(filter, now, item)
-  if filter.group_key ~= nil and filter.group_key ~= item.group_key then
-    return false
-  end
-
   if filter.since and now - filter.since < item.last_updated then
     return false
   end
 
   if filter.before and now - filter.before > item.last_updated then
-    return false
-  end
-
-  if filter.include_removed == false and item.removed == true then
-    return false
-  end
-
-  if filter.include_active == false and item.removed == false then
     return false
   end
 
@@ -258,7 +280,7 @@ function M.remove(state, now, group_key, item_key)
           -- Note that it should be safe to perform destructive updates to the
           -- arrays here since we're no longer iterating.
           table.remove(group.items, i)
-          add_removed(state, now, item)
+          add_removed(state, now, group, item)
           if #group.items == 0 then
             table.remove(state.groups, g)
           end
@@ -283,7 +305,7 @@ function M.clear(state, now, group_key)
   if group_key == nil then
     for _, group in ipairs(state.groups) do
       for _, item in ipairs(group.items) do
-        add_removed(state, now, item)
+        add_removed(state, now, group, item)
       end
     end
     state.groups = {}
@@ -291,7 +313,7 @@ function M.clear(state, now, group_key)
     for idx, group in ipairs(state.groups) do
       if group.key == group_key then
         for _, item in ipairs(group.items) do
-          add_removed(state, now, item)
+          add_removed(state, now, group, item)
         end
         table.remove(state.groups, idx)
         -- We assume group keys are unique
@@ -314,7 +336,7 @@ function M.tick(now, state)
       if item.expires_at > now then
         table.insert(new_items, item)
       else
-        add_removed(state, now, item)
+        add_removed(state, now, group, item)
       end
     end
     if #group.items > 0 then
@@ -333,7 +355,7 @@ end
 ---@param state   State
 ---@param filter  HistoryFilter
 ---@param now     number
----@return        Item[] history
+---@return        HistoryItem[] history
 function M.make_history(state, now, filter)
   ---@type Item[]
   local history = {}
@@ -343,7 +365,22 @@ function M.make_history(state, now, filter)
       if filter.group_key == nil or group.key == filter.group_key then
         for _, item in ipairs(group.items) do
           if not item.skip_history and matches_filter(filter, now, item) then
-            table.insert(history, vim.deepcopy(item))
+            local group_name = group.config.name
+            if type(group_name) == "function" then
+              group_name = group_name(now, group.items)
+            end
+
+            local group_icon = group.config.icon
+            if type(group_icon) == "function" then
+              group_icon = group_icon(now, group.items)
+            end
+
+            table.insert(history, item_to_history(item, {
+              removed = false,
+              group_key = group.key,
+              group_name = group_name,
+              group_icon = "",
+            }))
           end
         end
         if filter.group_key ~= nil then
@@ -357,7 +394,8 @@ function M.make_history(state, now, filter)
   if filter.include_removed ~= false then
     for _, item in ipairs(state.removed) do
       if matches_filter(filter, now, item) then
-        table.insert(history, vim.deepcopy(item))
+        -- NOTE: we aren't deep-copying here---not sure it's necessary.
+        table.insert(history, item)
       end
     end
   end
