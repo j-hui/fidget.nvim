@@ -115,7 +115,6 @@ Item                                                  *fidget.notification.Item*
 
     Fields: ~
         {key}           (Key)         Used to distinguish this item from others
-        {group_key}     (Key)         Key of the group this item belongs to
         {message}       (string)      Displayed message for the item
         {annote}        (string|nil)  Optional title that accompanies the message
         {style}         (string)      Style used to render the annote/title, if any
@@ -123,8 +122,19 @@ Item                                                  *fidget.notification.Item*
         {expires_at}    (number)      What time this item should be removed; math.huge means never
         {last_updated}  (number)      What time this item was last updated
         {skip_history}  (boolean)     Whether this item should be included in history
-        {removed}       (boolean)     Whether this item is deleted
         {data}          (any|nil)     Arbitrary data attached to notification item
+
+
+HistoryItem : Item                             *fidget.notification.HistoryItem*
+     A notification element in the notifications history.
+
+
+    Fields: ~
+        {removed}       (boolean)     Whether this item is deleted
+        {group_key}     (Key)         Key of the group this item belongs to
+        {group_name}    (string|nil)  Title of the group this item belongs to
+        {group_icon}    (string|nil)  Icon of the group this item belongs to
+        {last_updated}  (number)      What time this item was last updated, in seconds since Jan 1, 1970
 
 
 HistoryFilter                                *fidget.notification.HistoryFilter*
@@ -264,7 +274,15 @@ notification.get_history({filter})             *fidget.notification.get_history*
         {filter}  (HistoryFilter|Key|nil)  options or group_key for filtering history
 
     Returns: ~
-        (Item[])  history
+        (HistoryItem[])  history
+
+
+notification.show_history({filter})           *fidget.notification.show_history*
+     Show the notifications history in the |nvim_echo()| buffer.
+
+
+    Parameters: ~
+        {filter}  (HistoryFilter|Key|nil)  options or group_key for filtering history
 
 
 ==============================================================================
