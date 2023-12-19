@@ -13,6 +13,7 @@
 --- be added to code documentation.
 local M      = {}
 local logger = require("fidget.logger")
+local poll   = require("fidget.poll")
 
 --- The abstract state of the notifications subsystem.
 ---@class State
@@ -98,6 +99,7 @@ end
 local function item_to_history(item, extra)
   ---@type HistoryItem
   item = vim.tbl_extend("force", item, extra)
+  item.last_updated = poll.unix_time(item.last_updated)
   return item
 end
 

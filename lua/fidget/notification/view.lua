@@ -253,4 +253,52 @@ function M.render(now, groups)
   }
 end
 
+--- Display notification items in Neovim mesasges.
+---
+--- TODO(j-hui): this is not very configurable, but I'm not sure what options to
+--- expose to strike a balance between flexibility and simplicity. Then again,
+--- nothing done here is "special"; the user can easily (and is encouraged to)
+--- write a custom `echo_history()` by consuming the results of `get_history()`.
+---
+---@param items HistoryItem[]
+function M.echo_history(items)
+  for _, item in ipairs(items) do
+    local is_multiline_msg = string.find(item.message, "\n") ~= nil
+
+    local chunks = {}
+
+    table.insert(chunks, { vim.fn.strftime("%c", item.last_updated), "Comment" })
+
+    -- if item.group_icon and #item.group_icon > 0 then
+    --   table.insert(chunks, { " ", "MsgArea" })
+    --   table.insert(chunks, { item.group_icon, "Special" })
+    -- end
+
+    if item.group_name and #item.group_name > 0 then
+      table.insert(chunks, { " ", "MsgArea" })
+      table.insert(chunks, { item.group_name, "Special" })
+    end
+
+    table.insert(chunks, { " | ", "Comment" })
+
+    if item.annote and #item.annote > 0 then
+      table.insert(chunks, { item.annote, item.style })
+    end
+
+    if is_multiline_msg then
+      table.insert(chunks, { "\n", "MsgArea" })
+    else
+      table.insert(chunks, { " ", "MsgArea" })
+    end
+
+    table.insert(chunks, { item.message, "MsgArea" })
+
+    if is_multiline_msg then
+      table.insert(chunks, { "\n", "MsgArea" })
+    end
+
+    vim.api.nvim_echo(chunks, false, {})
+  end
+end
+
 return M

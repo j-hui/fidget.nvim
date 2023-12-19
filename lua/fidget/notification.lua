@@ -79,7 +79,10 @@ local logger                = require("fidget.logger")
 ---
 ---@class HistoryItem : Item
 ---@field removed       boolean     Whether this item is deleted
----@field data          any|nil     Arbitrary data attached to notification item
+---@field group_key     Key         Key of the group this item belongs to
+---@field group_name    string|nil  Title of the group this item belongs to
+---@field group_icon    string|nil  Icon of the group this item belongs to
+---@field last_updated  number      What time this item was last updated, in seconds since Jan 1, 1970
 
 --- Filter options when querying for notifications history.
 ---
@@ -367,6 +370,14 @@ function notification.get_history(filter)
     filter = { group_key = filter }
   end
   return notification.model.make_history(state, poll.get_time(), filter)
+end
+
+--- Show the notifications history in the |nvim_echo()| buffer.
+---
+---@param filter  HistoryFilter|Key|nil  options or group_key for filtering history
+function notification.show_history(filter)
+  local history = notification.get_history(filter)
+  notification.view.echo_history(history)
 end
 
 return notification
