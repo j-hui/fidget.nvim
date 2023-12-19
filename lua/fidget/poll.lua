@@ -2,14 +2,35 @@ local M = {}
 local logger = require("fidget.logger")
 
 --- Arbitrary point in time that timestamps are computed relative to.
----@type number
-local origin_time = vim.fn.reltime()
+---
+--- Units are in seconds. `unix_time` is relative to Jan 1 1970, while
+--- `origin_time` is relative to some arbitrary system-specific time.
+---
+--- This module captures both at the time so that we can freely convert between
+--- the two. By default, we use `origin_time` / `reltime()` since these offer
+--- higher precision, but then we use `unix_time` to normalize it to something
+--- human-readable.
+---
+---@type number, number
+local unix_time, origin_time = vim.fn.localtime(), vim.fn.reltime()
 
---- Obtain the current time (relative to origin_time).
+--- Obtain the seconds passed since this module was initialized.
 ---
 ---@return number
 function M.get_time()
   return vim.fn.reltimefloat(vim.fn.reltime(origin_time))
+end
+
+--- Obtain the (whole) seconds passed since Jan 1, 1970.
+---
+--- In particular, the result from this function is suitable for consumption by
+--- |strftime()|.
+---
+---@param reltime number|nil
+---@return number localtime
+function M.unix_time(reltime)
+  reltime = reltime or M.get_time()
+  return math.floor(unix_time + reltime)
 end
 
 ---luv uv_timer_t handle
