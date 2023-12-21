@@ -80,7 +80,7 @@ local function add_removed(state, now, group, item)
     end
 
     ---@cast item HistoryItem
-    item.last_updated = now
+    item.last_updated = poll.unix_time(now)
     item.removed = true
     item.group_key = group.key
     item.group_name = group_name
