@@ -1,0 +1,26 @@
+name: Run Tests
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        nvim-versions: ['stable', 'nightly']
+    name: Run Tests
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.nvim-versions }}
+
+      - name: run tests
+        run: nvim --clean --headless -u tests/minimal_init.lua -c "PlenaryBustedDirectory tests/ { minimal_init = 'tests/minimal_init.lua' }"
