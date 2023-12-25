@@ -153,6 +153,21 @@ function SC.tokenize(str)
   return tokens
 end
 
+--- Sort a table by its key, returning a sorted associative list, i.e., [(Key, Value)].
+---
+---@generic K
+---@generic V
+---@param tbl table<K, V>
+---@return    { [1]: K, [2]: V}[] sorted
+local function sort_by_key(tbl)
+  local sorted = {}
+  for k, v in pairs(tbl) do
+    table.insert(sorted, { k, v })
+  end
+  table.sort(sorted, function(a, b) return tostring(a[1]) < tostring(b[1]) end)
+  return sorted
+end
+
 --- Generate command handler function from subcommands specification.
 ---
 ---@param cmd_name string
@@ -323,7 +338,8 @@ function SC.vimdoc(cmdname, subname, subcmd, tag_prefix)
   local header = string.format("%s%s%s", cmd, string.rep(" ", math.max(78 - #tag - #cmd, 0)), tag)
 
   local pos_args, named_args = {}, {}
-  for name, arg in pairs(subcmd.args) do
+  for _, kv in ipairs(sort_by_key(subcmd.args)) do
+    local name, arg = kv[1], kv[2]
     if type(name) == "string" then
       name = string.format("--%s {%s}", name, arg.name or name)
       table.insert(named_args,
@@ -371,12 +387,13 @@ function SC.mddoc(cmdname, subname, subcmd, level)
   local heading = string.format("%s `:%s %s`", string.rep("#", level), cmdname, subname)
 
   local pos_args, named_args = {}, {}
-  for name, arg in pairs(subcmd.args) do
+  for _, kv in ipairs(sort_by_key(subcmd.args)) do
+    local name, arg = kv[1], kv[2]
     if type(name) == "string" then
       table.insert(named_args,
-        string.format("-   `--%s {%s}`: `(%s)` %s", name, arg.name or name, arg.type.name, arg.desc))
+        string.format("-   **`--%s {%s}`**: _`(%s)`_ %s", name, arg.name or name, arg.type.name, arg.desc))
     else
-      table.insert(pos_args, string.format("-   `{%s}`: `(%s)` %s", arg.name, arg.type.name, arg.desc))
+      table.insert(pos_args, string.format("-   **`{%s}`**: _`(%s)`_ %s", arg.name, arg.type.name, arg.desc))
     end
   end
 
@@ -452,8 +469,8 @@ SC.subcommands = {
     args = {
       { name = "group_key", type = GroupKey, desc = "filter history by group key" },
       group_key = { type = GroupKey, desc = "filter history by group key" },
-      before = { type = SC.Number, desc = "filter history for items updated at least this long ago" },
-      since = { type = SC.Number, desc = "filter history for items updated at most this long ago" },
+      before = { name = "seconds", type = SC.Number, desc = "filter history for items updated at least this long ago" },
+      since = { name = "seconds", type = SC.Number, desc = "filter history for items updated at most this long ago" },
       include_removed = {
         name = "true|false",
         type = SC.Boolean,
@@ -475,8 +492,8 @@ SC.subcommands = {
     args = {
       { name = "group_key", type = GroupKey, desc = "clear history by group key" },
       group_key = { type = GroupKey, desc = "clear history by group key" },
-      before = { type = SC.Number, desc = "clear history of items updated at least this long ago" },
-      since = { type = SC.Number, desc = "clear history of items updated at most this long ago" },
+      before = { name = "seconds", type = SC.Number, desc = "filter history for items updated at least this long ago" },
+      since = { name = "seconds", type = SC.Number, desc = "filter history for items updated at most this long ago" },
       include_removed = {
         name = "true|false",
         type = SC.Boolean,
@@ -522,7 +539,8 @@ end
 ---@return string docs
 function SC.make_panvimdocs()
   local mddocs, vimdocs = {}, {}
-  for name, subcmd in pairs(SC.subcommands) do
+  for _, kv in ipairs(sort_by_key(SC.subcommands)) do
+    local name, subcmd = kv[1], kv[2]
     table.insert(mddocs, SC.mddoc(COMMAND_NAME, name, subcmd, 4))
     table.insert(vimdocs, SC.vimdoc(COMMAND_NAME, name, subcmd, "fidget"))
   end
@@ -563,11 +581,6 @@ These sub-commands are documented below.
 ]], table.concat(mddocs, "\n\n"), table.concat(vimdocs, "\n\n"))
 end
 
--- Quick and dirty: to generate docs, un-comment the following and run :luafile %
--- local out = io.open("commands.txt", "w")
--- if out then
---   out:write(SC.make_panvimdocs())
---   out:close()
--- end
+-- print(SC.make_panvimdocs())
 
 return SC
