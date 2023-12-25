@@ -403,7 +403,7 @@ Positional arguments:
     detailed_docs = string.format([[
 
 <details>
-  <summary>Arguments</summary>
+  <summary><i>Arguments</i></summary>
 %s%s
 </details>]], named_docs, pos_docs)
   end
