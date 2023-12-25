@@ -20,6 +20,7 @@ fidget.progress     = require("fidget.progress")
 fidget.notification = require("fidget.notification")
 fidget.spinner      = require("fidget.spinner")
 fidget.logger       = require("fidget.logger")
+local commands      = require("fidget.commands")
 
 --- Set up Fidget plugin.
 ---
@@ -38,6 +39,7 @@ fidget.options = {
 ---@options ]]
 
 require("fidget.options").declare(fidget, "", fidget.options, function(warn_log)
+  commands.setup()
   if fidget.options.notification.override_vim_notify then
     fidget.logger.info("overriding vim.notify() with fidget.notify()")
     vim.notify = fidget.notify

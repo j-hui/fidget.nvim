@@ -141,6 +141,9 @@ For instance, using [Lazy](https://github.com/folke/lazy.nvim):
 
 ## Options
 
+Fidget can be configured by passing a table of options to the `setup()`.
+Available options are shown below:
+
 ```lua
 {
   -- Options related to LSP progress subsystem
@@ -261,10 +264,14 @@ source code. You are encouraged to hack around with that.
 
 ## Highlights
 
-Rather than defining its own highlights, Fidget uses built-in highlight groups
-that are typically overridden by custom Vim color schemes. With any luck, these
-will look reasonable when rendered, but the visual outcome will really depend
-on what your color scheme decided to do with those highlight groups.
+Rather than defining its own highlights, Fidget's default configuration uses
+built-in highlight groups that are typically overridden by custom Vim color
+schemes. With any luck, these will look reasonable when rendered, but the visual
+outcome will really depend on what your color scheme decided to do with those
+highlight groups.
+
+You can override these highlight groups (e.g., `icon_style`) using the `:h
+fidget-options` shown above.
 
 ## Related Work
 
