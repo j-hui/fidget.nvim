@@ -285,6 +285,14 @@ notification.show_history({filter})           *fidget.notification.show_history*
         {filter}  (HistoryFilter|Key|nil)  options or group_key for filtering history
 
 
+notification.group_keys()                       *fidget.notification.group_keys*
+     Get list of active notification group keys.
+
+
+    Returns: ~
+        (Key[])  keys
+
+
 ==============================================================================
 LSP progress subsystem                                         *fidget.progress*
 

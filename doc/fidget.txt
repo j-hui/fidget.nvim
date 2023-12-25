@@ -1,4 +1,4 @@
-*fidget.txt*                 For                 Last change: 2023 December 25
+*fidget.txt* Extensible UI for Neovim notifications and LSP progress messages.
 
 ==============================================================================
 Table of Contents                                   *fidget-table-of-contents*
