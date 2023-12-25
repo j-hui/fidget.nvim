@@ -262,6 +262,175 @@ source code. You are encouraged to hack around with that.
 
 <!-- panvimdoc-include-comment See |fidget-api.txt|. -->
 
+<!-- {{{ Generated from fidget.commands.lua -->
+
+## Commands
+
+<!-- panvimdoc-include-comment
+
+```vimdoc
+*fidget-:Fidget* *:Fidget*
+```
+
+-->
+
+Fidget exposes some of its Lua API functions through `:Fidget` sub-commands
+(e.g., `:Fidget clear`), which support shell-like arguments and completion.
+These sub-commands are documented below.
+
+<!-- panvimdoc-ignore-start -->
+
+### `:Fidget` sub-commands
+
+#### `:Fidget clear`
+
+Clear active notifications
+
+<details>
+  <summary>Command arguments</summary>
+  
+Positional arguments:
+
+    -   `{group_key}`: `(any)` group to clear
+
+</details>
+
+
+#### `:Fidget lsp_suppress`
+
+Suppress LSP progress notifications
+
+<details>
+  <summary>Command arguments</summary>
+  
+Positional arguments:
+
+    -   `{suppress}`: `(boolean)` whether to suppress (omitting this argument toggles suppression)
+
+</details>
+
+
+#### `:Fidget clear_history`
+
+Clear notifications history
+
+<details>
+  <summary>Command arguments</summary>
+  
+Flags:
+
+    -   `--include_active {true|false}`: `(boolean)` whether to clear items that have not been removed (default: true)
+    -   `--group_key {group_key}`: `(any)` clear history by group key
+    -   `--include_removed {true|false}`: `(boolean)` whether to clear items that have have been removed (default: true)
+    -   `--since {since}`: `(number)` clear history of items updated at most this long ago
+    -   `--before {before}`: `(number)` clear history of items updated at least this long ago
+
+Positional arguments:
+
+    -   `{group_key}`: `(any)` clear history by group key
+
+</details>
+
+
+#### `:Fidget suppress`
+
+Suppress notification window
+
+<details>
+  <summary>Command arguments</summary>
+  
+Positional arguments:
+
+    -   `{suppress}`: `(boolean)` whether to suppress (omitting this argument toggles suppression)
+
+</details>
+
+
+#### `:Fidget history`
+
+Show notifications history
+
+<details>
+  <summary>Command arguments</summary>
+  
+Flags:
+
+    -   `--include_active {true|false}`: `(boolean)` whether to clear items that have not been removed (default: `true`)
+    -   `--group_key {group_key}`: `(any)` filter history by group key
+    -   `--include_removed {true|false}`: `(boolean)` whether to clear items that have have been removed (default: `true`)
+    -   `--since {since}`: `(number)` filter history for items updated at most this long ago
+    -   `--before {before}`: `(number)` filter history for items updated at least this long ago
+
+Positional arguments:
+
+    -   `{group_key}`: `(any)` filter history by group key
+
+</details>
+
+
+<!-- panvimdoc-ignore-end -->
+
+<!-- panvimdoc-include-comment
+
+```vimdoc
+:Fidget clear                                           *fidget-:Fidget-clear*
+
+    Clear active notifications
+
+    Positional arguments: ~
+        {group_key}                    (any)        group to clear
+
+
+:Fidget lsp_suppress                             *fidget-:Fidget-lsp_suppress*
+
+    Suppress LSP progress notifications
+
+    Positional arguments: ~
+        {suppress}                     (boolean)    whether to suppress (omitting this argument toggles suppression)
+
+
+:Fidget clear_history                           *fidget-:Fidget-clear_history*
+
+    Clear notifications history
+
+    Flags: ~
+        --include_active {true|false}  (boolean)    whether to clear items that have not been removed (default: true)
+        --group_key {group_key}        (any)        clear history by group key
+        --include_removed {true|false} (boolean)    whether to clear items that have have been removed (default: true)
+        --since {since}                (number)     clear history of items updated at most this long ago
+        --before {before}              (number)     clear history of items updated at least this long ago
+
+    Positional arguments: ~
+        {group_key}                    (any)        clear history by group key
+
+
+:Fidget suppress                                     *fidget-:Fidget-suppress*
+
+    Suppress notification window
+
+    Positional arguments: ~
+        {suppress}                     (boolean)    whether to suppress (omitting this argument toggles suppression)
+
+
+:Fidget history                                       *fidget-:Fidget-history*
+
+    Show notifications history
+
+    Flags: ~
+        --include_active {true|false}  (boolean)    whether to clear items that have not been removed (default: `true`)
+        --group_key {group_key}        (any)        filter history by group key
+        --include_removed {true|false} (boolean)    whether to clear items that have have been removed (default: `true`)
+        --since {since}                (number)     filter history for items updated at most this long ago
+        --before {before}              (number)     filter history for items updated at least this long ago
+
+    Positional arguments: ~
+        {group_key}                    (any)        filter history by group key
+
+```
+-->
+
+<!-- Generated from fidget.commands.lua }}} -->
+
 ## Highlights
 
 Rather than defining its own highlights, Fidget's default configuration uses

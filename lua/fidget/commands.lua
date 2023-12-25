@@ -14,11 +14,13 @@ local SC = {}
 
 --- The specification of an argument type.
 ---@class Type
+---@field name string                                   Human-readable name of the type
 ---@field parse fun(str: string): (any|nil)             How to parse the argument (returns nil if it cannot be parsed)
 ---@field suggestions string[]|(fun(): string[])|nil    Possible list of completion suggestions
 
 ---@type Type
 SC.Boolean = {
+  name = "boolean",
   suggestions = { "true", "false" },
   parse = function(str)
     if str == "true" then
@@ -33,11 +35,13 @@ SC.Boolean = {
 
 ---@type Type
 SC.Number = {
+  name = "number",
   parse = tonumber,
 }
 
 ---@type Type
 SC.String = {
+  name = "string",
   parse = function(str)
     if string.sub(str, 1, 1) == [["]] and string.sub(str, #str) == [["]] then
       str = string.sub(str, 2, #str - 1)
@@ -55,6 +59,7 @@ SC.String = {
 ---@return Type
 function SC.Enum(alts)
   return {
+    name = [["]] .. table.concat(alts, [["|"]]) .. [["]],
     suggestions = alts,
     parse = function(str)
       for _, alt in ipairs(alts) do
@@ -69,6 +74,7 @@ end
 
 ---@type Type
 SC.Any = {
+  name = "any",
   parse = function(str)
     local v = SC.Boolean.parse(str)
     if v ~= nil then return v end
@@ -290,8 +296,109 @@ function SC.handle_complete(subcmds)
   end
 end
 
-function SC.make_vimdoc(subcmd)
+--- Generate vim `:help` docs, with the given tag prefix.
+---
+---@param cmdname string
+---@param subname string
+---@param subcmd SubCommand
+---@param tag_prefix string
+---@return string
+function SC.vimdoc(cmdname, subname, subcmd, tag_prefix)
+  local tag = string.format("*%s-:%s-%s*", tag_prefix, cmdname, subname)
+  local cmd = string.format(":%s %s", cmdname, subname)
+  local header = string.format("%s%s%s", cmd, string.rep(" ", math.max(78 - #tag - #cmd, 0)), tag)
 
+  local pos_args, named_args = {}, {}
+  for name, arg in pairs(subcmd.args) do
+    if type(name) == "string" then
+      name = string.format("--%s {%s}", name, arg.name or name)
+      table.insert(named_args,
+        string.format("        %-30s %-12s %s", name, string.format("(%s)", arg.type.name), arg.desc))
+    else
+      name = string.format("{%s}", arg.name)
+      table.insert(pos_args,
+        string.format("        %-30s %-12s %s", name, string.format("(%s)", arg.type.name), arg.desc))
+    end
+  end
+
+  local pos_docs, named_docs = "", ""
+  if #named_args > 0 then
+    named_docs = string.format([[
+
+    Flags: ~
+%s
+]], table.concat(named_args, "\n"))
+  end
+  if #pos_args > 0 then
+    pos_docs = string.format([[
+
+    Positional arguments: ~
+%s
+]], table.concat(pos_args, "\n"))
+  end
+
+  return string.format([[
+%s
+
+    %s
+%s%s]], header, subcmd.desc, named_docs, pos_docs)
+end
+
+--- Generate subcommand docs, at the given header level.
+---
+---@param cmdname string
+---@param subname string
+---@param subcmd SubCommand
+---@param level number|nil
+---@return string
+function SC.mddoc(cmdname, subname, subcmd, level)
+  level = level or 4
+
+  local heading = string.format("%s `:%s %s`", string.rep("#", level), cmdname, subname)
+
+  local pos_args, named_args = {}, {}
+  for name, arg in pairs(subcmd.args) do
+    if type(name) == "string" then
+      table.insert(named_args,
+        string.format("    -   `--%s {%s}`: `(%s)` %s", name, arg.name or name, arg.type.name, arg.desc))
+    else
+      table.insert(pos_args, string.format("    -   `{%s}`: `(%s)` %s", arg.name, arg.type.name, arg.desc))
+    end
+  end
+
+  local pos_docs, named_docs = "", ""
+  if #named_args > 0 then
+    named_docs = string.format([[
+
+Flags:
+
+%s
+]], table.concat(named_args, "\n"))
+  end
+  if #pos_args > 0 then
+    pos_docs = string.format([[
+
+Positional arguments:
+
+%s
+]], table.concat(pos_args, "\n"))
+  end
+
+  local detailed_docs = ""
+  if #named_args > 0 or #pos_args > 0 then
+    detailed_docs = string.format([[
+
+<details>
+  <summary>Command arguments</summary>
+  %s%s
+</details>]], named_docs, pos_docs)
+  end
+
+  return string.format([[%s
+
+%s
+%s
+]], heading, subcmd.desc, detailed_docs)
 end
 
 --[[
@@ -325,8 +432,16 @@ SC.subcommands = {
       group_key = { type = SC.Any, desc = "filter history by group key" },
       before = { type = SC.Number, desc = "filter history for items updated at least this long ago" },
       since = { type = SC.Number, desc = "filter history for items updated at most this long ago" },
-      include_removed = { type = SC.Boolean, desc = "whether to clear items that have have been removed (default: true)" },
-      include_active = { type = SC.Boolean, desc = "whether to clear items that have not been removed (default: true)" },
+      include_removed = {
+        name = "true|false",
+        type = SC.Boolean,
+        desc = "whether to clear items that have have been removed (default: `true`)"
+      },
+      include_active = {
+        name = "true|false",
+        type = SC.Boolean,
+        desc = "whether to clear items that have not been removed (default: `true`)"
+      },
     }
   },
   clear_history = {
@@ -340,8 +455,16 @@ SC.subcommands = {
       group_key = { type = SC.Any, desc = "clear history by group key" },
       before = { type = SC.Number, desc = "clear history of items updated at least this long ago" },
       since = { type = SC.Number, desc = "clear history of items updated at most this long ago" },
-      include_removed = { type = SC.Boolean, desc = "whether to clear items that have have been removed (default: true)" },
-      include_active = { type = SC.Boolean, desc = "whether to clear items that have not been removed (default: true)" },
+      include_removed = {
+        name = "true|false",
+        type = SC.Boolean,
+        desc = "whether to clear items that have have been removed (default: true)"
+      },
+      include_active = {
+        name = "true|false",
+        type = SC.Boolean,
+        desc = "whether to clear items that have not been removed (default: true)"
+      },
     }
   },
   suppress = {
@@ -372,5 +495,57 @@ function SC.setup()
     force = true,
   })
 end
+
+--- Reflect on subcommands specification to generate README documentation.
+---@return string docs
+function SC.make_panvimdocs()
+  local mddocs, vimdocs = {}, {}
+  for name, subcmd in pairs(SC.subcommands) do
+    table.insert(mddocs, SC.mddoc(COMMAND_NAME, name, subcmd, 4))
+    table.insert(vimdocs, SC.vimdoc(COMMAND_NAME, name, subcmd, "fidget"))
+  end
+
+  return string.format([[
+<!-- {{{ Generated from fidget.commands.lua -->
+
+## Commands
+
+<!-- panvimdoc-include-comment
+
+```vimdoc
+*fidget-:Fidget* *:Fidget*
+```
+
+-->
+
+Fidget exposes some of its Lua API functions through `:Fidget` sub-commands
+(e.g., `:Fidget clear`), which support shell-like arguments and completion.
+These sub-commands are documented below.
+
+<!-- panvimdoc-ignore-start -->
+
+### `:Fidget` sub-commands
+
+%s
+
+<!-- panvimdoc-ignore-end -->
+
+<!-- panvimdoc-include-comment
+
+```vimdoc
+%s
+```
+-->
+
+<!-- Generated from fidget.commands.lua }}} -->
+]], table.concat(mddocs, "\n\n"), table.concat(vimdocs, "\n\n"))
+end
+
+-- Quick and dirty: to generate docs, un-comment the following and run :luafile %
+-- local out = io.open("commands.txt", "w")
+-- if out then
+--   out:write(SC.make_panvimdocs())
+--   out:close()
+-- end
 
 return SC

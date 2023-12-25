@@ -1,4 +1,4 @@
-*fidget.txt* Extensible UI for Neovim notifications and LSP progress messages.
+*fidget.txt*                 For                 Last change: 2023 December 25
 
 ==============================================================================
 Table of Contents                                   *fidget-table-of-contents*
@@ -9,8 +9,9 @@ Table of Contents                                   *fidget-table-of-contents*
   - Versioning                             |fidget-getting-started-versioning|
 2. Options                                                    |fidget-options|
 3. Lua API                                                    |fidget-lua-api|
-4. Highlights                                              |fidget-highlights|
-5. Related Work                                          |fidget-related-work|
+4. Commands                                                  |fidget-commands|
+5. Highlights                                              |fidget-highlights|
+6. Related Work                                          |fidget-related-work|
   - Acknowledgements                    |fidget-related-work-acknowledgements|
 
 ==============================================================================
@@ -92,6 +93,9 @@ For instance, using Lazy <https://github.com/folke/lazy.nvim>
 
 ==============================================================================
 2. Options                                                    *fidget-options*
+
+Fidgetcan be configured by passing a table of options to the `setup()`.
+Available options are shown below:
 
 >lua
     {
@@ -192,7 +196,7 @@ For instance, using Lazy <https://github.com/folke/lazy.nvim>
     }
 <
 
-Formore details, see |fidget-option.txt|.
+For more details, see |fidget-option.txt|.
 
 
 ==============================================================================
@@ -202,16 +206,84 @@ See |fidget-api.txt|.
 
 
 ==============================================================================
-4. Highlights                                              *fidget-highlights*
+4. Commands                                                  *fidget-commands*
 
-Rather than defining its own highlights, Fidget uses built-in highlight groups
-that are typically overridden by custom Vim color schemes. With any luck, these
-will look reasonable when rendered, but the visual outcome will really depend
-on what your color scheme decided to do with those highlight groups.
+*fidget-:Fidget* *:Fidget*
+
+Fidget exposes some of its Lua API functions through `:Fidget` sub-commands
+(e.g., `:Fidget clear`), which support shell-like arguments and completion.
+These sub-commands are documented below.
+
+:Fidget clear                                           *fidget-:Fidget-clear*
+
+    Clear active notifications
+
+    Positional arguments: ~
+        {group_key}                    (any)        group to clear
+
+
+:Fidget lsp_suppress                             *fidget-:Fidget-lsp_suppress*
+
+    Suppress LSP progress notifications
+
+    Positional arguments: ~
+        {suppress}                     (boolean)    whether to suppress (omitting this argument toggles suppression)
+
+
+:Fidget clear_history                           *fidget-:Fidget-clear_history*
+
+    Clear notifications history
+
+    Flags: ~
+        --include_active {true|false}  (boolean)    whether to clear items that have not been removed (default: true)
+        --group_key {group_key}        (any)        clear history by group key
+        --include_removed {true|false} (boolean)    whether to clear items that have have been removed (default: true)
+        --since {since}                (number)     clear history of items updated at most this long ago
+        --before {before}              (number)     clear history of items updated at least this long ago
+
+    Positional arguments: ~
+        {group_key}                    (any)        clear history by group key
+
+
+:Fidget suppress                                     *fidget-:Fidget-suppress*
+
+    Suppress notification window
+
+    Positional arguments: ~
+        {suppress}                     (boolean)    whether to suppress (omitting this argument toggles suppression)
+
+
+:Fidget history                                       *fidget-:Fidget-history*
+
+    Show notifications history
+
+    Flags: ~
+        --include_active {true|false}  (boolean)    whether to clear items that have not been removed (default: `true`)
+        --group_key {group_key}        (any)        filter history by group key
+        --include_removed {true|false} (boolean)    whether to clear items that have have been removed (default: `true`)
+        --since {since}                (number)     filter history for items updated at most this long ago
+        --before {before}              (number)     filter history for items updated at least this long ago
+
+    Positional arguments: ~
+        {group_key}                    (any)        filter history by group key
+
 
 
 ==============================================================================
-5. Related Work                                          *fidget-related-work*
+5. Highlights                                              *fidget-highlights*
+
+Rather than defining its own highlights, Fidget’s default configuration uses
+built-in highlight groups that are typically overridden by custom Vim color
+schemes. With any luck, these will look reasonable when rendered, but the
+visual outcome will really depend on what your color scheme decided to do with
+those highlight groups.
+
+You can override these highlight groups (e.g., `icon_style`) using the
+|fidget-options| shown above.
+
+
+==============================================================================
+6. Related Work                                          *fidget-related-work*
 
 rcarriga/nvim-notify <https://github.com/rcarriga/nvim-notify> is first and
 foremost a `vim.notify()` backend, and it also supports LSP progress
