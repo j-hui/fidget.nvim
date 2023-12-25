@@ -201,6 +201,12 @@ Available options are shown below:
     override_vim_notify = false,  -- Automatically override vim.notify() with Fidget
     configs =                     -- How to configure notification groups when instantiated
       { default = require("fidget.notification").default_config },
+    redirect =                    -- Conditionally redirect notifications to another backend
+      function(msg, level, opts)
+        if opts and opts.on_open then
+          return require("fidget.integration.nvim-notify").delegate(msg, level, opts)
+        end
+      end,
 
     -- Options related to how notifications are rendered as text
     view = {
