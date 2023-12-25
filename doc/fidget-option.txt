@@ -529,6 +529,31 @@ notification.configs                      *fidget.option.notification.configs*
         `{ default = notification.default_config }`
 
 
+notification.redirect                    *fidget.option.notification.redirect*
+
+    Conditionally redirect notifications to another backend
+
+    This option is useful for delegating notifications to another backend that
+    supports features Fidget has not (yet) implemented.
+
+    For instance, Fidget uses a single, shared buffer and window for rendering
+    all notifications, so it lacks a per-notification `on_open` callback that
+    can be used to, e.g., set the |filetype| for a specific notification.
+    For such notifications, Fidget's default `redirect` delegates such
+    notifications with an `on_open` callback to |nvim-notify| (if available).
+
+    Type: ~
+        `false|fun(msg: string|nil, level: Level|nil, opts: table|nil): (boolean|nil)`
+
+    Default: ~
+>lua
+        function(msg, level, opts)
+          if opts and opts.on_open then
+            return require("fidget.integration.nvim-notify").delegate(msg, level, opts)
+          end
+        end
+<
+
 ==============================================================================
 Notifications rendering options              *fidget.option.notification.view*
 
