@@ -1,3 +1,4 @@
+--- `:Fidget` and its subcommands
 local SC = {}
 
 --- The specification of a subcommand.
@@ -17,9 +18,22 @@ local SC = {}
 ---@field name string                                   Human-readable name of the type
 ---@field parse fun(str: string): (any|nil)             How to parse the argument (returns nil if it cannot be parsed)
 ---@field suggestions string[]|(fun(): string[])|nil    Possible list of completion suggestions
+---@field override fun(self, tbl: table): Type          Create a new Type with the given fields overridden
+
+---@param typ table
+---@return Type typ
+function SC.Type(typ)
+  local mt = getmetatable(typ) or {}
+  mt.__index = mt.__index or {}
+  mt.__index.override = function(self, tbl)
+    return SC.Type(vim.tbl_extend("force", self, tbl))
+  end
+  setmetatable(typ, mt)
+  return typ
+end
 
 ---@type Type
-SC.Boolean = {
+SC.Boolean = SC.Type {
   name = "boolean",
   suggestions = { "true", "false" },
   parse = function(str)
@@ -34,13 +48,13 @@ SC.Boolean = {
 }
 
 ---@type Type
-SC.Number = {
+SC.Number = SC.Type {
   name = "number",
   parse = tonumber,
 }
 
 ---@type Type
-SC.String = {
+SC.String = SC.Type {
   name = "string",
   parse = function(str)
     if string.sub(str, 1, 1) == [["]] and string.sub(str, #str) == [["]] then
@@ -58,7 +72,7 @@ SC.String = {
 ---@param alts string[]
 ---@return Type
 function SC.Enum(alts)
-  return {
+  return SC.Type {
     name = [["]] .. table.concat(alts, [["|"]]) .. [["]],
     suggestions = alts,
     parse = function(str)
@@ -73,7 +87,7 @@ function SC.Enum(alts)
 end
 
 ---@type Type
-SC.Any = {
+SC.Any = SC.Type {
   name = "any",
   parse = function(str)
     local v = SC.Boolean.parse(str)
@@ -83,7 +97,7 @@ SC.Any = {
     v = SC.String.parse(str)
     if v ~= nil then return v end
     return nil
-  end
+  end,
 }
 
 --- Return the name of a potential flag, or nil if not a flag
@@ -410,6 +424,14 @@ Everything below this is Fidget-specific (and everything above this isn't)
 local COMMAND_NAME = "Fidget"
 local COMMAND_DESC = "Fidget ex-mode command interface"
 
+local GroupKey = SC.Any:override {
+  suggestions = function()
+    return vim.tbl_filter(function(key)
+      return type(key) == "string"
+    end, require("fidget.notification").group_keys())
+  end,
+}
+
 ---@type table<string, SubCommand>
 SC.subcommands = {
   clear = {
@@ -418,7 +440,7 @@ SC.subcommands = {
       require("fidget.notification").clear(args[1])
     end,
     args = {
-      { name = "group_key", type = SC.Any, desc = "group to clear" },
+      { name = "group_key", type = GroupKey, desc = "group to clear" },
     },
   },
   history = {
@@ -428,8 +450,8 @@ SC.subcommands = {
       require("fidget.notification").show_history(args)
     end,
     args = {
-      { name = "group_key", type = SC.Any, desc = "filter history by group key" },
-      group_key = { type = SC.Any, desc = "filter history by group key" },
+      { name = "group_key", type = GroupKey, desc = "filter history by group key" },
+      group_key = { type = GroupKey, desc = "filter history by group key" },
       before = { type = SC.Number, desc = "filter history for items updated at least this long ago" },
       since = { type = SC.Number, desc = "filter history for items updated at most this long ago" },
       include_removed = {
@@ -451,8 +473,8 @@ SC.subcommands = {
       require("fidget.notification").clear_history(args)
     end,
     args = {
-      { name = "group_key", type = SC.Any, desc = "clear history by group key" },
-      group_key = { type = SC.Any, desc = "clear history by group key" },
+      { name = "group_key", type = GroupKey, desc = "clear history by group key" },
+      group_key = { type = GroupKey, desc = "clear history by group key" },
       before = { type = SC.Number, desc = "clear history of items updated at least this long ago" },
       since = { type = SC.Number, desc = "clear history of items updated at most this long ago" },
       include_removed = {

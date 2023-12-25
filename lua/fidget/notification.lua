@@ -380,4 +380,11 @@ function notification.show_history(filter)
   notification.view.echo_history(history)
 end
 
+--- Get list of active notification group keys.
+---
+---@return Key[] keys
+function notification.group_keys()
+  return vim.tbl_map(function(group) return group.key end, state.groups)
+end
+
 return notification
