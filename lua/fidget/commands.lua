@@ -374,9 +374,9 @@ function SC.mddoc(cmdname, subname, subcmd, level)
   for name, arg in pairs(subcmd.args) do
     if type(name) == "string" then
       table.insert(named_args,
-        string.format("    -   `--%s {%s}`: `(%s)` %s", name, arg.name or name, arg.type.name, arg.desc))
+        string.format("-   `--%s {%s}`: `(%s)` %s", name, arg.name or name, arg.type.name, arg.desc))
     else
-      table.insert(pos_args, string.format("    -   `{%s}`: `(%s)` %s", arg.name, arg.type.name, arg.desc))
+      table.insert(pos_args, string.format("-   `{%s}`: `(%s)` %s", arg.name, arg.type.name, arg.desc))
     end
   end
 
@@ -403,8 +403,8 @@ Positional arguments:
     detailed_docs = string.format([[
 
 <details>
-  <summary>Command arguments</summary>
-  %s%s
+  <summary>Arguments</summary>
+%s%s
 </details>]], named_docs, pos_docs)
   end
 

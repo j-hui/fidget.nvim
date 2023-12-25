@@ -282,52 +282,24 @@ These sub-commands are documented below.
 
 ### `:Fidget` sub-commands
 
-#### `:Fidget clear`
+#### `:Fidget history`
 
-Clear active notifications
-
-<details>
-  <summary>Command arguments</summary>
-  
-Positional arguments:
-
-    -   `{group_key}`: `(any)` group to clear
-
-</details>
-
-
-#### `:Fidget lsp_suppress`
-
-Suppress LSP progress notifications
+Show notifications history
 
 <details>
-  <summary>Command arguments</summary>
-  
-Positional arguments:
+  <summary>Arguments</summary>
 
-    -   `{suppress}`: `(boolean)` whether to suppress (omitting this argument toggles suppression)
-
-</details>
-
-
-#### `:Fidget clear_history`
-
-Clear notifications history
-
-<details>
-  <summary>Command arguments</summary>
-  
 Flags:
 
-    -   `--include_active {true|false}`: `(boolean)` whether to clear items that have not been removed (default: true)
-    -   `--group_key {group_key}`: `(any)` clear history by group key
-    -   `--include_removed {true|false}`: `(boolean)` whether to clear items that have have been removed (default: true)
-    -   `--since {since}`: `(number)` clear history of items updated at most this long ago
-    -   `--before {before}`: `(number)` clear history of items updated at least this long ago
+-   `--since {since}`: `(number)` filter history for items updated at most this long ago
+-   `--include_removed {true|false}`: `(boolean)` whether to clear items that have have been removed (default: `true`)
+-   `--before {before}`: `(number)` filter history for items updated at least this long ago
+-   `--include_active {true|false}`: `(boolean)` whether to clear items that have not been removed (default: `true`)
+-   `--group_key {group_key}`: `(any)` filter history by group key
 
 Positional arguments:
 
-    -   `{group_key}`: `(any)` clear history by group key
+-   `{group_key}`: `(any)` filter history by group key
 
 </details>
 
@@ -337,33 +309,61 @@ Positional arguments:
 Suppress notification window
 
 <details>
-  <summary>Command arguments</summary>
-  
+  <summary>Arguments</summary>
+
 Positional arguments:
 
-    -   `{suppress}`: `(boolean)` whether to suppress (omitting this argument toggles suppression)
+-   `{suppress}`: `(boolean)` whether to suppress (omitting this argument toggles suppression)
 
 </details>
 
 
-#### `:Fidget history`
+#### `:Fidget clear`
 
-Show notifications history
+Clear active notifications
 
 <details>
-  <summary>Command arguments</summary>
-  
-Flags:
-
-    -   `--include_active {true|false}`: `(boolean)` whether to clear items that have not been removed (default: `true`)
-    -   `--group_key {group_key}`: `(any)` filter history by group key
-    -   `--include_removed {true|false}`: `(boolean)` whether to clear items that have have been removed (default: `true`)
-    -   `--since {since}`: `(number)` filter history for items updated at most this long ago
-    -   `--before {before}`: `(number)` filter history for items updated at least this long ago
+  <summary>Arguments</summary>
 
 Positional arguments:
 
-    -   `{group_key}`: `(any)` filter history by group key
+-   `{group_key}`: `(any)` group to clear
+
+</details>
+
+
+#### `:Fidget clear_history`
+
+Clear notifications history
+
+<details>
+  <summary>Arguments</summary>
+
+Flags:
+
+-   `--since {since}`: `(number)` clear history of items updated at most this long ago
+-   `--include_removed {true|false}`: `(boolean)` whether to clear items that have have been removed (default: true)
+-   `--before {before}`: `(number)` clear history of items updated at least this long ago
+-   `--include_active {true|false}`: `(boolean)` whether to clear items that have not been removed (default: true)
+-   `--group_key {group_key}`: `(any)` clear history by group key
+
+Positional arguments:
+
+-   `{group_key}`: `(any)` clear history by group key
+
+</details>
+
+
+#### `:Fidget lsp_suppress`
+
+Suppress LSP progress notifications
+
+<details>
+  <summary>Arguments</summary>
+
+Positional arguments:
+
+-   `{suppress}`: `(boolean)` whether to suppress (omitting this argument toggles suppression)
 
 </details>
 
@@ -373,35 +373,19 @@ Positional arguments:
 <!-- panvimdoc-include-comment
 
 ```vimdoc
-:Fidget clear                                           *fidget-:Fidget-clear*
+:Fidget history                                       *fidget-:Fidget-history*
 
-    Clear active notifications
-
-    Positional arguments: ~
-        {group_key}                    (any)        group to clear
-
-
-:Fidget lsp_suppress                             *fidget-:Fidget-lsp_suppress*
-
-    Suppress LSP progress notifications
-
-    Positional arguments: ~
-        {suppress}                     (boolean)    whether to suppress (omitting this argument toggles suppression)
-
-
-:Fidget clear_history                           *fidget-:Fidget-clear_history*
-
-    Clear notifications history
+    Show notifications history
 
     Flags: ~
-        --include_active {true|false}  (boolean)    whether to clear items that have not been removed (default: true)
-        --group_key {group_key}        (any)        clear history by group key
-        --include_removed {true|false} (boolean)    whether to clear items that have have been removed (default: true)
-        --since {since}                (number)     clear history of items updated at most this long ago
-        --before {before}              (number)     clear history of items updated at least this long ago
+        --since {since}                (number)     filter history for items updated at most this long ago
+        --include_removed {true|false} (boolean)    whether to clear items that have have been removed (default: `true`)
+        --before {before}              (number)     filter history for items updated at least this long ago
+        --include_active {true|false}  (boolean)    whether to clear items that have not been removed (default: `true`)
+        --group_key {group_key}        (any)        filter history by group key
 
     Positional arguments: ~
-        {group_key}                    (any)        clear history by group key
+        {group_key}                    (any)        filter history by group key
 
 
 :Fidget suppress                                     *fidget-:Fidget-suppress*
@@ -412,19 +396,35 @@ Positional arguments:
         {suppress}                     (boolean)    whether to suppress (omitting this argument toggles suppression)
 
 
-:Fidget history                                       *fidget-:Fidget-history*
+:Fidget clear                                           *fidget-:Fidget-clear*
 
-    Show notifications history
-
-    Flags: ~
-        --include_active {true|false}  (boolean)    whether to clear items that have not been removed (default: `true`)
-        --group_key {group_key}        (any)        filter history by group key
-        --include_removed {true|false} (boolean)    whether to clear items that have have been removed (default: `true`)
-        --since {since}                (number)     filter history for items updated at most this long ago
-        --before {before}              (number)     filter history for items updated at least this long ago
+    Clear active notifications
 
     Positional arguments: ~
-        {group_key}                    (any)        filter history by group key
+        {group_key}                    (any)        group to clear
+
+
+:Fidget clear_history                           *fidget-:Fidget-clear_history*
+
+    Clear notifications history
+
+    Flags: ~
+        --since {since}                (number)     clear history of items updated at most this long ago
+        --include_removed {true|false} (boolean)    whether to clear items that have have been removed (default: true)
+        --before {before}              (number)     clear history of items updated at least this long ago
+        --include_active {true|false}  (boolean)    whether to clear items that have not been removed (default: true)
+        --group_key {group_key}        (any)        clear history by group key
+
+    Positional arguments: ~
+        {group_key}                    (any)        clear history by group key
+
+
+:Fidget lsp_suppress                             *fidget-:Fidget-lsp_suppress*
+
+    Suppress LSP progress notifications
+
+    Positional arguments: ~
+        {suppress}                     (boolean)    whether to suppress (omitting this argument toggles suppression)
 
 ```
 -->
