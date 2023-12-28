@@ -174,7 +174,7 @@ notification.notify({msg}, {level}, {opts})
 
      Can be used to override `vim.notify()`, e.g.,
     >lua
-         vim.notify = require("fidget.notification").notify
+         vim.notify = require("fidget.notifications").notify
     <
 
 
