@@ -300,7 +300,7 @@ function M.render(now, groups)
   }
 end
 
---- Display notification items in Neovim mesasges.
+--- Display notification items in Neovim messages.
 ---
 --- TODO(j-hui): this is not very configurable, but I'm not sure what options to
 --- expose to strike a balance between flexibility and simplicity. Then again,
