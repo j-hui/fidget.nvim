@@ -70,7 +70,8 @@ local logger                = require("fidget.logger")
 --- Notification element containing a message and optional annotation.
 ---
 ---@class Item
----@field key           Key         Used to distinguish this item from others
+---@field key           Key         Identity of this item (for in-place updates)
+---@field content_key   Key         What to deduplicate items by (do not deduplicate if `nil`)
 ---@field message       string      Displayed message for the item
 ---@field annote        string|nil  Optional title that accompanies the message
 ---@field style         string      Style used to render the annote/title, if any
@@ -121,6 +122,11 @@ local state                 = {
 --- :lua print(vim.inspect(require("fidget.notification").default_config))
 ---<
 ---
+--- Note that the default `update_hook` function performs a few book-keeping
+--- tasks, e.g., calling |fidget.notification.set_content_key| to keep its
+--- `content_key` up to date. You may want to do the same if writing your own;
+--- check the source code to see what it's doing.
+---
 --- See also:~
 ---     |fidget.notification.Config|
 ---
@@ -140,8 +146,41 @@ notification.default_config = {
   info_annote = "INFO",
   warn_annote = "WARN",
   error_annote = "ERROR",
-  update_hook = false,
+  update_hook = function(item)
+    notification.set_content_key(item)
+  end,
 }
+
+--- Sets a |fidget.notification.Item|'s `content_key`, for deduplication.
+---
+--- This default implementation sets an item's `content_key` to its `message`,
+--- appended with its `annote` (or a null byte if it has no `annote`), a rough
+--- "hash" of its contents. You can write your own `update_hook` that "hashes"
+--- the message differently, e.g., only considering the `message`, or taking the
+--- `data` or style fields into account.
+---
+--- If you would like to disable message deduplication, don't call this
+--- function, leaving the `content_key` field as `nil`. Assuming you're not
+--- using the `update_hook` for anything else, you can achieve this by simply
+--- the option to `false`, e.g.:
+---
+--->lua
+--- { -- In options table
+---   notification = {
+---     configs = {
+---       -- Opt out of deduplication by default, i.e., in default config
+---       default = vim.tbl_extend("force", require('fidget.notification').default_config, {
+---         update_hook = false,
+---       },
+---     },
+---   },
+--- }
+---<
+---
+---@param item Item
+function notification.set_content_key(item)
+    item.content_key = item.message .. " " .. (item.annote and item.annote or string.char(0))
+end
 
 ---@options notification [[
 ---@protected

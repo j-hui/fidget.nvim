@@ -49,6 +49,23 @@ M.options = {
   ---
   ---@type string|false
   group_separator_hl = "Comment",
+
+  --- How to render notification messages
+  ---
+  --- Messages that appear multiple times (have the same `content_key`) will
+  --- only be rendered once, with a `cnt` greater than 1. This hook provides an
+  --- opportunity to customize how such messages should appear.
+  ---
+  --- Note that if this returns an empty string, the notification will not be
+  --- rendered.
+  ---
+  --- See also:~
+  ---     |fidget.notification.Config|
+  ---     |fidget.notification.default_config|
+  ---     |fidget.notification.set_content_key|
+  ---
+  ---@type fun(msg: string, cnt: number): string
+  render_message = function(msg, cnt) return cnt == 1 and msg or string.format("(%dx) %s", cnt, msg) end,
 }
 ---@options ]]
 
@@ -160,15 +177,17 @@ end
 ---
 ---@param item   Item
 ---@param config Config
+---@param count  number
 ---@return       NotificationRenderItem|nil render_item
-function M.render_item(item, config)
+function M.render_item(item, config, count)
   if item.hidden then
     return nil
   end
 
   local lines, highlights = {}, {}
 
-  for line in vim.gsplit(item.message, "\n", { plain = true, trimempty = true }) do
+  local msg = M.options.render_message(item.message, count)
+  for line in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
     table.insert(lines, line)
   end
 
@@ -178,16 +197,17 @@ function M.render_item(item, config)
   end
 
   if item.annote then
-    local msg = lines[1] -- Append annote to first line of message
+    local line1 = lines[1] -- Append annote to first line
+    local col_start = #line1
     local sep = config.annote_separator or " "
-    local line = string.format("%s%s%s", msg, sep, item.annote)
-    lines[1] = line
+    line1 = string.format("%s%s%s", line1, sep, item.annote)
+    lines[1] = line1
 
     -- Insert highlight for annote
     table.insert(highlights, {
       hl_group = item.style,
-      line = 0,         -- 0-indexed
-      col_start = #msg, -- byte-indexed
+      line = 0,              -- 0-indexed
+      col_start = col_start, -- byte-indexed
       col_end = -1,
     })
   end
@@ -217,16 +237,37 @@ function M.render(now, groups)
       table.insert(render_items, group_header)
     end
 
+    local counts = {}
+    for _, item in ipairs(group.items) do
+      local content_key = item.content_key
+      if content_key ~= nil then
+        if counts[content_key] then
+          counts[content_key] = counts[content_key] + 1
+        else
+          counts[content_key] = 1
+        end
+      end
+    end
+
     local i = 1
     for _, item in ipairs(group.items) do
       if group.config.render_limit and i > group.config.render_limit then
         -- Don't bother rendering the rest (though they still exist)
         break
       end
-      local render_item = M.render_item(item, group.config)
-      if render_item then
-        table.insert(render_items, render_item)
-        i = i + 1
+      local content_key = item.content_key
+      if content_key == nil or counts[content_key] then
+        local count = 1
+        if content_key ~= nil then
+          count = counts[content_key]
+          counts[content_key] = nil
+        end
+
+        local render_item = M.render_item(item, group.config, count)
+        if render_item then
+          table.insert(render_items, render_item)
+          i = i + 1
+        end
       end
     end
   end
