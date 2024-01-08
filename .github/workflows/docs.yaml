@@ -40,6 +40,6 @@ jobs:
 
     - uses: stefanzweifel/git-auto-commit-action@v4
       with:
-        commit_message: "Auto generate docs"
+        commit_message: "chore(doc): auto-generate help docs"
         branch: ${{ github.head_ref }}
         file_pattern: 'doc/*.txt'
