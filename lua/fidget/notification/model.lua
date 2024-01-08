@@ -245,6 +245,9 @@ function M.update(now, configs, state, msg, level, opts)
       last_updated = now,
       data = opts.data,
     }
+    if group.config.update_hook then
+      group.config.update_hook(new_item)
+    end
     table.insert(group.items, new_item)
   else
     -- Item with the same key already exists; update it in place
@@ -256,6 +259,9 @@ function M.update(now, configs, state, msg, level, opts)
     item.skip_history = opts.skip_history or item.skip_history
     item.last_updated = now
     item.data = opts.data ~= nil and opts.data or item.data
+    if group.config.update_hook then
+      group.config.update_hook(item)
+    end
   end
 
   if new_index then

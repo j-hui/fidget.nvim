@@ -37,7 +37,11 @@ local logger                = require("fidget.logger")
 ---
 --- If both name and icon are nil, then no group header is rendered.
 ---
---- Note that the actual `|fidget.notification.default_config|` defines a few
+--- The `update_hook` function can be used to dynamically adjust fields of
+--- a |fidget.notification.Item|, e.g., to set the `hidden` field according to
+--- the message. If set to `false`, nothing is done when an item is updated.
+---
+--- Note that the actual |fidget.notification.default_config| defines a few
 --- more defaults than what is documented here, which pertain to the fallback
 --- used if the corresponding field in the `default` config table is `nil`.
 ---
@@ -61,6 +65,7 @@ local logger                = require("fidget.logger")
 ---@field error_annote      string|nil    Default annotation for error items
 ---@field priority          number|nil    Order in which group should be displayed; defaults to `50`
 ---@field skip_history      boolean|nil   Whether messages should be preserved in history
+---@field update_hook       fun(item: Item)|false|nil   Called when an item is updated; defaults to `false`
 
 --- Notification element containing a message and optional annotation.
 ---
@@ -116,6 +121,9 @@ local state                 = {
 --- :lua print(vim.inspect(require("fidget.notification").default_config))
 ---<
 ---
+--- See also:~
+---     |fidget.notification.Config|
+---
 ---@type Config
 notification.default_config = {
   name = "Notifications",
@@ -132,6 +140,7 @@ notification.default_config = {
   info_annote = "INFO",
   warn_annote = "WARN",
   error_annote = "ERROR",
+  update_hook = false,
 }
 
 ---@options notification [[
