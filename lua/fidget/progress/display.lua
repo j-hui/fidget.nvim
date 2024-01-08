@@ -175,13 +175,20 @@ M.options = {
   ---       rust_analyzer = {
   ---         name = "Rust Analyzer",
   ---         icon = fidget.progress.display.for_icon(fidget.spinner.animate("arrow", 2.5), "🦀"),
+  ---         update_hook = function(item)
+  ---           require("fidget.notification").set_content_key(item)
+  ---           if item.hidden == nil and string.match(item.annote, "clippy") then
+  ---             -- Hide clippy-related notifications
+  ---             item.hidden = true
+  ---           end
+  ---         end,
   ---       },
   ---     }
   ---<
   ---
   ---@type { [Key]: Config }
   overrides = {
-    rust_analyzer = { name = "rust-analyzer" },
+    rust_analyzer = { name = "rust-analyzer", },
   },
 }
 ---@options ]]
