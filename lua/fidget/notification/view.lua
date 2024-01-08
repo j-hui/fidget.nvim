@@ -162,6 +162,10 @@ end
 ---@param config Config
 ---@return       NotificationRenderItem|nil render_item
 function M.render_item(item, config)
+  if item.hidden then
+    return nil
+  end
+
   local lines, highlights = {}, {}
 
   for line in vim.gsplit(item.message, "\n", { plain = true, trimempty = true }) do
@@ -213,7 +217,8 @@ function M.render(now, groups)
       table.insert(render_items, group_header)
     end
 
-    for i, item in ipairs(group.items) do
+    local i = 1
+    for _, item in ipairs(group.items) do
       if group.config.render_limit and i > group.config.render_limit then
         -- Don't bother rendering the rest (though they still exist)
         break
@@ -221,6 +226,7 @@ function M.render(now, groups)
       local render_item = M.render_item(item, group.config)
       if render_item then
         table.insert(render_items, render_item)
+        i = i + 1
       end
     end
   end
