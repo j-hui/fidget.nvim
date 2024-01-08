@@ -82,31 +82,36 @@ Config                                              *fidget.notification.Config*
 
      If both name and icon are nil, then no group header is rendered.
 
-     Note that the actual `|fidget.notification.default_config|` defines a few
+     The `update_hook` function can be used to dynamically adjust fields of
+     a |fidget.notification.Item|, e.g., to set the `hidden` field according to
+     the message. If set to `false`, nothing is done when an item is updated.
+
+     Note that the actual |fidget.notification.default_config| defines a few
      more defaults than what is documented here, which pertain to the fallback
      used if the corresponding field in the `default` config table is `nil`.
 
 
     Fields: ~
-        {name}              (Display|nil)  Name of the group
-        {icon}              (Display|nil)  Icon of the group
-        {icon_on_left}      (boolean|nil)  If `true`, icon is rendered on the left instead of right
-        {annote_separator}  (string|nil)   Separator between message from annote; defaults to `" "`
-        {ttl}               (number|nil)   How long a notification item should exist; defaults to `5`
-        {render_limit}      (number|nil)   How many notification items to show at once
-        {group_style}       (string|nil)   Style used to highlight group name; defaults to `"Title"`
-        {icon_style}        (string|nil)   Style used to highlight icon; if nil, use `group_style`
-        {annote_style}      (string|nil)   Default style used to highlight item annotes; defaults to `"Question"`
-        {debug_style}       (string|nil)   Style used to highlight debug item annotes
-        {info_style}        (string|nil)   Style used to highlight info item annotes
-        {warn_style}        (string|nil)   Style used to highlight warn item annotes
-        {error_style}       (string|nil)   Style used to highlight error item annotes
-        {debug_annote}      (string|nil)   Default annotation for debug items
-        {info_annote}       (string|nil)   Default annotation for info items
-        {warn_annote}       (string|nil)   Default annotation for warn items
-        {error_annote}      (string|nil)   Default annotation for error items
-        {priority}          (number|nil)   Order in which group should be displayed; defaults to `50`
-        {skip_history}      (boolean|nil)  Whether messages should be preserved in history
+        {name}              (Display|nil)               Name of the group
+        {icon}              (Display|nil)               Icon of the group
+        {icon_on_left}      (boolean|nil)               If `true`, icon is rendered on the left instead of right
+        {annote_separator}  (string|nil)                Separator between message from annote; defaults to `" "`
+        {ttl}               (number|nil)                How long a notification item should exist; defaults to `5`
+        {render_limit}      (number|nil)                How many notification items to show at once
+        {group_style}       (string|nil)                Style used to highlight group name; defaults to `"Title"`
+        {icon_style}        (string|nil)                Style used to highlight icon; if nil, use `group_style`
+        {annote_style}      (string|nil)                Default style used to highlight item annotes; defaults to `"Question"`
+        {debug_style}       (string|nil)                Style used to highlight debug item annotes
+        {info_style}        (string|nil)                Style used to highlight info item annotes
+        {warn_style}        (string|nil)                Style used to highlight warn item annotes
+        {error_style}       (string|nil)                Style used to highlight error item annotes
+        {debug_annote}      (string|nil)                Default annotation for debug items
+        {info_annote}       (string|nil)                Default annotation for info items
+        {warn_annote}       (string|nil)                Default annotation for warn items
+        {error_annote}      (string|nil)                Default annotation for error items
+        {priority}          (number|nil)                Order in which group should be displayed; defaults to `50`
+        {skip_history}      (boolean|nil)               Whether messages should be preserved in history
+        {update_hook}       (fun(item:Item)|false|nil)  Called when an item is updated; defaults to `false`
 
 
 Item                                                  *fidget.notification.Item*
@@ -114,7 +119,8 @@ Item                                                  *fidget.notification.Item*
 
 
     Fields: ~
-        {key}           (Key)         Used to distinguish this item from others
+        {key}           (Key)         Identity of this item (for in-place updates)
+        {content_key}   (Key)         What to deduplicate items by (do not deduplicate if `nil`)
         {message}       (string)      Displayed message for the item
         {annote}        (string|nil)  Optional title that accompanies the message
         {style}         (string)      Style used to render the annote/title, if any
@@ -163,9 +169,49 @@ notification.default_config                 *fidget.notification.default_config*
      :lua print(vim.inspect(require("fidget.notification").default_config))
     <
 
+     Note that the default `update_hook` function performs a few book-keeping
+     tasks, e.g., calling |fidget.notification.set_content_key| to keep its
+     `content_key` up to date. You may want to do the same if writing your own;
+     check the source code to see what it's doing.
+
+     See also:~
+         |fidget.notification.Config|
+
 
     Type: ~
         (Config)
+
+
+notification.set_content_key({item})       *fidget.notification.set_content_key*
+     Sets a |fidget.notification.Item|'s `content_key`, for deduplication.
+
+     This default implementation sets an item's `content_key` to its `message`,
+     appended with its `annote` (or a null byte if it has no `annote`), a rough
+     "hash" of its contents. You can write your own `update_hook` that "hashes"
+     the message differently, e.g., only considering the `message`, or taking the
+     `data` or style fields into account.
+
+     If you would like to disable message deduplication, don't call this
+     function, leaving the `content_key` field as `nil`. Assuming you're not
+     using the `update_hook` for anything else, you can achieve this by simply
+     the option to `false`, e.g.:
+
+    >lua
+     { -- In options table
+       notification = {
+         configs = {
+           -- Opt out of deduplication by default, i.e., in default config
+           default = vim.tbl_extend("force", require('fidget.notification').default_config, {
+             update_hook = false,
+           },
+         },
+       },
+     }
+    <
+
+
+    Parameters: ~
+        {item}  (Item)
 
 
                                                     *fidget.notification.notify*

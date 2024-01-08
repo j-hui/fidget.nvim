@@ -610,6 +610,29 @@ notification.view.group_separator_hl  *fidget.option.notification.view.group_sep
         `"Comment"`
 
 
+notification.view.render_message  *fidget.option.notification.view.render_message*
+
+    How to render notification messages
+
+    Messages that appear multiple times (have the same `content_key`) will
+    only be rendered once, with a `cnt` greater than 1. This hook provides an
+    opportunity to customize how such messages should appear.
+
+    Note that if this returns an empty string, the notification will not be
+    rendered.
+
+    See also:~
+        |fidget.notification.Config|
+        |fidget.notification.default_config|
+        |fidget.notification.set_content_key|
+
+    Type: ~
+        `fun(msg: string, cnt: number): string`
+
+    Default: ~
+        `function(msg, cnt) return cnt == 1 and msg or string.format("(%dx) %s", cnt, msg) end`
+
+
 ==============================================================================
 Notifications window options               *fidget.option.notification.window*
 
