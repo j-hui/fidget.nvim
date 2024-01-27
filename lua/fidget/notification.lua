@@ -272,7 +272,7 @@ end)
 ---
 --- Can be used to override `vim.notify()`, e.g.,
 --->lua
----     vim.notify = require("fidget.notifications").notify
+---     vim.notify = require("fidget.notification").notify
 ---<
 ---
 ---@param msg     string|nil  Content of the notification to show to the user.
