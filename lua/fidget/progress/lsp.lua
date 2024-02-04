@@ -59,8 +59,11 @@ end)
 function M.poll_for_messages()
   local messages = {}
   for _, client in ipairs(vim.lsp.get_clients()) do
-    logger.info("Polling messages from", client.id, "(", client.name, ")")
+    local client_name = string.format("%s (%s)", client.id, client.name)
+    local count = 0
+    logger.info("Polling messages from", client_name)
     for progress in client.progress do
+      count = count + 1
       local value = progress.value
       if type(value) == 'table' and value.kind then
         local message = {
@@ -72,18 +75,20 @@ function M.poll_for_messages()
           cancellable = value.cancellable or false,
           lsp_client = client,
         }
+        logger.info("Got message from", client_name, ":", value)
         table.insert(messages, message)
       elseif progress.value ~= nil then
         -- Doesn't look like work done progress and can be in any format
         -- Ignore it as there is no sensible way to display it, but we log it
-        logger.warn("Dropped message from client", client.id, "(", client.name, ") of type", type(value))
+        logger.warn("Dropped message from client", client_name, "of type", type(value))
         logger.info("Dropped message contents:", vim.inspect(value))
       else -- progress.value == nil; nothing to display, nothing interesting to log
         -- Log at INFO level, not at WARN, because apparently some servers do
         -- send these kinds of messages spuriously.
-        logger.info("Dropped nil message from client", client.id, "(", client.name, ")")
+        logger.info("Dropped nil message from client", client_name)
       end
     end
+    logger.info("Processed", count, "messages from", client_name)
   end
   return messages
 end
@@ -138,31 +143,36 @@ if not vim.lsp.status then
     local to_remove = {}
 
     for _, client in ipairs(vim.lsp.get_active_clients()) do
-      logger.info("Polling messages from", client.id, "(", client.name, ")")
-      for token, ctx in pairs(client.messages.progress) do
-        local seen = seen_messages[ctx]
-        if not seen                              -- brand new table
-            or seen.message ~= ctx.message       -- message changed
-            or seen.percentage ~= ctx.percentage -- percentage changed
-            or seen.done ~= ctx.done then        -- progress completed
+      local client_name = string.format("%s (%s)", client.id, client.name)
+      local count = 0
+      logger.info("Polling messages from", client_name)
+      for token, value in pairs(client.messages.progress) do
+        count = count + 1
+        local seen = seen_messages[value]
+        if not seen                                -- brand new table
+            or seen.message ~= value.message       -- message changed
+            or seen.percentage ~= value.percentage -- percentage changed
+            or seen.done ~= value.done then        -- progress completed
           local message = {
             token = token,
-            title = ctx.title,
-            message = ctx.message,
-            percentage = ctx.done and nil or ctx.percentage,
-            done = ctx.done or false,
-            cancellable = ctx.cancellable or false,
+            title = value.title,
+            message = value.message,
+            percentage = value.done and nil or value.percentage,
+            done = value.done or false,
+            cancellable = value.cancellable or false,
             lsp_client = client,
           }
+          logger.info("Got message from", client_name, ":", value)
           table.insert(messages, message)
 
-          if ctx.done then
+          if value.done then
             table.insert(to_remove, { client = client, token = token })
           else
-            seen_messages[ctx] = { message = ctx.message, percentage = ctx.percentage, done = ctx.done }
+            seen_messages[value] = { message = value.message, percentage = value.percentage, done = value.done }
           end
         end
       end
+      logger.info("Processed", count, "messages from", client_name)
     end
 
     for _, item in ipairs(to_remove) do

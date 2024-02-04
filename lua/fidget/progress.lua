@@ -219,12 +219,12 @@ progress.poller = poll.Poller {
         -- But if it is, consider indexing by hash.
         if msg.lsp_client.name == lsp_name then
           ignore = true
-          logger.info("Ignoring LSP progress message:", msg)
+          logger.info("Ignoring LSP progress message from", lsp_name, ":", msg)
           break
         end
       end
       if not ignore then
-        logger.info("Notifying LSP progress message:", msg)
+        logger.info("Notifying LSP progress message from", msg.lsp_client.name, ":", msg.title, " | ", msg.message)
         progress.load_config(msg)
         notification.notify(progress.format_progress(msg))
       end
