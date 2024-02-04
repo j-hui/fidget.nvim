@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0](https://github.com/j-hui/fidget.nvim/compare/v1.2.0...v1.3.0) (2024-02-04)
+
+
+### Features
+
+* **log:** auto-prune logs to prevent them from growing indefinitely ([e3cb72b](https://github.com/j-hui/fidget.nvim/commit/e3cb72b67924ed2f7d63fc383be2892ae830016f))
+* **logger:** improve LSP progress message logging ([f03a2d6](https://github.com/j-hui/fidget.nvim/commit/f03a2d6c8cebc23c1cc646efddcaa312dbfacc06))
+* **log:** log $/progress handler invocations ([8d4cd3b](https://github.com/j-hui/fidget.nvim/commit/8d4cd3beb512d347ba95958e4fa7d177ad832d44))
+
+
+### Bug Fixes
+
+* Fix a typo in the documentation ([#204](https://github.com/j-hui/fidget.nvim/issues/204)) ([7e08b10](https://github.com/j-hui/fidget.nvim/commit/7e08b105d59a325368c9d4bd0fc5e16a0518e8a8))
+
 ## [1.2.0](https://github.com/j-hui/fidget.nvim/compare/v1.1.0...v1.2.0) (2024-01-08)
 
 
