@@ -143,6 +143,7 @@ Available options are shown below:
         -- Options related to Neovim's built-in LSP client
         lsp = {
           progress_ringbuf_size = 0,  -- Configure the nvim's LSP progress ring buffer size
+          log_handler = false,        -- Log `$/progress` handler invocations (for debugging)
         },
       },
     
@@ -199,6 +200,7 @@ Available options are shown below:
       -- Options related to logging
       logger = {
         level = vim.log.levels.WARN,  -- Minimum logging level
+        max_size = 10000,             -- Maximum log file size, in KB
         float_precision = 0.01,       -- Limit the number of decimals displayed for floats
         path =                        -- Where Fidget writes its logs to
           string.format("%s/fidget.nvim.log", vim.fn.stdpath("cache")),
