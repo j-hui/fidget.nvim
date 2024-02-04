@@ -18,6 +18,25 @@ M.options = {
   ---@type 0|1|2|3|4|5
   level = vim.log.levels.WARN,
 
+  --- Maximum log file size, in KB
+  ---
+  --- If this option is set to `false`, the log file will be let to grow
+  --- indefinitely.
+  ---
+  --- When the log file exceeds this size, it is backed up with suffix `.bak`,
+  --- overwriting any possible previous backup. Thus, the maximum on-disk
+  --- footprint of Fidget logs is approximately twice `logger.max_size`.
+  --- If you would like to retain the backup log, copy it manually.
+  ---
+  --- Note that there is a possible race condition when two concurrent Neovim
+  --- processes both try to back up the log file. Thus, a fresh backup log file
+  --- may be clobbered by a concurrent Neovim process, before you have a chance
+  --- to back move it somewhere safe for later inspection. So, when debugging
+  --- Fidget, run only one instance of Neovim, or set this option to `false`.
+  ---
+  ---@type number | false
+  max_size = 10000,
+
   --- Limit the number of decimals displayed for floats
   ---
   ---@type number
@@ -33,7 +52,18 @@ M.options = {
 }
 ---@options ]]
 
-require("fidget.options").declare(M, "logger", M.options)
+require("fidget.options").declare(M, "logger", M.options, function()
+  if M.options.max_size then
+    -- Simulate opening the log at startup, so that any potential file system
+    -- issues arise sooner than later. Also forces log to be
+    local log = M.open_log()
+    if log then
+      log:close()
+    else
+      vim.notify("Could not open Fidget log: " .. M.options.path, vim.log.levels.WARN)
+    end
+  end
+end)
 
 function M.fmt_level(level)
   if level == vim.log.levels.DEBUG then
@@ -77,16 +107,21 @@ local function do_log(level, ...)
   if level < M.options.level then
     return
   end
+
+  -- if M.options.max_size then
+  --   M.prune_log(false)
+  -- end
+
   local info = debug.getinfo(3, "Sl")
   local _, _, filename = string.find(info.short_src, PLUGIN_PATH_PATTERN)
   local lineinfo = (filename or info.short_src) .. ":" .. info.currentline
 
-  local fp = io.open(M.options.path, "a")
-  if fp then
+  local log = M.open_log()
+  if log then
     local log_line = string.format("[%-6s%s] %s: %s\n",
       M.fmt_level(level), os.date(), lineinfo, make_string(...))
-    fp:write(log_line)
-    fp:close()
+    log:write(log_line)
+    log:close()
   end
 end
 
@@ -123,6 +158,28 @@ end
 ---@return boolean at_level
 function M.at_level(level)
   return level >= M.options.level
+end
+
+--- Open the Fidget log; prune the existing log if it has grown too large.
+---
+--- Possibly returns an open file handle to the log; it is the caller's
+--- responsibility to `:close()` it.
+---
+---@return file*|nil
+function M.open_log()
+  local fp = io.open(M.options.path, "a")
+  if fp == nil then
+    return
+  end
+
+  local size = fp:seek("end") / 1024
+  if M.options.max_size == false or size < M.options.max_size then
+    return fp
+  end
+
+  fp:close()
+  os.rename(M.options.path, M.options.path .. ".bak")
+  return io.open(M.options.path, "a")
 end
 
 return M

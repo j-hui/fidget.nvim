@@ -859,6 +859,31 @@ logger.level                                      *fidget.option.logger.level*
         `vim.log.levels.WARN`
 
 
+logger.max_size                                *fidget.option.logger.max_size*
+
+    Maximum log file size, in KB
+
+    If this option is set to `false`, the log file will be let to grow
+    indefinitely.
+
+    When the log file exceeds this size, it is backed up with suffix `.bak`,
+    overwriting any possible previous backup. Thus, the maximum on-disk
+    footprint of Fidget logs is approximately twice `logger.max_size`.
+    If you would like to retain the backup log, copy it manually.
+
+    Note that there is a possible race condition when two concurrent Neovim
+    processes both try to back up the log file. Thus, a fresh backup log file
+    may be clobbered by a concurrent Neovim process, before you have a chance
+    to back move it somewhere safe for later inspection. So, when debugging
+    Fidget, run only one instance of Neovim, or set this option to `false`.
+
+    Type: ~
+        `number | false`
+
+    Default: ~
+        `10000`
+
+
 logger.float_precision                  *fidget.option.logger.float_precision*
 
     Limit the number of decimals displayed for floats
