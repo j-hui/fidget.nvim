@@ -453,6 +453,24 @@ progress.lsp.progress_ringbuf_size  *fidget.option.progress.lsp.progress_ringbuf
         `0`
 
 
+progress.lsp.log_handler              *fidget.option.progress.lsp.log_handler*
+
+    Log `$/progress` handler invocations (for debugging)
+
+    Works by wrapping `vim.lsp.handlers["$/progress"]` with Fidget's logger.
+    Invocations are logged at the `vim.log.levels.INFO` level.
+
+    This option exists primarily for debugging; leaving this set to `true` is
+    not recommended.
+
+    Since it works by overriding Neovim's existing `$/progress` handler, you
+    should not use this function if you'd like Neovim to use your overriden
+    `$/progress` handler! It will conflict with the handler that Fidget tries
+    to install for logging purposes.
+    Default: ~
+        `false`
+
+
 ==============================================================================
 Notification options                              *fidget.option.notification*
 

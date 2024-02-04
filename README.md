@@ -190,6 +190,7 @@ Available options are shown below:
     -- Options related to Neovim's built-in LSP client
     lsp = {
       progress_ringbuf_size = 0,  -- Configure the nvim's LSP progress ring buffer size
+      log_handler = false,        -- Log `$/progress` handler invocations (for debugging)
     },
   },
 
@@ -276,7 +277,6 @@ source code. You are encouraged to hack around with that.
 :put = execute('lua print(dofile([[lua/fidget/commands.lua]]).make_panvimdocs())')
 -->
 
-
 <!-- {{{ Generated from fidget.commands.lua -->
 
 ## Commands
@@ -306,10 +306,9 @@ Clear active notifications
 
 Positional arguments:
 
--   **`{group_key}`**: _`(any)`_ group to clear
+- **`{group_key}`**: _`(any)`_ group to clear
 
 </details>
-
 
 #### `:Fidget clear_history`
 
@@ -320,18 +319,17 @@ Clear notifications history
 
 Flags:
 
--   **`--before {seconds}`**: _`(number)`_ filter history for items updated at least this long ago
--   **`--group_key {group_key}`**: _`(any)`_ clear history by group key
--   **`--include_active {true|false}`**: _`(boolean)`_ whether to clear items that have not been removed (default: true)
--   **`--include_removed {true|false}`**: _`(boolean)`_ whether to clear items that have have been removed (default: true)
--   **`--since {seconds}`**: _`(number)`_ filter history for items updated at most this long ago
+- **`--before {seconds}`**: _`(number)`_ filter history for items updated at least this long ago
+- **`--group_key {group_key}`**: _`(any)`_ clear history by group key
+- **`--include_active {true|false}`**: _`(boolean)`_ whether to clear items that have not been removed (default: true)
+- **`--include_removed {true|false}`**: _`(boolean)`_ whether to clear items that have have been removed (default: true)
+- **`--since {seconds}`**: _`(number)`_ filter history for items updated at most this long ago
 
 Positional arguments:
 
--   **`{group_key}`**: _`(any)`_ clear history by group key
+- **`{group_key}`**: _`(any)`_ clear history by group key
 
 </details>
-
 
 #### `:Fidget history`
 
@@ -342,18 +340,17 @@ Show notifications history
 
 Flags:
 
--   **`--before {seconds}`**: _`(number)`_ filter history for items updated at least this long ago
--   **`--group_key {group_key}`**: _`(any)`_ filter history by group key
--   **`--include_active {true|false}`**: _`(boolean)`_ whether to clear items that have not been removed (default: `true`)
--   **`--include_removed {true|false}`**: _`(boolean)`_ whether to clear items that have have been removed (default: `true`)
--   **`--since {seconds}`**: _`(number)`_ filter history for items updated at most this long ago
+- **`--before {seconds}`**: _`(number)`_ filter history for items updated at least this long ago
+- **`--group_key {group_key}`**: _`(any)`_ filter history by group key
+- **`--include_active {true|false}`**: _`(boolean)`_ whether to clear items that have not been removed (default: `true`)
+- **`--include_removed {true|false}`**: _`(boolean)`_ whether to clear items that have have been removed (default: `true`)
+- **`--since {seconds}`**: _`(number)`_ filter history for items updated at most this long ago
 
 Positional arguments:
 
--   **`{group_key}`**: _`(any)`_ filter history by group key
+- **`{group_key}`**: _`(any)`_ filter history by group key
 
 </details>
-
 
 #### `:Fidget lsp_suppress`
 
@@ -364,10 +361,9 @@ Suppress LSP progress notifications
 
 Positional arguments:
 
--   **`{suppress}`**: _`(boolean)`_ whether to suppress (omitting this argument toggles suppression)
+- **`{suppress}`**: _`(boolean)`_ whether to suppress (omitting this argument toggles suppression)
 
 </details>
-
 
 #### `:Fidget suppress`
 
@@ -378,10 +374,9 @@ Suppress notification window
 
 Positional arguments:
 
--   **`{suppress}`**: _`(boolean)`_ whether to suppress (omitting this argument toggles suppression)
+- **`{suppress}`**: _`(boolean)`_ whether to suppress (omitting this argument toggles suppression)
 
 </details>
-
 
 <!-- panvimdoc-ignore-end -->
 
@@ -445,7 +440,6 @@ Positional arguments:
 -->
 
 <!-- Generated from fidget.commands.lua }}} -->
-
 
 ## Highlights
 
