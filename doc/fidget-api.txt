@@ -265,6 +265,9 @@ notification.clear_history({filter})         *fidget.notification.clear_history*
 notification.reset()                                 *fidget.notification.reset*
      Reset notification subsystem state.
 
+     Note that this function does not set any Fidget notification window state,
+     in particular, the `x_offset`.
+
 
                                                 *fidget.notification.set_config*
 notification.set_config({key}, {config}, {overwrite})
