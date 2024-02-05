@@ -346,6 +346,9 @@ function notification.clear_history(filter)
 end
 
 --- Reset notification subsystem state.
+---
+--- Note that this function does not set any Fidget notification window state,
+--- in particular, the `x_offset`.
 function notification.reset()
   notification.clear()
   notification.clear_history()

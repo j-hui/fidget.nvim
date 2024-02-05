@@ -484,8 +484,6 @@ function M.close()
     end
     state.buffer_id = nil
   end
-
-  state.x_offset = 0
 end
 
 --- Set x_offset, shifting the horizontal position of the notification window.
