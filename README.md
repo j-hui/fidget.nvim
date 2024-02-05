@@ -242,6 +242,9 @@ Available options are shown below:
     ["nvim-tree"] = {
       enable = true,              -- Integrate with nvim-tree/nvim-tree.lua (if installed)
     },
+    ["xcodebuild-nvim"] = {
+      enable = true,              -- Integrate with wojciech-kulik/xcodebuild.nvim (if installed)
+    },
   },
 
   -- Options related to logging
