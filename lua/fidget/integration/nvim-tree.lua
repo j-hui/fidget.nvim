@@ -22,7 +22,10 @@ require("fidget.options").declare(M, "integration.nvim-tree", M.options, functio
   end
 
   local ok, api = pcall(function() return require("nvim-tree.api") end)
-  if not ok then
+  if not ok or not api.tree.winid then
+    -- NOTE: api.tree.winid doesn't exist on some older versions of nvim-tree.
+    -- We need it to figure out the size of the nvim-tree window, so if it does
+    -- not exist, there's no point in installing any nvim-tree event callbacks.
     return
   end
 
