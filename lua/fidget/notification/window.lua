@@ -130,9 +130,9 @@ local state = {
   ---@type number|nil
   namespace_id = nil,
 
-  --- Additional, temporary offset.
+  --- Additional offset.
   ---
-  --- Useful for temporarily adding additional padding to account for space
+  --- Useful for adding additional padding to account for space
   --- taken up by other plugins' windows.
   ---
   ---@type number

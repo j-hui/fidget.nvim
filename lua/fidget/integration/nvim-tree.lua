@@ -39,7 +39,7 @@ require("fidget.options").declare(M, "integration.nvim-tree", M.options, functio
       local col = vim.api.nvim_win_get_position(winid)[2]
       if col > 1 then
         local width = vim.api.nvim_win_get_width(winid)
-        win.set_x_offset(width)
+        win.set_x_offset(width + 1)
       end
     end
   end
