@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Generate Fidget documentation
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Install luajit
       run: sudo apt install -y luajit
