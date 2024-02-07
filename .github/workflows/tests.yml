@@ -14,13 +14,13 @@ jobs:
         nvim-versions: ['stable', 'nightly']
     name: Run Tests
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: rhysd/action-setup-vim@v1
+      - name: Install Neovim
+        uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
           version: ${{ matrix.nvim-versions }}
 
-      - name: run tests
+      - name: Run tests
         run: nvim --clean --headless -u tests/minimal_init.lua -c "PlenaryBustedDirectory tests/ { minimal_init = 'tests/minimal_init.lua' }"
