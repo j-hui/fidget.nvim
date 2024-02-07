@@ -8,10 +8,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        nvim-versions: ['stable', 'nightly']
+        nvim-version: ['stable', 'nightly']
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     name: Run Tests
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +21,7 @@ jobs:
         uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
-          version: ${{ matrix.nvim-versions }}
+          version: ${{ matrix.nvim-version }}
 
       - name: Run tests
         run: nvim --clean --headless -u tests/minimal_init.lua -c "PlenaryBustedDirectory tests/ { minimal_init = 'tests/minimal_init.lua' }"
