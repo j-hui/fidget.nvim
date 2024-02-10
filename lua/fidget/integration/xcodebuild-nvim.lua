@@ -28,15 +28,36 @@ require("fidget.options").declare(M, "integration.xcodebuild-nvim", M.options, f
   local win = require("fidget.notification.window")
   local test_explorer_winid = nil
 
+  local function is_any_window_below(row, height)
+    local all_windows = vim.api.nvim_list_wins()
+    local bottom_row = row + height
+
+    for _, winnr in ipairs(all_windows) do
+      local win_row  = vim.api.nvim_win_get_position(winnr)[1]
+
+      if win_row > bottom_row then
+        return true
+      end
+    end
+
+    return false
+  end
+
   local function resize(winid)
     test_explorer_winid = winid
 
     if win.options.relative == "editor" then
-      local col = vim.api.nvim_win_get_position(winid)[2]
+      local row, col = unpack(vim.api.nvim_win_get_position(winid))
 
       if col > 1 then
-        local width = vim.api.nvim_win_get_width(winid)
-        win.set_x_offset(width + 1)
+        local height = vim.api.nvim_win_get_height(winid)
+
+        if is_any_window_below(row, height) then
+          win.set_x_offset(0)
+        else
+          local width = vim.api.nvim_win_get_width(winid)
+          win.set_x_offset(width + 1)
+        end
       end
     end
   end
