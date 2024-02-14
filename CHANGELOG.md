@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/j-hui/fidget.nvim/compare/v1.3.0...v1.4.0) (2024-02-14)
+
+
+### Features
+
+* **integration:** improved avoidance of Test Explorer window from xcodebuild.nvim plugin ([#213](https://github.com/j-hui/fidget.nvim/issues/213)) ([7d1873a](https://github.com/j-hui/fidget.nvim/commit/7d1873ae12fb9db75edaedd298c2155b1efa96ad))
+* **integration:** xcodebuild.nvim integration ([#212](https://github.com/j-hui/fidget.nvim/issues/212)) ([9eb2833](https://github.com/j-hui/fidget.nvim/commit/9eb28334191033e439b34dfa580c3bf5cd9dd5fa)), closes [#207](https://github.com/j-hui/fidget.nvim/issues/207)
+
+
+### Bug Fixes
+
+* checking for winid value before to evoke it ([#203](https://github.com/j-hui/fidget.nvim/issues/203)) ([53d5b79](https://github.com/j-hui/fidget.nvim/commit/53d5b7959163d7ce5f31893a3be6bb845ee5fd80))
+* **notificationa:** don't reset x_offset when closing window ([d1b2a71](https://github.com/j-hui/fidget.nvim/commit/d1b2a7147b5e51238830d939d2fcab12f08c38fb))
+
 ## [1.3.0](https://github.com/j-hui/fidget.nvim/compare/v1.2.0...v1.3.0) (2024-02-04)
 
 
