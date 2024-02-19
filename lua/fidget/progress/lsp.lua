@@ -90,8 +90,15 @@ end)
 ---@return ProgressMessage[] progress_messages
 ---@see fidget.progress.lsp.ProgressMessage
 function M.poll_for_messages()
+  local clients = vim.lsp.get_clients()
+  if #clients == 0 then
+    -- Issue being tracked in #177
+    logger.warn("No active LSP clients to poll from (see issue #177)")
+    return {}
+  end
+
   local messages = {}
-  for _, client in ipairs(vim.lsp.get_clients()) do
+  for _, client in ipairs(clients) do
     local client_name = string.format("%s (%s)", client.id, client.name)
     local count = 0
     logger.info("Polling messages from", client_name)
@@ -172,10 +179,16 @@ if not vim.lsp.status then
   ---@protected
   ---@return ProgressMessage[] progress_messages
   function M.poll_for_messages()
+    local clients = vim.lsp.get_active_clients()
+    if #clients == 0 then
+      -- Issue being tracked in #177
+      logger.warn("No active LSP clients to poll from (see issue #177)")
+      return {}
+    end
+
     local messages = {}
     local to_remove = {}
-
-    for _, client in ipairs(vim.lsp.get_active_clients()) do
+    for _, client in ipairs(clients) do
       local client_name = string.format("%s (%s)", client.id, client.name)
       local count = 0
       logger.info("Polling messages from", client_name)
