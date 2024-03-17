@@ -190,7 +190,7 @@ function M.get_editor_dimensions()
   local statusline_height = 0
   local laststatus = vim.opt.laststatus:get()
   if laststatus == 2 or laststatus == 3
-      or (laststatus == 1 and #vim.api.nvim_tabpage_list_wins() > 1)
+      or (laststatus == 1 and #vim.api.nvim_tabpage_list_wins(0) > 1)
   then
     statusline_height = 1
   end
