@@ -67,6 +67,14 @@ require("fidget.options").declare(M, "integration.xcodebuild-nvim", M.options, f
     win.set_x_offset(0)
   end
 
+  local bufnr = require("xcodebuild.tests.explorer").bufnr
+  if bufnr then
+    local winnr = vim.fn.win_findbuf(bufnr)
+    if winnr[1] then
+      resize(winnr[1])
+    end
+  end
+
   vim.api.nvim_create_autocmd("User", {
     group = au_group,
     pattern = "XcodebuildTestExplorerToggled",
