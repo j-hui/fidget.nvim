@@ -53,9 +53,12 @@ M.options = {
 ---@options ]]
 
 require("fidget.options").declare(M, "logger", M.options, function()
+  -- Create directory where log will reside
+  vim.fn.mkdir(vim.fn.fnamemodify(M.options.path, ":p:h"), "p")
+
   if M.options.max_size then
     -- Simulate opening the log at startup, so that any potential file system
-    -- issues arise sooner than later. Also forces log to be
+    -- issues arise sooner than later. Also forces log to be created or pruned.
     local log = M.open_log()
     if log then
       log:close()
