@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.4.1](https://github.com/j-hui/fidget.nvim/compare/v1.4.0...v1.4.1) (2024-03-20)
+
+
+### Bug Fixes
+
+* **doc:** require Neovim v0.9.0+ (close [#225](https://github.com/j-hui/fidget.nvim/issues/225)) ([933db45](https://github.com/j-hui/fidget.nvim/commit/933db4596e4bab1b09b6d48a10e21819e4cc458f))
+* **integration:** improved avoidance of Test Explorer (xcodebuild.nvim) ([#221](https://github.com/j-hui/fidget.nvim/issues/221)) ([910104a](https://github.com/j-hui/fidget.nvim/commit/910104a2d0a831ba8ac662cd23d3f1c685401cf6))
+* **logger:** create log directory on initialization (fix [#226](https://github.com/j-hui/fidget.nvim/issues/226)) ([0d4b47b](https://github.com/j-hui/fidget.nvim/commit/0d4b47b31f3ad1ad944a8a3173f0d79c2867f918))
+* missing argument for function ([#219](https://github.com/j-hui/fidget.nvim/issues/219)) ([889028b](https://github.com/j-hui/fidget.nvim/commit/889028b2462d1610d245f59e2b7424bbbd192f61))
+* **progress:** use INFO level for all progress notifications ([ebb8e44](https://github.com/j-hui/fidget.nvim/commit/ebb8e44d6c37337e3b4f9bce31842573fa96bf8d))
+
 ## [1.4.0](https://github.com/j-hui/fidget.nvim/compare/v1.3.0...v1.4.0) (2024-02-14)
 
 
