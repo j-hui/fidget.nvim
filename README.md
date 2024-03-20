@@ -76,7 +76,7 @@ who doesn't love a little bit of terminal eye candy, as a treat?
 
 ### Requirements
 
-Fidget requires Neovim v0.8.0+.
+Fidget requires Neovim v0.9.0+.
 
 If you would like to see progress notifications, you must have configured Neovim
 with an LSP server that uses the [`$/progress`][lsp-progress] handler.
