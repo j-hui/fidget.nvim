@@ -5,7 +5,7 @@ on:
     tags:
       - '*'
   release:
-    types: [released] # Triggered by release-please
+    types: [published] # Triggered by release-please
   pull_request: # Tests a local luarocks install without publishing on PRs
   workflow_dispatch: # Allow manual trigger
 
