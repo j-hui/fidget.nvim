@@ -20,7 +20,7 @@ Table of Contents                                   *fidget-table-of-contents*
 
 REQUIREMENTS                             *fidget-getting-started-requirements*
 
-Fidget requires Neovim v0.8.0+.
+Fidget requires Neovim v0.9.0+.
 
 If you would like to see progress notifications, you must have configured
 Neovim with an LSP server that uses the `$/progress`
@@ -83,7 +83,7 @@ For instance, using Lazy <https://github.com/folke/lazy.nvim>
 >lua
     {
       "j-hui/fidget.nvim",
-      tag = "v1.0.0",
+      tag = "v1.0.0", -- Make sure to update this to something recent!
       opts = {
         -- options
       },
