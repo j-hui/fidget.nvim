@@ -1,5 +1,4 @@
 name: Push to Luarocks
-
 on:
   push:
     tags:
@@ -12,21 +11,13 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Required to count the commits
-      - name: Get Version
-        # Tags created by GitHub releases don't trigger push: tags workflows
-        # So we have to determine the tag manually.
-        run: echo "LUAROCKS_VERSION=$(git describe --abbrev=0 --tags)" >> $GITHUB_ENV
       - name: LuaRocks Upload
         uses: nvim-neorocks/luarocks-tag-release@v5
         env:
           LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
         with:
-          version: ${{ env.LUAROCKS_VERSION }}
-          labels: |
-            neovim
-          summary: "Extensible UI for Neovim notifications and LSP progress messages."
+          labels: neovim
+          summary: Extensible UI for Neovim notifications and LSP progress messages.
           detailed_description: |
             Fidget is an unintrusive window in the corner of your editor that manages its own lifetime.
 
