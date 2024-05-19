@@ -1,4 +1,5 @@
 name: Push to Luarocks
+
 on:
   push:
     tags:
