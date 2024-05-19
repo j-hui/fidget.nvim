@@ -10,9 +10,8 @@ jobs:
     name: release
     runs-on: ubuntu-latest
     steps:
-      - uses: google-github-actions/release-please-action@v4
+      - uses: googleapis/release-please-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
         with:
           release-type: simple
-          package-name: fidget.nvim
