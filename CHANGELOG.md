@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.5](https://github.com/j-hui/fidget.nvim/compare/v1.4.4...v1.4.5) (2024-05-19)
+
+
+### Bug Fixes
+
+* another dummy commit for testing release-please ([6ed1fc5](https://github.com/j-hui/fidget.nvim/commit/6ed1fc5ecfc6b15c453a6cc85efe51414220bf29))
+* dummy fix commit to trigger release-please ([26e24cf](https://github.com/j-hui/fidget.nvim/commit/26e24cfbd5aec456e84637111a6770353464407c))
+
 ## [1.4.4](https://github.com/j-hui/fidget.nvim/compare/v1.4.3...v1.4.4) (2024-05-19)
 
 
