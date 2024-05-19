@@ -38,7 +38,7 @@ jobs:
         treesitter: true
         shiftheadinglevelby: -1
 
-    - uses: stefanzweifel/git-auto-commit-action@v4
+    - uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "chore(doc): auto-generate help docs"
         branch: ${{ github.head_ref }}
