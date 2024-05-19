@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.4](https://github.com/j-hui/fidget.nvim/compare/v1.4.3...v1.4.4) (2024-05-19)
+
+
+### Bug Fixes
+
+* another attempt to trigger luarocks workflow ([19fa0e7](https://github.com/j-hui/fidget.nvim/commit/19fa0e70b7e862577863e88cb81eb7503af94ba9))
+
 ## [1.4.3](https://github.com/j-hui/fidget.nvim/compare/v1.4.2...v1.4.3) (2024-05-18)
 
 
