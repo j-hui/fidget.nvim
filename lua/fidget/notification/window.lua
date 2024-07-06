@@ -316,17 +316,27 @@ end
 --- This also has the side effect of creating a notification buffer if it
 --- doesn't already exist, associating it with the window.
 ---
+--- Returns nil if Fidget window could not be created (e.g., because editor is
+--- too small to show Fidget).
+---
 ---@param row     number
 ---@param col     number
 ---@param anchor  ("NW"|"NE"|"SW"|"SE")
 ---@param width   number
 ---@param height  number
----@return number window_id
+---@return number|nil window_id
 function M.get_window(row, col, anchor, width, height)
   -- Clamp width and height to dimensions of editor and user specification.
   local editor_width, editor_height = M.get_editor_dimensions()
+  editor_width = math.max(0, editor_width - 4) -- HACK: guess width of signcolumn etc.
 
-  width = math.min(width, editor_width - 4) -- guess width of signcolumn etc.
+  if editor_width < 4 or editor_height < 4 then
+    -- Editor is too small to render anything.
+    M.close()
+    return nil
+  end
+
+  width = math.min(width, editor_width)
   if M.options.max_width > 0 then
     width = math.min(width, M.options.max_width)
   end
@@ -399,9 +409,12 @@ end
 
 --- Show the notification window (and its buffer contents), editor-relative.
 ---
+--- Returns nil if Fidget window could not be created (e.g., because editor is
+--- too small to show Fidget).
+---
 ---@param width   number
 ---@param height  number
----@return number window_id
+---@return number|nil window_id
 function M.show(width, height)
   local row, col, anchor = M.get_window_position()
   return M.get_window(row, col, anchor, width, height)
