@@ -43,13 +43,15 @@ M.options = {
 
   --- Icon shown when all LSP progress tasks are complete
   ---
-  --- When a string literal is given (e.g., `"✔"`), it is used as a static icon;
-  --- when a table (e.g., `{"dots"}` or `{ pattern = "clock", period = 2 }`) is
-  --- given, it is used to generate an animation function; when a function is
-  --- specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`),
-  --- it is used as the animation function.
+  --- When a string literal is given (e.g., `"✔"`), it is used as a static icon.
   ---
-  --- See also: |fidget.spinner.Manga| and |fidget.spinner.Anime|.
+  --- When a table (e.g., `{ pattern = "clock", period = 2 }`) is given, it is
+  --- used to generate an animation function. See also: |fidget.spinner.Manga|.
+  ---
+  --- When a function is given, it is used as the animation function. This
+  --- function is passed the timestamp at each frame and should return the frame
+  --- contents, e.g., `function(now) return now % 2 < 1 and ". " or " ." end`.
+  --- See also: |fidget.spinner.Anime|.
   ---
   ---@type string|Manga|Anime
   done_icon = "✔",
@@ -71,14 +73,18 @@ M.options = {
 
   --- Icon shown when LSP progress tasks are in progress
   ---
-  --- When a string literal is given (e.g., `"✔"`), it is used as a static icon;
-  --- when a table (e.g., `{"dots"}` or `{ pattern = "clock", period = 2 }`) is
-  --- given, it is used to generate an animation function; when a function is
-  --- specified (e.g., `function(now) return now % 2 < 1 and "+" or "-" end`),
-  --- it is used as the animation function.
+  --- When a string literal is given (e.g., `"✔"`), it is used as a static icon.
+  ---
+  --- When a table (e.g., `{ pattern = "clock", period = 2 }`) is given, it is
+  --- used to generate an animation function. See also: |fidget.spinner.Manga|.
+  ---
+  --- When a function is given, it is used as the animation function. This
+  --- function is passed the timestamp at each frame and should return the frame
+  --- contents, e.g., `function(now) return now % 2 < 1 and ". " or " ." end`.
+  --- See also: |fidget.spinner.Anime|.
   ---
   ---@type string|Manga|Anime
-  progress_icon = { "dots" },
+  progress_icon = { pattern = "dots" },
 
   --- Highlight group for in-progress LSP tasks
   ---
@@ -169,12 +175,31 @@ M.options = {
   ---       hls = {
   ---         name = "Haskell Language Server",
   ---         priority = 60,
-  ---         icon = fidget.progress.display.for_icon(fidget.spinner.animate("triangle", 3), "💯"),
+  ---         icon = fidget.progress.display.for_icon(
+  ---           fidget.spinner.animate({
+  ---             pattern = {
+  ---               "    ",
+  ---               "=   ",
+  ---               ">=  ",
+  ---               ">>= ",
+  ---               " >>=",
+  ---               "  >>",
+  ---               "   >",
+  ---             },
+  ---           }),
+  ---           " <> "
+  ---         ),
   ---         skip_history = false,
   ---       },
   ---       rust_analyzer = {
   ---         name = "Rust Analyzer",
-  ---         icon = fidget.progress.display.for_icon(fidget.spinner.animate("arrow", 2.5), "🦀"),
+  ---         icon = fidget.progress.display.for_icon(
+  ---           fidget.spinner.animate({
+  ---             pattern = fidget.spinner.patterns.arrow,
+  ---             period = 2.5,
+  ---           }),
+  ---           "🦀"
+  ---         ),
   ---         update_hook = function(item)
   ---           require("fidget.notification").set_content_key(item)
   ---           if item.hidden == nil and string.match(item.annote, "clippy") then
@@ -217,12 +242,18 @@ end
 function M.make_config(group)
   local progress = M.options.progress_icon
   if type(progress) == "table" then
-    progress = spinner.animate(progress[1] or progress.pattern, progress.period)
+    progress = spinner.animate(progress)
+  end
+  if type(progress) ~= "function" and type(progress) ~= "string" then
+    progress = spinner.bad
   end
 
   local done = M.options.done_icon
   if type(done) == "table" then
-    done = spinner.animate(done[1] or done.pattern, done.period)
+    done = spinner.animate(done)
+  end
+  if type(done) ~= "function" and type(done) ~= "string" then
+    done = spinner.bad
   end
 
   local config = {
