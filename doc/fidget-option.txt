@@ -152,15 +152,29 @@ progress.clear_on_detach              *fidget.option.progress.clear_on_detach*
 
 progress.ignore                                *fidget.option.progress.ignore*
 
-    List of LSP servers to ignore
+    List of filters to ignore LSP progress messages
+
+    Each filter is either a string or a function.
+
+    If it is a string, then it is treated as the name of a LSP server;
+    messages from that server are ignored.
+
+    If it is a function, then the progress message object is passed to the
+    function. If the function returns a truthy value, then that message is
+    ignored.
 
     Example:
 >lua
-        ignore = { "rust_analyzer" }
+        ignore = {
+          "rust_analyzer",  -- Ignore all messages from rust-analyzer
+          function(msg)     -- Ignore messages containing "ing"
+            return string.find(msg.title, "ing") ~= nil
+          end,
+        }
 <
 
     Type: ~
-        `Key[]`
+        `(string|fun(msg: ProgressMessage): any)[]`
 
     Default: ~
         `{}`
