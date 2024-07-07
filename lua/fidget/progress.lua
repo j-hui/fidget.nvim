@@ -100,14 +100,28 @@ progress.options   = {
     return client and client.name or nil
   end,
 
-  --- List of LSP servers to ignore
+  --- List of filters to ignore LSP progress messages
+  ---
+  --- Each filter is either a string or a function.
+  ---
+  --- If it is a string, then it is treated as the name of a LSP server;
+  --- messages from that server are ignored.
+  ---
+  --- If it is a function, then the progress message object is passed to the
+  --- function. If the function returns a truthy value, then that message is
+  --- ignored.
   ---
   --- Example:
   --->lua
-  ---     ignore = { "rust_analyzer" }
+  ---     ignore = {
+  ---       "rust_analyzer",  -- Ignore all messages from rust-analyzer
+  ---       function(msg)     -- Ignore messages containing "ing"
+  ---         return string.find(msg.title, "ing") ~= nil
+  ---       end,
+  ---     }
   ---<
   ---
-  ---@type Key[]
+  ---@type (string|fun(msg: ProgressMessage): any)[]
   ignore = {},
 
   display = progress.display,
@@ -214,13 +228,21 @@ progress.poller = poll.Poller {
     for _, msg in ipairs(messages) do
       -- Determine if we should ignore this message
       local ignore = false
-      for _, lsp_name in ipairs(progress.options.ignore) do
-        -- NOTE: hopefully this loop isn't too expensive.
-        -- But if it is, consider indexing by hash.
-        if msg.lsp_client.name == lsp_name then
-          ignore = true
-          logger.info("Ignoring LSP progress message from", lsp_name, ":", msg)
-          break
+      for _, filter in ipairs(progress.options.ignore) do
+        if type(filter) == "string" then
+          if msg.lsp_client.name == filter then
+            ignore = true
+            logger.info("Ignoring LSP progress message by name from", filter, ":", msg)
+            break
+          end
+        elseif type(filter) == "function" then
+          if filter(msg) then
+            ignore = true
+            logger.info("Filtering out LSP progress message", ":", msg)
+            break
+          end
+        else
+          logger.error("Unsupported filter type:", type(filter))
         end
       end
       if not ignore then
