@@ -8,12 +8,13 @@
 ---
 --- Note that for now, it only supports editor-relative floats, though some code
 --- ported from the legacy version still supports window-relative floats.
-local M = {}
+local M      = {}
+local logger = require("fidget.logger")
 
 ---@options notification.window [[
 ---@protected
 --- Notifications window options
-M.options = {
+M.options    = {
   --- Base highlight group in the notification window
   ---
   --- Used by any Fidget notification text that is not otherwise highlighted,
@@ -331,7 +332,7 @@ function M.get_window(row, col, anchor, width, height)
   editor_width = math.max(0, editor_width - 4) -- HACK: guess width of signcolumn etc.
 
   if editor_width < 4 or editor_height < 4 then
-    -- Editor is too small to render anything.
+    logger.info("Editor window is too small to display Fidget:", editor_width, "x", editor_height)
     M.close()
     return nil
   end
