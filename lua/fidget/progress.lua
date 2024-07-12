@@ -129,6 +129,8 @@ progress.options   = {
 }
 ---@options ]]
 
+progress.client_ids = {}
+
 require("fidget.options").declare(progress, "progress", progress.options, function()
   -- Ensure setup() reentrancy
   for _, autocmd in pairs(autocmds) do
@@ -137,7 +139,9 @@ require("fidget.options").declare(progress, "progress", progress.options, functi
   autocmds = {}
 
   if progress.options.poll_rate ~= false then
-    autocmds["LspProgress"] = progress.lsp.on_progress_message(function()
+    autocmds["LspProgress"] = progress.lsp.on_progress_message(function(event)
+      local client_id = event.data.client_id
+      progress.client_ids[client_id] = client_id
       if progress.options.poll_rate > 0 then
         progress.poller:start_polling(progress.options.poll_rate)
       else
@@ -150,7 +154,9 @@ require("fidget.options").declare(progress, "progress", progress.options, functi
     autocmds["LspDetach"] = vim.api.nvim_create_autocmd("LspDetach", {
       desc = "Fidget LSP detach handler",
       callback = function(args)
-        progress.on_detach(args.data.client_id)
+        local client_id = args.data.client_id
+        progress.client_ids[client_id] = nil
+        progress.on_detach(client_id)
       end,
     })
   end
@@ -219,7 +225,7 @@ progress.poller = poll.Poller {
       return false
     end
 
-    local messages = progress.lsp.poll_for_messages()
+    local messages = progress.lsp.poll_for_messages(progress.client_ids)
     if #messages == 0 then
       logger.info("No LSP messages (that can be displayed)")
       return false
