@@ -377,9 +377,6 @@ ProgressMessage                            *fidget.progress.lsp.ProgressMessage*
         {lsp_client}   (table)       LSP client table this message came from
 
 
-M.get_clients()                                *fidget.progress.lsp.get_clients*
-
-
 M.poll_for_messages()                    *fidget.progress.lsp.poll_for_messages*
      Consumes LSP progress messages from each client.progress ring buffer.
 
