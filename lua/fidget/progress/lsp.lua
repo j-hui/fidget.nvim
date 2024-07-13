@@ -82,6 +82,14 @@ require("fidget.options").declare(M, "progress.lsp", M.options, function()
   end
 end)
 
+function M.get_clients(client_ids)
+  local clients = {}
+  for _, client_id in pairs(client_ids) do
+    table.insert(clients, vim.lsp.get_client_by_id(client_id))
+  end
+  return clients
+end
+
 --- Consumes LSP progress messages from each client.progress ring buffer.
 ---
 --- Based on vim.lsp.status(), except this implementation does not format the
@@ -89,8 +97,8 @@ end)
 ---
 ---@return ProgressMessage[] progress_messages
 ---@see fidget.progress.lsp.ProgressMessage
-function M.poll_for_messages()
-  local clients = vim.lsp.get_clients()
+function M.poll_for_messages(client_ids)
+  local clients = M.get_clients(client_ids)
   if #clients == 0 then
     -- Issue being tracked in #177
     logger.warn("No active LSP clients to poll from (see issue #177)")
@@ -178,8 +186,8 @@ if not vim.lsp.status then
   ---
   ---@protected
   ---@return ProgressMessage[] progress_messages
-  function M.poll_for_messages()
-    local clients = vim.lsp.get_active_clients()
+  function M.poll_for_messages(client_ids)
+    local clients = M.get_clients(client_ids)
     if #clients == 0 then
       -- Issue being tracked in #177
       logger.warn("No active LSP clients to poll from (see issue #177)")
