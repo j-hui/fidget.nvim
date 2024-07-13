@@ -1,19 +1,19 @@
 ---@mod fidget.progress LSP progress subsystem
-local progress     = {}
-progress.display   = require("fidget.progress.display")
-progress.lsp       = require("fidget.progress.lsp")
-progress.handle    = require("fidget.progress.handle")
-local poll         = require("fidget.poll")
-local notification = require("fidget.notification")
-local logger       = require("fidget.logger")
+local progress      = {}
+progress.display    = require("fidget.progress.display")
+progress.lsp        = require("fidget.progress.lsp")
+progress.handle     = require("fidget.progress.handle")
+local poll          = require("fidget.poll")
+local notification  = require("fidget.notification")
+local logger        = require("fidget.logger")
 
 --- Table of progress-related autocmds, used to ensure setup() re-entrancy.
-local autocmds     = {}
+local autocmds      = {}
 
 ---@options progress [[
 ---@protected
 --- Progress options
-progress.options   = {
+progress.options    = {
   --- How and when to poll for progress messages
   ---
   --- Set to `0` to immediately poll on each |LspProgress| event.
@@ -139,9 +139,7 @@ require("fidget.options").declare(progress, "progress", progress.options, functi
   autocmds = {}
 
   if progress.options.poll_rate ~= false then
-    autocmds["LspProgress"] = progress.lsp.on_progress_message(function(event)
-      local client_id = event.data.client_id
-      progress.client_ids[client_id] = client_id
+    autocmds["LspProgress"] = progress.lsp.on_progress_message(function()
       if progress.options.poll_rate > 0 then
         progress.poller:start_polling(progress.options.poll_rate)
       else
@@ -151,14 +149,7 @@ require("fidget.options").declare(progress, "progress", progress.options, functi
   end
 
   if progress.options.clear_on_detach then
-    autocmds["LspDetach"] = vim.api.nvim_create_autocmd("LspDetach", {
-      desc = "Fidget LSP detach handler",
-      callback = function(args)
-        local client_id = args.data.client_id
-        progress.client_ids[client_id] = nil
-        progress.on_detach(client_id)
-      end,
-    })
+    autocmds["LspDetach"] = progress.lsp.on_detach(progress.on_detach)
   end
 end)
 

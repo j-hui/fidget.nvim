@@ -19,6 +19,10 @@ local lsp_attach_autocmd   = nil
 ---@type function
 local lsp_progress_handler = vim.lsp.handlers["$/progress"]
 
+--- Set of attached LSP clients (even those that are inactive)
+---@type table<number, true>
+local lsp_client_ids       = {}
+
 ---@options progress.lsp [[
 ---@protected
 --- Nvim LSP client options
@@ -82,14 +86,6 @@ require("fidget.options").declare(M, "progress.lsp", M.options, function()
   end
 end)
 
-function M.get_clients(client_ids)
-  local clients = {}
-  for _, client_id in pairs(client_ids) do
-    table.insert(clients, vim.lsp.get_client_by_id(client_id))
-  end
-  return clients
-end
-
 --- Consumes LSP progress messages from each client.progress ring buffer.
 ---
 --- Based on vim.lsp.status(), except this implementation does not format the
@@ -97,11 +93,14 @@ end
 ---
 ---@return ProgressMessage[] progress_messages
 ---@see fidget.progress.lsp.ProgressMessage
-function M.poll_for_messages(client_ids)
-  local clients = M.get_clients(client_ids)
+function M.poll_for_messages()
+  local clients = {}
+
+  for client_id in pairs(lsp_client_ids) do
+    table.insert(clients, vim.lsp.get_client_by_id(client_id))
+  end
+
   if #clients == 0 then
-    -- Issue being tracked in #177
-    logger.warn("No active LSP clients to poll from (see issue #177)")
     return {}
   end
 
@@ -145,11 +144,33 @@ end
 ---
 ---@protected
 ---@param fn function
----@return number
+---@return number autocommand_id
 function M.on_progress_message(fn)
-  return vim.api.nvim_create_autocmd({ "LspProgress" }, {
-    callback = fn,
+  return vim.api.nvim_create_autocmd("LspProgress", {
+    callback = function(event)
+      -- Remember client ID (even if it is inactive)
+      local client_id = event.data.client_id
+      lsp_client_ids[client_id] = true
+      fn(event)
+    end,
     desc = "Fidget LSP progress handler",
+  })
+end
+
+--- Register handler for LSP client detach event.
+---
+---@protected
+---@param fn function(client_id: number)
+---@return number autocommand_id
+function M.on_detach(fn)
+  return vim.api.nvim_create_autocmd("LspDetach", {
+    callback = function(args)
+      -- Forget client ID
+      local client_id = args.data.client_id
+      lsp_client_ids[client_id] = nil
+      fn(client_id)
+    end,
+    desc = "Fidget LSP detach handler",
   })
 end
 
@@ -181,15 +202,21 @@ if not vim.lsp.status then
   --- replaced by [vim.lsp.status()][lsp-status-pr], whose ring buffer gives
   --- consume semantics.
   ---
+  --- Also note that this function only polls for _active_ clients; see below
+  --- (`on_progress_message()`) for details.
+  ---
   --- [get_progress_messages]: https://github.com/neovim/neovim/blob/v0.9.4/runtime/lua/vim/lsp/util.lua#L354-L385
   --- [lsp-status-pr]: https://github.com/neovim/neovim/pull/23958
   ---
   ---@protected
   ---@return ProgressMessage[] progress_messages
-  function M.poll_for_messages(client_ids)
-    local clients = M.get_clients(client_ids)
+  function M.poll_for_messages()
+    -- lsp_client_ids is not populated by `onp_progress_message()` handler,
+    -- so we can only poll for active clients.
+    local clients = vim.lsp.get_active_clients()
+
     if #clients == 0 then
-      -- Issue being tracked in #177
+      -- See issue #177
       logger.warn("No active LSP clients to poll from (see issue #177)")
       return {}
     end
@@ -236,7 +263,15 @@ if not vim.lsp.status then
     return messages
   end
 
-  --- Register autocmd callback for LspProgressUpdate event (v0.8.0--v0.9.4).
+  --- Register callback for the `LspProgressUpdate` event (v0.8.0--v0.9.4).
+  ---
+  --- Unlike `LspProgress`, `LspProgressUpdate` is a [User] autocmd that does
+  --- not carry information about which LSP client sent the progress message;
+  --- it only conveys that some progress message has been sent.
+  ---
+  --- Thus, this handler does not populate the `lsp_client_ids` table; without
+  --- this information, its corresponding `poll_for_messages()` only polls for
+  --- messages from active LSP clients.
   ---
   ---@protected
   ---@param fn function
