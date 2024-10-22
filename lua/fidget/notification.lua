@@ -9,7 +9,7 @@ local logger                = require("fidget.logger")
 --- Used to determine the identity of notification items and groups.
 ---@alias Key any
 
---- Second (level) paramter passed to |fidget.notification.notify|.
+--- Second (level) parameter passed to |fidget.notification.notify|.
 ---
 --- `string` indicates highlight group name; otherwise, `number` indicates
 --- the |vim.log.levels| value (that will resolve to a highlight group as
