@@ -36,6 +36,9 @@ require("fidget.options").declare(M, "integration.nvim-tree", M.options, functio
   local function resize()
     if win.options.relative == "editor" then
       local winid = api.tree.winid()
+      if winid == nil then
+        return
+      end
       local col = vim.api.nvim_win_get_position(winid)[2]
       if col > 1 then
         local width = vim.api.nvim_win_get_width(winid)
