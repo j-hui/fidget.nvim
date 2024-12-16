@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.5.0](https://github.com/j-hui/fidget.nvim/compare/v1.4.5...v1.5.0) (2024-12-16)
+
+
+### Features
+
+* ignore messages via to filter functions ([a01443a](https://github.com/j-hui/fidget.nvim/commit/a01443a5adba5f4a74d246664ff25644e303a5fd)), closes [#249](https://github.com/j-hui/fidget.nvim/issues/249)
+* show progress for clients before they initialize ([600ecc1](https://github.com/j-hui/fidget.nvim/commit/600ecc102263140236db034d22c12b41df761872)), closes [#177](https://github.com/j-hui/fidget.nvim/issues/177)
+
+
+### Bug Fixes
+
+* don't render window is editor is too small ([43607ed](https://github.com/j-hui/fidget.nvim/commit/43607ed19059a245a2193bb9fadfac575b1e35f3)), closes [#248](https://github.com/j-hui/fidget.nvim/issues/248)
+* don't use client IDs from LspProgressUpdate ([f53cc34](https://github.com/j-hui/fidget.nvim/commit/f53cc3439d20afbc6101a17e8989b01c07ddb8b6))
+* **nvim-tree:** fix crash if winid is nil ([#258](https://github.com/j-hui/fidget.nvim/issues/258)) ([fccbdfa](https://github.com/j-hui/fidget.nvim/commit/fccbdfa6802b510689f12373b1ba41b1c1885e60))
+
 ## [1.4.5](https://github.com/j-hui/fidget.nvim/compare/v1.4.4...v1.4.5) (2024-05-19)
 
 
