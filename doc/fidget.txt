@@ -122,7 +122,7 @@ Available options are shown below:
           done_style = "Constant",    -- Highlight group for completed LSP tasks
           progress_ttl = math.huge,   -- How long a message should persist when in progress
           progress_icon =             -- Icon shown when LSP progress tasks are in progress
-            { pattern = "dots", period = 1 },
+            { "dots" },
           progress_style =            -- Highlight group for in-progress LSP tasks
             "WarningMsg",
           group_style = "Title",      -- Highlight group for group name (LSP server name)
