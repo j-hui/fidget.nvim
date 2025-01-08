@@ -428,7 +428,7 @@ handle.create({message})                         *fidget.progress.handle.create*
      -- Or you can use the `report` method to bulk-update
      -- properties.
      handle:report({
-       title = "The task status changed",
+       title = "The task status changed"
        message = "Doing another thing...",
        percentage = 50,
      })
