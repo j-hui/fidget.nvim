@@ -445,6 +445,23 @@ Positional arguments:
 
 <!-- Generated from fidget.commands.lua }}} -->
 
+## Telescope
+
+Fidget is bundled with a telescope picker extension, the picker will show all
+history notifications, similar as `Fidget history`, but you can filter
+notifications by keywords. To enable it, add the
+following to your config.
+
+```lua
+  require("telescope").load_extension("fidget")
+```
+
+Use command `:Telescope fidget` or lua api
+
+```lua
+  require("telescope").extensions.fidget.fidget()
+```
+
 ## Highlights
 
 Rather than defining its own highlights, Fidget's default configuration uses
