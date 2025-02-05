@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/j-hui/fidget.nvim/compare/v1.5.0...v1.6.0) (2025-02-05)
+
+
+### Features
+
+* add Telescope extension ([#264](https://github.com/j-hui/fidget.nvim/issues/264)) ([f9acdb5](https://github.com/j-hui/fidget.nvim/commit/f9acdb555cb08551e707a5181248d97e160c9f7c))
+
 ## [1.5.0](https://github.com/j-hui/fidget.nvim/compare/v1.4.5...v1.5.0) (2024-12-16)
 
 
