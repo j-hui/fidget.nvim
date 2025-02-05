@@ -445,6 +445,26 @@ Positional arguments:
 
 <!-- Generated from fidget.commands.lua }}} -->
 
+## Telescope
+
+Fidget includes a [Telescope][telescope.nvim] picker extension, which will show
+your Fidget notification history in Telescope and allow you to filter it.
+To enable this extension, make sure the Telescope plugin is installed, and
+add the following to your configuration:
+
+```lua
+require("telescope").load_extension("fidget")
+```
+
+You can open the Fidget picker using the command `:Telescope fidget`, or
+via the Lua API:
+
+```lua
+require("telescope").extensions.fidget.fidget()
+```
+
+[telescope.nvim]: https://github.com/nvim-telescope/telescope.nvim
+
 ## Highlights
 
 Rather than defining its own highlights, Fidget's default configuration uses

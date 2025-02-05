@@ -11,7 +11,8 @@ Table of Contents                                   *fidget-table-of-contents*
 3. Lua API                                                    |fidget-lua-api|
 4. Commands                                                  |fidget-commands|
 5. Highlights                                              |fidget-highlights|
-6. Related Work                                          |fidget-related-work|
+6. Telescope                                                |fidget-telescope|
+7. Related Work                                          |fidget-related-work|
   - Acknowledgements                    |fidget-related-work-acknowledgements|
 
 ==============================================================================
@@ -296,9 +297,21 @@ those highlight groups.
 You can override these highlight groups (e.g., `icon_style`) using the
 |fidget-options| shown above.
 
+==============================================================================
+6. Telescope                                                *fidget-telescope*
+
+Fidget is bundled with a telescope picker extension, the picker will show all
+history notifications, similar as `Fidget history`, but you can filter
+notifications by keywords. To enable it, add the 
+following to your config.
+>lua
+    require("telescope").load_extension("fidget")
+<
+
+Use command `:Telescope fidget` or lua api `lua require("telescope").extensions.fidget.fidget()` 
 
 ==============================================================================
-6. Related Work                                          *fidget-related-work*
+7. Related Work                                          *fidget-related-work*
 
 rcarriga/nvim-notify <https://github.com/rcarriga/nvim-notify> is first and
 foremost a `vim.notify()` backend, and it also supports LSP progress
