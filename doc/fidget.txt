@@ -10,8 +10,8 @@ Table of Contents                                   *fidget-table-of-contents*
 2. Options                                                    |fidget-options|
 3. Lua API                                                    |fidget-lua-api|
 4. Commands                                                  |fidget-commands|
-5. Highlights                                              |fidget-highlights|
-6. Telescope                                                |fidget-telescope|
+5. Telescope                                                |fidget-telescope|
+6. Highlights                                              |fidget-highlights|
 7. Related Work                                          |fidget-related-work|
   - Acknowledgements                    |fidget-related-work-acknowledgements|
 
@@ -286,7 +286,27 @@ These sub-commands are documented below.
 
 
 ==============================================================================
-5. Highlights                                              *fidget-highlights*
+5. Telescope                                                *fidget-telescope*
+
+Fidget includes a Telescope <https://github.com/nvim-telescope/telescope.nvim>
+picker extension, which will show your Fidget notification history in Telescope
+and allow you to filter it. To enable this extension, make sure the Telescope
+plugin is installed, and add the following to your configuration:
+
+>lua
+    require("telescope").load_extension("fidget")
+<
+
+You can open the Fidget picker using the command `:Telescope fidget`, or via
+the Lua API:
+
+>lua
+    require("telescope").extensions.fidget.fidget()
+<
+
+
+==============================================================================
+6. Highlights                                              *fidget-highlights*
 
 Rather than defining its own highlights, Fidget’s default configuration uses
 built-in highlight groups that are typically overridden by custom Vim color
@@ -297,18 +317,6 @@ those highlight groups.
 You can override these highlight groups (e.g., `icon_style`) using the
 |fidget-options| shown above.
 
-==============================================================================
-6. Telescope                                                *fidget-telescope*
-
-Fidget is bundled with a telescope picker extension, the picker will show all
-history notifications, similar as `Fidget history`, but you can filter
-notifications by keywords. To enable it, add the 
-following to your config.
->lua
-    require("telescope").load_extension("fidget")
-<
-
-Use command `:Telescope fidget` or lua api `lua require("telescope").extensions.fidget.fidget()` 
 
 ==============================================================================
 7. Related Work                                          *fidget-related-work*
