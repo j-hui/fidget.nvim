@@ -3,7 +3,7 @@ name: Push to Luarocks
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   pull_request: # Tests a local luarocks install without publishing on PRs
   workflow_dispatch: # Allow manual trigger
 
