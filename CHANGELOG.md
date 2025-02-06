@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/j-hui/fidget.nvim/compare/v1.6.0...v1.6.1) (2025-02-06)
+
+
+### Bug Fixes
+
+* **ci:** fix glob pattern for luarocks workflow ([ebd7f74](https://github.com/j-hui/fidget.nvim/commit/ebd7f749bda1681cbe342ced2060b00cdb63d0d1))
+
 ## [1.6.0](https://github.com/j-hui/fidget.nvim/compare/v1.5.0...v1.6.0) (2025-02-05)
 
 
