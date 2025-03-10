@@ -245,6 +245,20 @@ Available options are shown below:
     ["xcodebuild-nvim"] = {
       enable = true,              -- Integrate with wojciech-kulik/xcodebuild.nvim (if installed)
     },
+    ["clangd"] = {
+      --- Integrate with clangd LSP (if running)
+      --- Show clangd parsing progress
+      --- Note: if enabled, vim.lsp.handlers["textDocument/clangd.fileStatus"] will be hooked
+      --- You can use the handler of this sub module directly
+      enable = false,
+
+      --- Do not show notification if clangd isn't busy
+      --- for more than this number of ms
+      notification_delay = 500,
+
+      --- Annotation string shown next to the message
+      annote = "clangd",
+    },
   },
 
   -- Options related to logging
