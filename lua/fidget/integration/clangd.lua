@@ -3,8 +3,15 @@ local M = {}
 ---@options integration.clangd [[
 --- clangd integration
 M.options = {
-  --- Integrate with clangd LSP (if running)
+  --- Integrate with clangd LSP clangdFileStatus
   --- Show clangd parsing progress
+  --- init_options.clangdFileStatus = true must be set in clangd LSP config
+  --- Example using lspconfig:
+  --- lspconfig.clangd.setup {
+  ---   init_options = {
+  ---     clangdFileStatus = true
+  ---   }
+  --- }
   --- Note: if enabled, vim.lsp.handlers["textDocument/clangd.fileStatus"] will be hooked
   --- You can use the handler of this sub module directly
   ---@type boolean
