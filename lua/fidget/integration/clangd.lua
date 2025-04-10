@@ -27,68 +27,80 @@ M.options = {
   annote = "clangd",
 }
 
-local last_step = 0 -- 0: just created, 1: shown, 2: completed
 local notify = require"fidget.notification".notify
-local timer = nil
-local function stop_timer()
-  if timer then
-    timer:stop()
-    timer:close()
-    timer = nil
+local file_status = {}
+local function stop_timer(status)
+  if status.timer then
+    status.timer:stop()
+    status.timer:close()
+    status.timer = nil
   end
 end
 
 M.handler = function(err, result, ctx, config)
   if not result.state then return end
-  stop_timer()
-
+  local key = result.uri
   local message = result.state
   local opts = {
-    key = "clangd.fileStatus",
-    group = ctx.client_id,
+    key = key,
+    group = "clangd.fileStatus",
     annote = M.options.annote,
     ttl = math.huge,
   }
 
+  if not file_status[key] then
+    file_status[key] = {
+      message = message,
+      complete = false,
+      timer = nil,
+      busy = false,
+    }
+  end
+  local status = file_status[key]
+  status.message = message
+
   if message == "idle" then
-    if last_step ~= 1 then
+    stop_timer(status)
+    status.complete = true
+    if not status.busy then
       -- no notification displayed
-      last_step = 2
+      status.busy = false
       return
     end
     -- update notification
-    last_step = 2
+    status.busy = false
     message = "Completed"
     opts.ttl = 0
     notify(message, vim.log.levels.INFO, opts)
     return
   end
 
-  last_step = 0
-
+  status.complete = false
   if M.options.notification_delay == 0 then
-    last_step = 1
-    notify(message, vim.log.levels.INFO, opts)
-    return
+    status.busy = true
   end
 
-  timer = vim.uv.new_timer()
-  timer:start(M.options.notification_delay, 0, function()
-    stop_timer()
-    vim.schedule(function()
-      if last_step == 0 then
-        last_step = 1
-        notify(message, vim.log.levels.INFO, opts)
-      end
+  if status.busy then
+    notify(message, vim.log.levels.INFO, opts)
+  elseif not status.timer then
+    status.timer = vim.uv.new_timer()
+    status.timer:start(M.options.notification_delay, 0, function()
+      vim.schedule(function()
+        stop_timer(status)
+        if not status.complete then
+          status.busy = true
+          notify(status.message, vim.log.levels.INFO, opts)
+        end
+      end)
     end)
-  end)
+  end
 end
 
 require("fidget.options").declare(M, "integration.clangd", M.options, function()
   if not M.options.enable then
     return
   end
-    vim.lsp.handlers["textDocument/clangd.fileStatus"] = M.handler
+  vim.lsp.handlers["textDocument/clangd.fileStatus"] = M.handler
 end)
 
 return M
