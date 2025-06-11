@@ -447,7 +447,10 @@ function M.set_lines(lines, highlights, right_col)
     end
 
     -- Replace entire buffer with new set of lines
+    vim.bo[buffer_id].modifiable = true
     vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
+    vim.bo[buffer_id].modifiable = false
+    vim.bo[buffer_id].modified = false
 
     for _, highlight in ipairs(highlights) do
       local offset = offsets[highlight.line + 1] -- highlight.line is 0-based, so needs +1
@@ -461,7 +464,10 @@ function M.set_lines(lines, highlights, right_col)
     end
   else
     -- Replace entire buffer with new set of lines
+    vim.bo[buffer_id].modifiable = true
     vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
+    vim.bo[buffer_id].modifiable = false
+    vim.bo[buffer_id].modified = false
 
     for _, highlight in ipairs(highlights) do
       vim.api.nvim_buf_add_highlight(
@@ -493,7 +499,6 @@ function M.close()
 
   if state.buffer_id ~= nil then
     if vim.api.nvim_buf_is_valid(state.buffer_id) then
-      vim.api.nvim_buf_set_lines(state.buffer_id, 0, -1, false, {}) -- clear out text (is this necessary?)
       vim.api.nvim_buf_delete(state.buffer_id, { force = true })
     end
     state.buffer_id = nil
