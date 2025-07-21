@@ -371,8 +371,8 @@ notification.poller = poll.Poller {
       end
 
       notification.window.guard(function()
-        notification.window.set_lines(v.lines, v.highlights, v.width)
-        notification.window.show(v.width, #v.lines)
+        local width = notification.window.set_lines(v.lines, v.highlights, true)
+        notification.window.show(width, #v.lines)
       end)
       return true
     else
