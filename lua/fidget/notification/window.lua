@@ -337,6 +337,7 @@ function M.get_window(row, col, anchor, width, height)
     return nil
   end
 
+  width = width + M.options.x_padding
   width = math.min(width, editor_width)
   if M.options.max_width > 0 then
     width = math.min(width, M.options.max_width)
@@ -413,10 +414,10 @@ end
 --- Returns nil if Fidget window could not be created (e.g., because editor is
 --- too small to show Fidget).
 ---
----@param width   number
----@param height  number
+---@param height  integer
+---@param width   integer
 ---@return number|nil window_id
-function M.show(width, height)
+function M.show(height, width)
   local row, col, anchor = M.get_window_position()
   return M.get_window(row, col, anchor, width, height)
 end
@@ -424,71 +425,26 @@ end
 --- Replace the set of lines in the Fidget window, right-justify them, and apply
 --- highlights.
 ---
----@param lines       string[]                  lines to place into buffer
----@param highlights  NotificationHighlight[]   list of highlights to apply
----@param right_align boolean                   whether to right-justify the text
----@return integer max_width
-function M.set_lines(lines, highlights, right_align)
+---
+---@param lines       NotificationLine[]  lines to place into buffer
+---@param width       integer             width of longest line
+function M.set_lines(lines, width)
   local buffer_id = M.get_buffer()
   local namespace_id = M.get_namespace()
 
   -- Clear previous highlights
   vim.api.nvim_buf_clear_namespace(buffer_id, namespace_id, 0, -1)
+  vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, {})
 
-  local line_widths = {}
-  local max_width = 0
-  vim.api.nvim_buf_call(buffer_id, function()
-    for l, line in ipairs(lines) do
-      line_widths[l] = vim.fn.strdisplaywidth(line)
-      max_width = math.max(max_width, line_widths[l])
-    end
-  end)
-
-  if right_align then
-    local offsets = {}
-
-    -- Right justify each line by padding spaces
-    for l, width in ipairs(line_widths) do
-      local offset = max_width - width
-      lines[l] = string.rep(" ", offset) .. lines[l]
-      offsets[l] = offset
-    end
-
-    -- Replace entire buffer with new set of lines
-    vim.bo[buffer_id].modifiable = true
-    vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
-    vim.bo[buffer_id].modifiable = false
-    vim.bo[buffer_id].modified = false
-
-    for _, highlight in ipairs(highlights) do
-      local offset = offsets[highlight.line + 1] -- highlight.line is 0-based, so needs +1
-      vim.api.nvim_buf_add_highlight(
-        buffer_id,
-        namespace_id,
-        highlight.hl_group,
-        highlight.line,
-        highlight.col_start + offset,
-        highlight.col_end == -1 and -1 or highlight.col_end + offset)
-    end
-  else
-    -- Replace entire buffer with new set of lines
-    vim.bo[buffer_id].modifiable = true
-    vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, lines)
-    vim.bo[buffer_id].modifiable = false
-    vim.bo[buffer_id].modified = false
-
-    for _, highlight in ipairs(highlights) do
-      vim.api.nvim_buf_add_highlight(
-        buffer_id,
-        namespace_id,
-        highlight.hl_group,
-        highlight.line,
-        highlight.col_start,
-        highlight.col_end)
-    end
+  for _, line in ipairs(lines) do
+    vim.api.nvim_buf_set_lines(buffer_id, -1, -1, false, { "" })
+    local last = vim.api.nvim_buf_line_count(buffer_id) - 1
+    vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, last, 0, {
+      virt_text = line,
+      virt_text_pos = "eol_right_align",
+    })
   end
-
-  return max_width
+  M.show(#lines, width)
 end
 
 --- Close the Fidget window and associated buffers.

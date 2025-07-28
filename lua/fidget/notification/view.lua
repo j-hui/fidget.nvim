@@ -3,19 +3,8 @@
 --- TODO: partial/in-place rendering, to avoid building new strings.
 local M = {}
 
----@class NotificationView
----@field lines       string[]                  text to show in the notification
----@field highlights  NotificationHighlight[]   buf_add_highlight() params, applied in order
-
----@class NotificationRenderItem
----@field lines      string[]                 displayed message for the item
----@field highlights NotificationHighlight[]  buf_add_highlight() params for lines field
-
----@class NotificationHighlight
----@field hl_group    string    what highlight group to add
----@field line        number    (0-indexed) line number to add highlight
----@field col_start   number    (byte-indexed) column to start highlight
----@field col_end     number    (byte-indexed) column to end highlight
+--- A list of (text, highlight[]) tuples of highlighted tokens.
+---@class NotificationLine : {[1]: string, [2]: string[]}[]
 
 ---@options notification.view [[
 ---@protected
@@ -70,32 +59,30 @@ M.options = {
 
 require("fidget.options").declare(M, "notification.view", M.options)
 
---- Render group separator item.
----
----@return NotificationRenderItem|nil group_separator
+---@param s string|nil
+---@return integer len
+local function strlen(s)
+  if s then return vim.fn.strdisplaywidth(s) else return 0 end
+end
+
+---@return NotificationLine[]|nil lines
+---@return integer                width
 function M.render_group_separator()
   if not M.options.group_separator then
-    return nil
+    return nil, 0
   end
-
-  return {
-    lines = { M.options.group_separator or nil },
-    highlights = {
-      M.options.group_separator_hl and {
-        hl_group = M.options.group_separator_hl or nil,
-        line = 0,
-        col_start = 0,
-        col_end = -1,
-      }
-    }
-  }
+  local line = M.options.group_separator
+  ---@cast line string
+  return { { { line, { M.options.group_separator_hl } } } }, strlen(line)
+  -- TODO: cache the return value, this never changes
 end
 
 --- Render the header of a group, containing group name and icon.
 ---
 ---@param   now   number    timestamp of current render frame
----@param   group Group
----@return  NotificationRenderItem|nil group_header
+---@param   group Group     group whose header we should render
+---@return  NotificationLine[]|nil group_header
+---@return  integer                width
 function M.render_group_header(now, group)
   local group_name = group.config.name
   if type(group_name) == "function" then
@@ -107,69 +94,46 @@ function M.render_group_header(now, group)
     group_icon = group_icon(now, group.items)
   end
 
-  if group_name == nil and group_icon == nil then
-    -- No group header to render
-    return nil
-  end
+  local name_tok = group_name and {
+    group_name, { group.config.group_style or "Title" }
+  }
+  local icon_tok = group_icon and {
+    group_icon, { group.config.icon_style or group.config.group_style or "Title" },
+  }
 
-  local lines, highlights = {}, {}
-
-  if group_name and group_icon then
-    -- Both group_name and group_icon are present, lay them out next to each other
+  if name_tok and icon_tok then
+    local sep_tok = { M.options.icon_separator, {} } -- TODO: cache this
+    local width = strlen(group_name) + strlen(group_icon) + strlen(M.options.icon_separator)
     if group.config.icon_on_left then
-      table.insert(lines, string.format("%s%s%s", group_icon, M.options.icon_separator, group_name))
-      table.insert(highlights, {
-        hl_group = group.config.group_style or "Title",
-        line = 0,
-        col_start = 0,
-        col_end = -1,
-      })
-      if group.config.icon_style then
-        table.insert(highlights, {
-          hl_group = group.config.icon_style,
-          line = 0,
-          col_start = 0,
-          col_end = #group_icon,
-        })
-      end
-    else -- not icon_on_left, AKA icon on right
-      -- NOTE: this branch represents the most common case (default options)
-      table.insert(lines, string.format("%s%s%s", group_name, M.options.icon_separator, group_icon))
-      table.insert(highlights, {
-        hl_group = group.config.group_style or "Title",
-        line = 0,
-        col_start = 0,
-        col_end = -1,
-      })
-      if group.config.icon_style then
-        table.insert(highlights, {
-          hl_group = group.config.icon_style,
-          line = 0,
-          col_start = #group_name + #M.options.icon_separator,
-          col_end = -1,
-        })
-      end
+      return { { icon_tok, sep_tok, name_tok } }, width
+    else
+      return { { name_tok, sep_tok, icon_tok } }, width
     end
+  elseif name_tok then
+    return { { name_tok } }, strlen(group_name)
+  elseif icon_tok then
+    return { { icon_tok } }, strlen(group_icon)
   else
-    if group_name then
-      table.insert(lines, group_name)
-      table.insert(highlights, {
-        hl_group = group.config.group_style or "Title",
-        line = 0,
-        col_start = 0,
-        col_end = -1,
-      })
-    elseif group_icon then
-      table.insert(lines, group_icon)
-      table.insert(highlights, {
-        hl_group = group.config.icon_style or group.config.group_style or "Title",
-        line = 0,
-        col_start = 0,
-        col_end = -1,
-      })
+    -- No group header to render
+    return nil, 0
+  end
+end
+
+---@param items Item[]
+---@return Item[] deduped
+---@return table<any, integer> counts
+function M.dedup_items(items)
+  local deduped, counts = {}, {}
+  for _, item in ipairs(items) do
+    local key = item.content_key or item
+    if counts[key] then
+      counts[key] = counts[key] + 1
+    else
+      counts[key] = 1
+      table.insert(deduped, item)
     end
   end
-  return { lines = lines, highlights = highlights }
+  return deduped, counts
 end
 
 --- Render a notification item, containing message and annote.
@@ -177,124 +141,95 @@ end
 ---@param item   Item
 ---@param config Config
 ---@param count  number
----@return       NotificationRenderItem|nil render_item
+---@return NotificationLine[]|nil lines
+---@return integer                max_width
 function M.render_item(item, config, count)
   if item.hidden then
-    return nil
+    return nil, 0
   end
 
-  local lines, highlights = {}, {}
-
   local msg = M.options.render_message(item.message, count)
+
+  local sep_tok = { config.annote_separator or " ", {} }
+  local lines, width = {}, 0
   for line in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
-    table.insert(lines, line)
+    local line_tok = { line, {} }
+    if item.annote and #lines == 0 then
+      table.insert(lines, {
+        line_tok,
+        sep_tok,
+        { item.annote, { item.style } },
+      })
+      width = math.max(width, strlen(line) + strlen(sep_tok[1]) + strlen(item.annote))
+    else
+      table.insert(lines, { line_tok })
+      width = math.max(width, strlen(line))
+    end
   end
 
   if #lines == 0 then
     -- Don't render empty messages
-    return nil
+    return nil, 0
+  else
+    return lines, width
   end
-
-  if item.annote then
-    local line1 = lines[1] -- Append annote to first line
-    local col_start = #line1
-    local sep = config.annote_separator or " "
-    line1 = string.format("%s%s%s", line1, sep, item.annote)
-    lines[1] = line1
-
-    -- Insert highlight for annote
-    table.insert(highlights, {
-      hl_group = item.style,
-      line = 0,              -- 0-indexed
-      col_start = col_start, -- byte-indexed
-      col_end = -1,
-    })
-  end
-
-  return { lines = lines, highlights = highlights }
 end
 
 --- Render notifications into lines and highlights.
 ---
 ---@param now number timestamp of current render frame
 ---@param groups Group[]
----@return NotificationView view
+---@return NotificationLine[] lines
+---@return integer width
 function M.render(now, groups)
-  ---@type NotificationRenderItem[]
-  local render_items = {}
+  ---@type NotificationLine[][]
+  local chunks = {}
+  local max_width = 0
 
   for idx, group in ipairs(groups) do
     if idx ~= 1 then
-      local separator = M.render_group_separator()
-      if separator then
-        table.insert(render_items, separator)
+      local sep, sep_width = M.render_group_separator()
+      if sep then
+        table.insert(chunks, sep)
+        max_width = math.max(max_width, sep_width)
       end
     end
 
-    local group_header = M.render_group_header(now, group)
-    if group_header then
-      table.insert(render_items, group_header)
+    local hdr, hdr_width = M.render_group_header(now, group)
+    if hdr then
+      table.insert(chunks, hdr)
+      max_width = math.max(max_width, hdr_width)
     end
 
-    local counts = {}
-    for _, item in ipairs(group.items) do
-      local content_key = item.content_key
-      if content_key ~= nil then
-        if counts[content_key] then
-          counts[content_key] = counts[content_key] + 1
-        else
-          counts[content_key] = 1
-        end
-      end
-    end
-
-    local i = 1
-    for _, item in ipairs(group.items) do
+    local items, counts = M.dedup_items(group.items)
+    for i, item in ipairs(items) do
       if group.config.render_limit and i > group.config.render_limit then
         -- Don't bother rendering the rest (though they still exist)
         break
       end
-      local content_key = item.content_key
-      if content_key == nil or counts[content_key] then
-        local count = 1
-        if content_key ~= nil then
-          count = counts[content_key]
-          counts[content_key] = nil
-        end
 
-        local render_item = M.render_item(item, group.config, count)
-        if render_item then
-          table.insert(render_items, render_item)
-          i = i + 1
-        end
+      local it, it_width = M.render_item(item, group.config, counts[item.content_key or item])
+      if it then
+        table.insert(chunks, it)
+        max_width = math.max(max_width, it_width)
       end
     end
   end
 
-  local lines, highlights = {}, {}
-
   local start, stop, step
   if M.options.stack_upwards then
-    start, stop, step = #render_items, 1, -1
+    start, stop, step = #chunks, 1, -1
   else
-    start, stop, step = 1, #render_items, 1
+    start, stop, step = 1, #chunks, 1
   end
 
+  local lines = {}
   for i = start, stop, step do
-    local item, offset = render_items[i], #lines
-    for _, line in ipairs(item.lines) do
+    for _, line in ipairs(chunks[i]) do
       table.insert(lines, line)
     end
-    for _, highlight in ipairs(item.highlights) do
-      highlight.line = highlight.line + offset
-      table.insert(highlights, highlight)
-    end
   end
-
-  return {
-    lines = lines,
-    highlights = highlights,
-  }
+  return lines, max_width
 end
 
 --- Display notification items in Neovim messages.
