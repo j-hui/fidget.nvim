@@ -424,24 +424,32 @@ end
 --- Replace the set of lines in the Fidget window, right-justify them, and apply
 --- highlights.
 ---
---- To forego right-justification, pass nil for right_col.
----
 ---@param lines       string[]                  lines to place into buffer
 ---@param highlights  NotificationHighlight[]   list of highlights to apply
----@param right_col   number|nil                optional display width, to right-justify
-function M.set_lines(lines, highlights, right_col)
+---@param right_align boolean                   whether to right-justify the text
+---@return integer max_width
+function M.set_lines(lines, highlights, right_align)
   local buffer_id = M.get_buffer()
   local namespace_id = M.get_namespace()
 
   -- Clear previous highlights
   vim.api.nvim_buf_clear_namespace(buffer_id, namespace_id, 0, -1)
 
-  if right_col then
+  local line_widths = {}
+  local max_width = 0
+  vim.api.nvim_buf_call(buffer_id, function()
+    for l, line in ipairs(lines) do
+      line_widths[l] = vim.fn.strdisplaywidth(line)
+      max_width = math.max(max_width, line_widths[l])
+    end
+  end)
+
+  if right_align then
     local offsets = {}
 
     -- Right justify each line by padding spaces
-    for l, line in ipairs(lines) do
-      local offset = right_col - vim.fn.strdisplaywidth(line)
+    for l, width in ipairs(line_widths) do
+      local offset = max_width - width
       lines[l] = string.rep(" ", offset) .. lines[l]
       offsets[l] = offset
     end
@@ -479,6 +487,8 @@ function M.set_lines(lines, highlights, right_col)
         highlight.col_end)
     end
   end
+
+  return max_width
 end
 
 --- Close the Fidget window and associated buffers.

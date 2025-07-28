@@ -4,7 +4,6 @@
 local M = {}
 
 ---@class NotificationView
----@field width       number                    the maximum width of any line
 ---@field lines       string[]                  text to show in the notification
 ---@field highlights  NotificationHighlight[]   buf_add_highlight() params, applied in order
 
@@ -272,7 +271,7 @@ function M.render(now, groups)
     end
   end
 
-  local width, lines, highlights = 0, {}, {}
+  local lines, highlights = {}, {}
 
   local start, stop, step
   if M.options.stack_upwards then
@@ -284,7 +283,6 @@ function M.render(now, groups)
   for i = start, stop, step do
     local item, offset = render_items[i], #lines
     for _, line in ipairs(item.lines) do
-      width = math.max(width, vim.fn.strdisplaywidth(line))
       table.insert(lines, line)
     end
     for _, highlight in ipairs(item.highlights) do
@@ -294,7 +292,6 @@ function M.render(now, groups)
   end
 
   return {
-    width = width,
     lines = lines,
     highlights = highlights,
   }
