@@ -304,7 +304,7 @@ function M.get_buffer()
   if state.buffer_id == nil or not vim.api.nvim_buf_is_valid(state.buffer_id) then
     -- Create an unlisted (1st param) scratch (2nd param) buffer
     state.buffer_id = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_option(state.buffer_id, "filetype", "fidget")
+    vim.api.nvim_set_option_value("filetype", "fidget", { buf = state.buffer_id })
   end
   return state.buffer_id
 end
