@@ -461,7 +461,7 @@ function M.set_lines(lines, width)
       virt_text_pos = "eol_right_align",
     })
   end
-  M.show(#lines, width)
+  M.show(vim.api.nvim_buf_line_count(buffer_id), width)
 end
 
 --- Close the Fidget window and associated buffers.
