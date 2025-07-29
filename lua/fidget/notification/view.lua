@@ -3,6 +3,8 @@
 --- TODO: partial/in-place rendering, to avoid building new strings.
 local M = {}
 
+local window = require("fidget.notification.window")
+
 --- A list of (text, highlight[]) tuples of highlighted tokens.
 ---@class NotificationLine : {[1]: string, [2]: string[]}[]
 
@@ -59,10 +61,23 @@ M.options = {
 
 require("fidget.options").declare(M, "notification.view", M.options)
 
+--- The displayed width of a string.
+---
+--- A simple wrapper around vim.fn.strwidth(), accounting for tab characters
+--- manually.
+---
+--- We call this instead of vim.fn.strdisplaywidth() because that depends on
+--- the state and size of the current window and buffer, which could be
+--- anywhere.
 ---@param s string|nil
 ---@return integer len
-local function strlen(s)
-  if s then return vim.fn.strdisplaywidth(s) else return 0 end
+local function strwidth(s)
+  if s then
+    return vim.fn.strwidth(s) +
+        vim.fn.count(s, "\t") * math.max(0, window.options.tabstop - 1)
+  else
+    return 0
+  end
 end
 
 ---@return NotificationLine[]|nil lines
@@ -73,7 +88,7 @@ function M.render_group_separator()
   end
   local line = M.options.group_separator
   ---@cast line string
-  return { { { line, { M.options.group_separator_hl } } } }, strlen(line)
+  return { { { line, { M.options.group_separator_hl } } } }, strwidth(line)
   -- TODO: cache the return value, this never changes
 end
 
@@ -103,16 +118,16 @@ function M.render_group_header(now, group)
 
   if name_tok and icon_tok then
     local sep_tok = { M.options.icon_separator, {} } -- TODO: cache this
-    local width = strlen(group_name) + strlen(group_icon) + strlen(M.options.icon_separator)
+    local width = strwidth(group_name) + strwidth(group_icon) + strwidth(M.options.icon_separator)
     if group.config.icon_on_left then
       return { { icon_tok, sep_tok, name_tok } }, width
     else
       return { { name_tok, sep_tok, icon_tok } }, width
     end
   elseif name_tok then
-    return { { name_tok } }, strlen(group_name)
+    return { { name_tok } }, strwidth(group_name)
   elseif icon_tok then
-    return { { icon_tok } }, strlen(group_icon)
+    return { { icon_tok } }, strwidth(group_icon)
   else
     -- No group header to render
     return nil, 0
@@ -160,10 +175,10 @@ function M.render_item(item, config, count)
         sep_tok,
         { item.annote, { item.style } },
       })
-      width = math.max(width, strlen(line) + strlen(sep_tok[1]) + strlen(item.annote))
+      width = math.max(width, strwidth(line) + strwidth(sep_tok[1]) + strwidth(item.annote))
     else
       table.insert(lines, { line_tok })
-      width = math.max(width, strlen(line))
+      width = math.max(width, strwidth(line))
     end
   end
 

@@ -106,6 +106,11 @@ M.options    = {
   ---
   ---@type "editor"|"win"
   relative = "editor",
+
+  --- Width of each tab character in the notification window
+  ---
+  ---@type number
+  tabstop = 8,
 }
 ---@options ]]
 
@@ -305,6 +310,9 @@ function M.get_buffer()
     -- Create an unlisted (1st param) scratch (2nd param) buffer
     state.buffer_id = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_set_option_value("filetype", "fidget", { buf = state.buffer_id })
+    -- We set this to a known value to ensure we correctly account for the width
+    -- of tab chars while calling strwidth() in notification.view.strwidth().
+    vim.api.nvim_set_option_value("tabstop", M.options.tabstop, { buf = state.buffer_id })
   end
   return state.buffer_id
 end
