@@ -418,13 +418,12 @@ end
 function M.get_namespace()
   if state.namespace_id == nil then
     state.namespace_id = vim.api.nvim_create_namespace("fidget-window")
-    local normal_hl = vim.api.nvim_get_hl_by_name("Normal", true)
-    if normal_hl.background ~= nil then
-      vim.api.nvim_set_hl(state.namespace_id, M.no_blend_hl, {
-        bg = "bg",
-        blend = 0,
-      })
+    local no_blend_hl = { blend = 0 }
+    local normal_hl = vim.api.nvim_get_hl(0, { name = "Normal" })
+    if normal_hl.bg ~= nil then
+      no_blend_hl.bg = "bg"
     end
+    vim.api.nvim_set_hl(state.namespace_id, M.no_blend_hl, no_blend_hl)
   end
   return state.namespace_id
 end
