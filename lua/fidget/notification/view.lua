@@ -5,8 +5,11 @@ local M = {}
 
 local window = require("fidget.notification.window")
 
---- A list of (text, highlight[]) tuples of highlighted tokens.
----@class NotificationLine : {[1]: string, [2]: string[]}[]
+--- A list of highlighted tokens.
+---@class NotificationLine : NotificationToken[]
+
+--- A tuple consisting of some text and a stack of highlights.
+---@class NotificationToken : {[1]: string, [2]: string[]}
 
 ---@options notification.view [[
 ---@protected
@@ -80,6 +83,13 @@ local function strwidth(s)
   end
 end
 
+---@param text string the text in this token
+---@param ... string  highlights to apply to text
+---@return NotificationToken
+local function Token(text, ...)
+  return { text, { window.no_blend_hl, ... } }
+end
+
 ---@return NotificationLine[]|nil lines
 ---@return integer                width
 function M.render_group_separator()
@@ -88,7 +98,7 @@ function M.render_group_separator()
   end
   local line = M.options.group_separator
   ---@cast line string
-  return { { { line, { M.options.group_separator_hl } } } }, strwidth(line)
+  return { { Token(line, M.options.group_separator_hl) } }, strwidth(line)
   -- TODO: cache the return value, this never changes
 end
 
@@ -109,15 +119,15 @@ function M.render_group_header(now, group)
     group_icon = group_icon(now, group.items)
   end
 
-  local name_tok = group_name and {
-    group_name, { group.config.group_style or "Title" }
-  }
-  local icon_tok = group_icon and {
-    group_icon, { group.config.icon_style or group.config.group_style or "Title" },
-  }
+  local name_tok = group_name and Token(
+    group_name, group.config.group_style or "Title"
+  )
+  local icon_tok = group_icon and Token(
+    group_icon, group.config.icon_style or group.config.group_style or "Title"
+  )
 
   if name_tok and icon_tok then
-    local sep_tok = { M.options.icon_separator, {} } -- TODO: cache this
+    local sep_tok = Token(M.options.icon_separator) -- TODO: cache this
     local width = strwidth(group_name) + strwidth(group_icon) + strwidth(M.options.icon_separator)
     if group.config.icon_on_left then
       return { { icon_tok, sep_tok, name_tok } }, width
@@ -165,15 +175,15 @@ function M.render_item(item, config, count)
 
   local msg = M.options.render_message(item.message, count)
 
-  local sep_tok = { config.annote_separator or " ", {} }
+  local sep_tok = Token(config.annote_separator or " ")
   local lines, width = {}, 0
   for line in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
-    local line_tok = { line, {} }
+    local line_tok = Token(line)
     if item.annote and #lines == 0 then
       table.insert(lines, {
         line_tok,
         sep_tok,
-        { item.annote, { item.style } },
+        Token(item.annote, item.style),
       })
       width = math.max(width, strwidth(line) + strwidth(sep_tok[1]) + strwidth(item.annote))
     else

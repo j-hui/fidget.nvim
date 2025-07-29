@@ -116,6 +116,10 @@ M.options    = {
 
 require("fidget.options").declare(M, "notification.window", M.options)
 
+--- The name of the highlight group that Fidget uses to prevent winblend from
+--- "bleeding" the main editor window into the notification window.
+M.no_blend_hl = "FidgetNoBlend"
+
 --- Local state maintained by this module.
 ---
 --- If this framework were ever extended to support multiple concurrent windows,
@@ -371,6 +375,7 @@ function M.get_window(row, col, anchor, width, height)
       zindex = M.options.zindex,
       noautocmd = true,
     })
+    vim.api.nvim_win_set_hl_ns(state.window_id, M.get_namespace())
   else
     -- Window is already created; reposition it in case anything has changed.
     vim.api.nvim_win_set_config(state.window_id, {
@@ -413,6 +418,10 @@ end
 function M.get_namespace()
   if state.namespace_id == nil then
     state.namespace_id = vim.api.nvim_create_namespace("fidget-window")
+    vim.api.nvim_set_hl(state.namespace_id, M.no_blend_hl, {
+      bg = "bg",
+      blend = 0,
+    })
   end
   return state.namespace_id
 end
