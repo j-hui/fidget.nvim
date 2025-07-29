@@ -49,15 +49,14 @@ M.options = {
   --- only be rendered once, with a `cnt` greater than 1. This hook provides an
   --- opportunity to customize how such messages should appear.
   ---
-  --- Note that if this returns an empty string, the notification will not be
-  --- rendered.
+  --- If this returns false or nil, the notification will not be rendered.
   ---
   --- See also:~
   ---     |fidget.notification.Config|
   ---     |fidget.notification.default_config|
   ---     |fidget.notification.set_content_key|
   ---
-  ---@type fun(msg: string, cnt: number): string
+  ---@type fun(msg: string, cnt: number): (string|false|nil)
   render_message = function(msg, cnt) return cnt == 1 and msg or string.format("(%dx) %s", cnt, msg) end,
 }
 ---@options ]]
@@ -174,17 +173,18 @@ function M.render_item(item, config, count)
   end
 
   local msg = M.options.render_message(item.message, count)
+  if not msg then
+    -- Don't render any lines for nil messages
+    return nil, 0
+  end
 
   local sep_tok = Token(config.annote_separator or " ")
+  local ann_tok = item.annote and Token(item.annote, item.style)
   local lines, width = {}, 0
   for line in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
     local line_tok = Token(line)
-    if item.annote and #lines == 0 then
-      table.insert(lines, {
-        line_tok,
-        sep_tok,
-        Token(item.annote, item.style),
-      })
+    if ann_tok and #lines == 0 then
+      table.insert(lines, { line_tok, sep_tok, ann_tok })
       width = math.max(width, strwidth(line) + strwidth(sep_tok[1]) + strwidth(item.annote))
     else
       table.insert(lines, { line_tok })
@@ -193,8 +193,13 @@ function M.render_item(item, config, count)
   end
 
   if #lines == 0 then
-    -- Don't render empty messages
-    return nil, 0
+    if ann_tok then
+      -- The message is an empty string, but there's an annotation to render.
+      return { { ann_tok } }, strwidth(item.annote)
+    else
+      -- Don't render empty messages
+      return nil, 0
+    end
   else
     return lines, width
   end
