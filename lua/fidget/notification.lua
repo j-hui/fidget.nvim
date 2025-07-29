@@ -29,9 +29,11 @@ local logger                = require("fidget.logger")
 
 --- Something that can be displayed in a |fidget.notification.Group|.
 ---
+--- If false, this content is not rendered.
+---
 --- If a callable `function`, it is invoked every render cycle with the items
 --- list; useful for rendering animations and other dynamic content.
----@alias Display string|fun(now: number, items: Item[]): string
+---@alias Display string|false|fun(now: number, items: Item[]): (string|false|nil)
 
 --- Used to configure the behavior of notification groups.
 ---

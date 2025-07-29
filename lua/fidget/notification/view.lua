@@ -126,6 +126,8 @@ function M.render_group_header(now, group)
   )
 
   if name_tok and icon_tok then
+    ---@cast group_name string
+    ---@cast group_icon string
     local sep_tok = Token(M.options.icon_separator) -- TODO: cache this
     local width = strwidth(group_name) + strwidth(group_icon) + strwidth(M.options.icon_separator)
     if group.config.icon_on_left then
@@ -134,8 +136,10 @@ function M.render_group_header(now, group)
       return { { name_tok, sep_tok, icon_tok } }, width
     end
   elseif name_tok then
+    ---@cast group_name string
     return { { name_tok } }, strwidth(group_name)
   elseif icon_tok then
+    ---@cast group_icon string
     return { { icon_tok } }, strwidth(group_icon)
   else
     -- No group header to render
