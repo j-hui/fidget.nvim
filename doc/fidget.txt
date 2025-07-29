@@ -84,7 +84,7 @@ For instance, using Lazy <https://github.com/folke/lazy.nvim>
 >lua
     {
       "j-hui/fidget.nvim",
-      tag = "v1.0.0", -- Make sure to update this to something recent!
+      tag = "*", -- alternatively, pin this to a specific version, e.g., "v1.6.1"
       opts = {
         -- options
       },

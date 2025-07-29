@@ -657,8 +657,7 @@ notification.view.render_message  *fidget.option.notification.view.render_messag
     only be rendered once, with a `cnt` greater than 1. This hook provides an
     opportunity to customize how such messages should appear.
 
-    Note that if this returns an empty string, the notification will not be
-    rendered.
+    If this returns false or nil, the notification will not be rendered.
 
     See also:~
         |fidget.notification.Config|
@@ -666,7 +665,7 @@ notification.view.render_message  *fidget.option.notification.view.render_messag
         |fidget.notification.set_content_key|
 
     Type: ~
-        `fun(msg: string, cnt: number): string`
+        `fun(msg: string, cnt: number): (string|false|nil)`
 
     Default: ~
         `function(msg, cnt) return cnt == 1 and msg or string.format("(%dx) %s", cnt, msg) end`
@@ -832,6 +831,17 @@ notification.window.relative      *fidget.option.notification.window.relative*
 
     Default: ~
         `"editor"`
+
+
+notification.window.tabstop        *fidget.option.notification.window.tabstop*
+
+    Width of each tab character in the notification window
+
+    Type: ~
+        `number`
+
+    Default: ~
+        `8`
 
 
 ==============================================================================

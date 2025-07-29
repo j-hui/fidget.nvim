@@ -70,11 +70,13 @@ Options                                            *fidget.notification.Options*
 Display                                            *fidget.notification.Display*
      Something that can be displayed in a |fidget.notification.Group|.
 
+     If false, this content is not rendered.
+
      If a callable `function`, it is invoked every render cycle with the items
      list; useful for rendering animations and other dynamic content.
 
     Type: ~
-        string|fun(now:number,items:Item[]):string
+        string|false|fun(now:number,items:Item[]):string|false|nil
 
 
 Config                                              *fidget.notification.Config*
