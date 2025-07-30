@@ -458,10 +458,31 @@ function M.set_lines(lines, width)
   for _, line in ipairs(lines) do
     vim.api.nvim_buf_set_lines(buffer_id, -1, -1, false, { "" })
     local last = vim.api.nvim_buf_line_count(buffer_id) - 1
-    vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, last, 0, {
-      virt_text = line,
-      virt_text_pos = "eol_right_align",
-    })
+    if vim.fn.has("nvim-0.11.0") then
+      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, last, 0, {
+        virt_text = line,
+        virt_text_pos = "eol_right_align",
+      })
+    else
+      -- pre-0.11.0: eol_right_align was only introduced in 0.11.0;
+      -- without it we need to compute and add the padding ourselves
+      local len, padded = 0, { {} }
+      for _, tok in ipairs(line) do
+        len = len + vim.fn.strwidth(tok[1]) +
+            vim.fn.count(tok[1], "\t") * math.max(0, M.options.tabstop - 1)
+        table.insert(padded, tok)
+      end
+      local pad_width = math.max(0, width - len)
+      if pad_width > 0 then
+        padded[1] = { string.rep(" ", pad_width), {} }
+      else
+        padded = line
+      end
+      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, last, 0, {
+        virt_text = padded,
+        virt_text_pos = "eol",
+      })
+    end
   end
   M.show(vim.api.nvim_buf_line_count(buffer_id), width)
 end
