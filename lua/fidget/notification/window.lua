@@ -349,7 +349,9 @@ function M.get_window(row, col, anchor, width, height)
     return nil
   end
 
-  width = width + M.options.x_padding
+  -- Rendering with ext_marks causes lines to appear 1 character wider because
+  -- the mark begins _after_ eol
+  width = width + 1
   width = math.min(width, editor_width)
   if M.options.max_width > 0 then
     width = math.min(width, M.options.max_width)
