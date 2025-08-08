@@ -216,6 +216,7 @@ Available options are shown below:
       group_separator = "---",    -- Separator between notification groups
       group_separator_hl =        -- Highlight group used for group separator
         "Comment",
+      line_margin = 1,            -- Spaces to pad both sides of each non-empty line
       render_message =            -- How to render notification messages
         function(msg, cnt)
           return cnt == 1 and msg or string.format("(%dx) %s", cnt, msg)

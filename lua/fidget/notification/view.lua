@@ -43,6 +43,14 @@ M.options = {
   ---@type string|false
   group_separator_hl = "Comment",
 
+  --- Spaces to pad both sides of each non-empty line
+  ---
+  --- Useful for adding a visual gap between notification text and any buffer it
+  --- may overlap with.
+  ---
+  ---@type integer
+  line_margin = 1,
+
   --- How to render notification messages
   ---
   --- Messages that appear multiple times (have the same `content_key`) will
@@ -71,14 +79,21 @@ require("fidget.options").declare(M, "notification.view", M.options)
 --- We call this instead of vim.fn.strdisplaywidth() because that depends on
 --- the state and size of the current window and buffer, which could be
 --- anywhere.
----@param s string|nil
+---@param ... string
 ---@return integer len
-local function strwidth(s)
-  if s then
-    return vim.fn.strwidth(s) +
+local function line_width(...)
+  local w = 0
+  for _, s in ipairs({ ... }) do
+    if type(s) ~= "string" then
+      print("yo this is " .. type(s))
+    end
+    w = w + vim.fn.strwidth(s) +
         vim.fn.count(s, "\t") * math.max(0, window.options.tabstop - 1)
+  end
+  if w == 0 then
+    return w
   else
-    return 0
+    return w + 2 * M.options.line_margin
   end
 end
 
@@ -89,6 +104,16 @@ local function Token(text, ...)
   return { text, { window.no_blend_hl, ... } }
 end
 
+---@param ... NotificationToken
+---@return NotificationLine
+local function Line(...)
+  if #{ ... } == 0 then
+    return {}
+  end
+  local margin = Token(string.rep(" ", M.options.line_margin))
+  return { margin, ..., margin }
+end
+
 ---@return NotificationLine[]|nil lines
 ---@return integer                width
 function M.render_group_separator()
@@ -97,7 +122,7 @@ function M.render_group_separator()
   end
   local line = M.options.group_separator
   ---@cast line string
-  return { { Token(line, M.options.group_separator_hl) } }, strwidth(line)
+  return { Line(Token(line, M.options.group_separator_hl)) }, line_width(line)
   -- TODO: cache the return value, this never changes
 end
 
@@ -129,18 +154,18 @@ function M.render_group_header(now, group)
     ---@cast group_name string
     ---@cast group_icon string
     local sep_tok = Token(M.options.icon_separator) -- TODO: cache this
-    local width = strwidth(group_name) + strwidth(group_icon) + strwidth(M.options.icon_separator)
+    local width = line_width(group_name, group_icon, M.options.icon_separator)
     if group.config.icon_on_left then
-      return { { icon_tok, sep_tok, name_tok } }, width
+      return { Line(icon_tok, sep_tok, name_tok) }, width
     else
-      return { { name_tok, sep_tok, icon_tok } }, width
+      return { Line(name_tok, sep_tok, icon_tok) }, width
     end
   elseif name_tok then
     ---@cast group_name string
-    return { { name_tok } }, strwidth(group_name)
+    return { Line(name_tok) }, line_width(group_name)
   elseif icon_tok then
     ---@cast group_icon string
-    return { { icon_tok } }, strwidth(group_icon)
+    return { Line(icon_tok) }, line_width(group_icon)
   else
     -- No group header to render
     return nil, 0
@@ -188,18 +213,18 @@ function M.render_item(item, config, count)
   for line in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
     local line_tok = Token(line)
     if ann_tok and #lines == 0 then
-      table.insert(lines, { line_tok, sep_tok, ann_tok })
-      width = math.max(width, strwidth(line) + strwidth(sep_tok[1]) + strwidth(item.annote))
+      table.insert(lines, Line(line_tok, sep_tok, ann_tok))
+      width = math.max(width, line_width(line, sep_tok[1], item.annote))
     else
-      table.insert(lines, { line_tok })
-      width = math.max(width, strwidth(line))
+      table.insert(lines, Line(line_tok))
+      width = math.max(width, line_width(line))
     end
   end
 
   if #lines == 0 then
     if ann_tok then
       -- The message is an empty string, but there's an annotation to render.
-      return { { ann_tok } }, strwidth(item.annote)
+      return { Line(ann_tok) }, line_width(item.annote)
     else
       -- Don't render empty messages
       return nil, 0
