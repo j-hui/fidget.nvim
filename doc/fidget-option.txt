@@ -649,6 +649,20 @@ notification.view.group_separator_hl  *fidget.option.notification.view.group_sep
         `"Comment"`
 
 
+notification.view.line_margin    *fidget.option.notification.view.line_margin*
+
+    Spaces to pad both sides of each non-empty line
+
+    Useful for adding a visual gap between notification text and any buffer it
+    may overlap with.
+
+    Type: ~
+        `integer`
+
+    Default: ~
+        `1`
+
+
 notification.view.render_message  *fidget.option.notification.view.render_message*
 
     How to render notification messages
