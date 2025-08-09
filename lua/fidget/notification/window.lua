@@ -460,7 +460,7 @@ function M.set_lines(lines, width)
   for _, line in ipairs(lines) do
     vim.api.nvim_buf_set_lines(buffer_id, -1, -1, false, { "" })
     local last = vim.api.nvim_buf_line_count(buffer_id) - 1
-    if vim.fn.has("nvim-0.11.0") then
+    if vim.fn.has("nvim-0.11.0") == 1 then
       vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, last, 0, {
         virt_text = line,
         virt_text_pos = "eol_right_align",
