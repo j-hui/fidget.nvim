@@ -98,6 +98,9 @@ end
 ---@param ... string  highlights to apply to text
 ---@return NotificationToken
 local function Token(text, ...)
+  if vim.api.nvim_list_uis()[1].ext_multigrid then
+    return { text, { ... } }
+  end
   return { text, { window.no_blend_hl, ... } }
 end
 
