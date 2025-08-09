@@ -75,7 +75,10 @@ M.options    = {
   ---
   --- `0` means no maximum width.
   ---
-  ---@type integer
+  --- Non-integral numbers between `0` and `1` mean a fraction of the editor
+  --- width, e.g., `0.5` for half of the editor.
+  ---
+  ---@type number
   max_width = 0,
 
   --- Maximum height of the notification window
@@ -217,6 +220,22 @@ function M.get_editor_dimensions()
   return width, height
 end
 
+--- Compute the max width of the notification window.
+---
+---@return integer
+function M.max_width()
+  if M.options.max_width <= 0 then
+    return math.huge
+  end
+
+  if M.options.max_width < 1 then
+    local width = vim.opt.columns:get()
+    return math.ceil(width * M.options.max_width)
+  end
+
+  return math.floor(M.options.max_width)
+end
+
 --- Compute the row, col, anchor for |nvim_open_win()| to align the window.
 ---
 --- (Thanks @levouh!)
@@ -352,10 +371,7 @@ function M.get_window(row, col, anchor, width, height)
   -- Rendering with ext_marks causes lines to appear 1 character wider because
   -- the mark begins _after_ eol
   width = width + 1
-  width = math.min(width, editor_width)
-  if M.options.max_width > 0 then
-    width = math.min(width, M.options.max_width)
-  end
+  width = math.min(width, editor_width, M.max_width())
 
   height = math.min(height, editor_height)
   if M.options.max_height > 0 then
