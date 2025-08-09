@@ -84,9 +84,6 @@ require("fidget.options").declare(M, "notification.view", M.options)
 local function line_width(...)
   local w = 0
   for _, s in ipairs({ ... }) do
-    if type(s) ~= "string" then
-      print("yo this is " .. type(s))
-    end
     w = w + vim.fn.strwidth(s) +
         vim.fn.count(s, "\t") * math.max(0, window.options.tabstop - 1)
   end
