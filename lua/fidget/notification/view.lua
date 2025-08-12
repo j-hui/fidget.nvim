@@ -104,7 +104,7 @@ end
 ---@param ... NotificationToken
 ---@return NotificationLine
 local function Line(...)
-  if #{ ... } == 0 then
+  if select("#", ...) == 0 then
     return {}
   end
   local margin = Token(string.rep(" ", M.options.line_margin))
@@ -117,11 +117,10 @@ end
 ---@return NotificationLine[]|nil lines
 ---@return integer                width
 function M.render_group_separator()
-  if not M.options.group_separator then
+  local line = M.options.group_separator
+  if not line then
     return nil, 0
   end
-  local line = M.options.group_separator
-  ---@cast line string
   return { Line(Token(line, M.options.group_separator_hl)) }, line_width(line)
   -- TODO: cache the return value, this never changes
 end
