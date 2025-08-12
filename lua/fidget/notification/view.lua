@@ -108,7 +108,10 @@ local function Line(...)
     return {}
   end
   local margin = Token(string.rep(" ", M.options.line_margin))
-  return { margin, ..., margin }
+  -- ... only expands to all args in last position of table
+  local line = { margin, ... }
+  line[#line + 1] = margin
+  return line
 end
 
 ---@return NotificationLine[]|nil lines
