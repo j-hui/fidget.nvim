@@ -197,8 +197,8 @@ end
 
 --- Get the current width and height of the editor window.
 ---
----@return number width
----@return number height
+---@return integer width
+---@return integer height
 function M.get_editor_dimensions()
   local statusline_height = 0
   local laststatus = vim.opt.laststatus:get()
@@ -233,7 +233,7 @@ function M.max_width()
     return math.ceil(width * M.options.max_width)
   end
 
-  return math.floor(M.options.max_width)
+  return math.max(4, math.floor(M.options.max_width))
 end
 
 --- Compute the row, col, anchor for |nvim_open_win()| to align the window.

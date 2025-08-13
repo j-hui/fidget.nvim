@@ -23,6 +23,53 @@ M.options = {
   ---@type boolean
   stack_upwards = true,
 
+  --- Indent messages more than 1 line long.
+  ---
+  --- Example: ~
+  --->
+  ---   align message style INFO
+  ---       looks like this
+  ---         when reflowed
+  ---
+  ---    align annote style INFO
+  ---       looks like this when
+  ---                   reflowed
+  ---<
+  ---
+  ---@type "message"|"annote"
+  align = "message",
+
+  --- Reflow (wrap) messages longer than Fidget window width.
+  ---
+  --- The various options determine how wrapping is handled mid-word.
+  ---
+  --- Example: ~
+  --->
+  ---   "truncate" is reflo INFO
+  ---         wed like this
+  ---
+  ---   "hyphenate" is ref- INFO
+  ---       lowed like this
+  ---
+  ---   "ellipsis" is refl… INFO
+  ---       …owed like this
+  ---
+  ---      "hyphenate" will INFO
+  ---    leave blank spaces
+  ---         to avoid "l-"
+  ---
+  ---   "ellipsis" instead… INFO
+  ---           …fills them
+  ---<
+  ---
+  --- This option has no effect if |fidget.option.notification.window.max_width|
+  --- is `0` (i.e., infinite).
+  ---
+  --- Annotes longer than this width on their own will not be wrapped.
+  ---
+  ---@type "hard"|"hyphenate"|"ellipsis"|false
+  reflow = "hard",
+
   --- Separator between group name and icon
   ---
   --- Must not contain any newlines. Set to `""` to remove the gap between names
@@ -85,7 +132,7 @@ local function multigrid_ui()
   return false
 end
 
---- The displayed width of a string.
+--- The displayed width of some strings.
 ---
 --- A simple wrapper around vim.fn.strwidth(), accounting for tab characters
 --- manually.
@@ -95,17 +142,26 @@ end
 --- anywhere.
 ---@param ... string
 ---@return integer len
-local function line_width(...)
+local function strwidth(...)
   local w = 0
   for _, s in ipairs({ ... }) do
     w = w + vim.fn.strwidth(s) +
         vim.fn.count(s, "\t") * math.max(0, window.options.tabstop - 1)
   end
-  if w == 0 then
-    return w
-  else
-    return w + 2 * M.options.line_margin
-  end
+  return w
+end
+
+---@return integer len
+local function line_margin()
+  return 2 * M.options.line_margin
+end
+
+--- The displayed width of some strings, accounting for line_margin.
+---@param ... string
+---@return integer len
+local function line_width(...)
+  local w = strwidth(...)
+  return w == 0 and w or w + line_margin()
 end
 
 ---@param text string the text in this token
@@ -223,17 +279,68 @@ function M.render_item(item, config, count)
     return nil, 0
   end
 
-  local sep_tok = Token(config.annote_separator or " ")
+  local lines, item_width = {}, 0
+
   local ann_tok = item.annote and Token(item.annote, item.style)
-  local lines, width = {}, 0
-  for line in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
-    local line_tok = Token(line)
-    if ann_tok and #lines == 0 then
-      table.insert(lines, Line(line_tok, sep_tok, ann_tok))
-      width = math.max(width, line_width(line, sep_tok[1], item.annote))
+  local sep_tok = Token(config.annote_separator or " ")
+
+  -- How much space is available to message lines
+  local msg_width = window.max_width()
+      - line_margin() -- adjusted for line margin
+      - 1             -- adjusted for ext_mark margin
+
+  if ann_tok and msg_width ~= math.huge and M.options.reflow then
+    -- If we need annote, adjust remaining available width for message line(s)
+    local ann_width = strwidth(sep_tok[1], ann_tok[1])
+    if ann_width > msg_width then
+      -- No room for annote + item line. Put annote on line of its own.
+      table.insert(lines, Line(ann_tok))
+      item_width = line_width(ann_tok[1])
+      -- Pretend there was no annote to begin with.
+      ann_tok = nil
     else
-      table.insert(lines, Line(line_tok))
-      width = math.max(width, line_width(line))
+      -- Reduce available space for message line(s); that will get printed next
+      -- to annote and sep in first iteration of loop below.
+      msg_width = msg_width - ann_width
+    end
+  end
+
+  local function insert(line)
+    if ann_tok then
+      -- Need to emite annote token in this line
+      table.insert(lines, Line(line, sep_tok, ann_tok))
+      item_width = math.max(item_width, line_width(line[1], sep_tok[1], ann_tok[1]))
+
+      if M.options.align == "annote" then
+        -- Refund available msg_width with length of annote + sepeparator
+        msg_width, ann_tok = msg_width + strwidth(sep_tok[1], ann_tok[1]), nil
+      else -- M.options.align == "message"
+        -- Replace annote token with equivalent width of space
+        ann_tok = Token(string.rep(" ", strwidth(ann_tok[1])))
+      end
+    else
+      table.insert(lines, Line(line))
+      item_width = math.max(item_width, line_width(line[1]))
+    end
+  end
+
+  for whole_line in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
+    local lwidth = strwidth(whole_line)
+    if msg_width >= lwidth then
+      insert(Token(whole_line))
+    elseif not M.options.reflow then
+      -- If the message is wider than available space but we are explicitly
+      -- asked not to reflow, then just truncate it.
+      insert(Token(vim.fn.strcharpart(whole_line, 0, msg_width, true)))
+    else
+      local split_begin = 0
+      while lwidth > 0 do
+        local split_len = msg_width
+        local line = Token(vim.fn.strcharpart(whole_line, split_begin, split_len, true))
+        insert(line)
+        split_begin = split_begin + split_len
+        lwidth = lwidth - split_len
+      end
     end
   end
 
@@ -246,7 +353,7 @@ function M.render_item(item, config, count)
       return nil, 0
     end
   else
-    return lines, width
+    return lines, item_width
   end
 end
 
