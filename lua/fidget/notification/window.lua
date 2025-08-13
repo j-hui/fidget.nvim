@@ -455,13 +455,14 @@ function M.set_lines(lines, width)
 
   -- Clear previous highlights
   vim.api.nvim_buf_clear_namespace(buffer_id, namespace_id, 0, -1)
-  vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, {})
 
-  for _, line in ipairs(lines) do
-    vim.api.nvim_buf_set_lines(buffer_id, -1, -1, false, { "" })
-    local last = vim.api.nvim_buf_line_count(buffer_id) - 1
+  -- Prepare empty lines for extmarks
+  local empty_lines = vim.tbl_map(function() return "" end, lines)
+  vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, empty_lines)
+
+  for iline, line in ipairs(lines) do
     if vim.fn.has("nvim-0.11.0") == 1 then
-      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, last, 0, {
+      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, iline - 1, 0, {
         virt_text = line,
         virt_text_pos = "eol_right_align",
       })
@@ -480,7 +481,7 @@ function M.set_lines(lines, width)
       else
         padded = line
       end
-      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, last, 0, {
+      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, iline - 1, 0, {
         virt_text = padded,
         virt_text_pos = "eol",
       })
