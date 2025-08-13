@@ -212,6 +212,8 @@ Available options are shown below:
     -- Options related to how notifications are rendered as text
     view = {
       stack_upwards = true,       -- Display notification items from bottom to top
+      align = "message",          -- Indent messages longer than a single line
+      reflow = false,             -- Reflow (wrap) messages wider than notification window
       icon_separator = " ",       -- Separator between group name and icon
       group_separator = "---",    -- Separator between notification groups
       group_separator_hl =        -- Highlight group used for group separator
