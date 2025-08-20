@@ -394,20 +394,8 @@ function M.get_window(row, col, anchor, width, height)
     })
   end
 
-  local winhighlight = ""
-
-  if M.options.normal_hl ~= "" then
-    -- Instead of NormalFloat
-    winhighlight = winhighlight .. "NormalNC:" .. M.options.normal_hl
-  end
-
-  if M.options.border_hl ~= "" then
-    winhighlight = winhighlight .. ",FloatBorder:" .. M.options.border_hl
-  end
-
   M.win_set_local_options(state.window_id, {
-    winblend = M.options.winblend, -- Transparent background
-    winhighlight = winhighlight ~= "" and winhighlight or nil,
+    winblend = M.options.winblend,
   })
   return state.window_id
 end
@@ -420,12 +408,42 @@ end
 function M.get_namespace()
   if state.namespace_id == nil then
     state.namespace_id = vim.api.nvim_create_namespace("fidget-window")
-    local no_blend_hl = { blend = 0 }
-    local normal_hl = vim.api.nvim_get_hl(0, { name = "Normal" })
-    if normal_hl.bg ~= nil then
-      no_blend_hl.bg = "bg"
+
+    local base_normal_hl = vim.api.nvim_get_hl(0, { name = "Normal" })
+
+    local normal_hl = base_normal_hl
+    if M.options.normal_hl ~= "" and M.options.normal_hl ~= "Normal" then
+      -- Options say that we should use something else as Normal
+      normal_hl = vim.api.nvim_get_hl(0, { name = M.options.normal_hl })
+
+      -- A non-Normal highlight might lack a background, so we explicitly copy
+      -- it over from the actual normal highlight group
+      normal_hl.bg = normal_hl.bg or base_normal_hl.bg
     end
-    vim.api.nvim_set_hl(state.namespace_id, M.no_blend_hl, no_blend_hl)
+
+    -- For some reason, these are annotated as distinct types even though the
+    -- documentation for nvim_get_hl() indicates they share the same schema.
+    ---@diagnostic disable-next-line: cast-type-mismatch
+    ---@cast normal_hl vim.api.keyset.highlight
+
+    vim.api.nvim_set_hl(state.namespace_id, "Normal", normal_hl)
+    vim.api.nvim_set_hl(state.namespace_id, "NormalNC", normal_hl)
+
+    normal_hl.blend = 0
+    vim.api.nvim_set_hl(state.namespace_id, M.no_blend_hl, normal_hl)
+
+    local border_hl = vim.api.nvim_get_hl(0, {
+      name = M.options.border_hl == "" and "FloatBorder" or M.options.border_hl,
+    })
+
+    ---@diagnostic disable-next-line: cast-type-mismatch
+    ---@cast border_hl vim.api.keyset.highlight
+
+    -- Explicitly ignore FloatBorder background and use background from whatever
+    -- was determined to be "normal", which is *probably* the right thing to do.
+    border_hl.bg = normal_hl.bg
+
+    vim.api.nvim_set_hl(state.namespace_id, "FloatBorder", border_hl)
   end
   return state.namespace_id
 end
