@@ -71,6 +71,20 @@ M.options = {
 
 require("fidget.options").declare(M, "notification.view", M.options)
 
+--- True when using GUI clients like neovide. Set before each render() phase.
+---@type boolean
+local is_multigrid_ui = false
+
+---@return boolean is_multigrid_ui
+local function multigrid_ui()
+  for _, ui in ipairs(vim.api.nvim_list_uis()) do
+    if ui.ext_multigrid then
+      return true
+    end
+  end
+  return false
+end
+
 --- The displayed width of a string.
 ---
 --- A simple wrapper around vim.fn.strwidth(), accounting for tab characters
@@ -98,6 +112,9 @@ end
 ---@param ... string  highlights to apply to text
 ---@return NotificationToken
 local function Token(text, ...)
+  if is_multigrid_ui then
+    return { text, { ... } }
+  end
   return { text, { window.no_blend_hl, ... } }
 end
 
@@ -240,6 +257,8 @@ end
 ---@return NotificationLine[] lines
 ---@return integer width
 function M.render(now, groups)
+  is_multigrid_ui = multigrid_ui()
+
   ---@type NotificationLine[][]
   local chunks = {}
   local max_width = 0
