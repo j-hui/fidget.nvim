@@ -63,7 +63,7 @@ M.options = {
   --- Annotes longer than this width on their own will not be wrapped.
   ---
   ---@type "hard"|"hyphenate"|"ellipsis"|false
-  reflow = false,
+  reflow = "ellipsis",
 
   --- Separator between group name and icon
   ---
