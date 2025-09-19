@@ -68,7 +68,7 @@ M.options = {
   --- Annotes longer than this width on their own will not be wrapped.
   ---
   ---@type "hard"|"hyphenate"|"ellipsis"|false
-  reflow = "hard",
+  reflow = "ellipsis",
 
   --- Separator between group name and icon
   ---
@@ -130,6 +130,19 @@ local function multigrid_ui()
     end
   end
   return false
+end
+
+---  Whether nr is a codepoint representing whitespace.
+---comment
+---@param s string
+---@param index integer
+---@return boolean
+local function whitespace(s, index)
+  -- Same heuristic as vim.fn.trim(): <= 32 includes all ASCII whitespace
+  -- (as well as other control chars, which we don't care about).
+  -- Note that 160 is the unicode no-break space but we don't want to break on
+  -- that anyway.
+  return vim.fn.strgetchar(s, index) <= 32
 end
 
 --- The displayed width of some strings.
@@ -289,6 +302,14 @@ function M.render_item(item, config, count)
       - line_margin() -- adjusted for line margin
       - 1             -- adjusted for ext_mark margin
 
+  local presplit_char, postsplit_char = nil, nil
+  if M.options.reflow == "hyphenate" then
+    presplit_char = "-"
+  elseif M.options.reflow == "ellipsis" then
+    presplit_char = "…"
+    postsplit_char = "…"
+  end
+
   if ann_tok and msg_width ~= math.huge and M.options.reflow then
     -- If we need annote, adjust remaining available width for message line(s)
     local ann_width = strwidth(sep_tok[1], ann_tok[1])
@@ -327,17 +348,52 @@ function M.render_item(item, config, count)
   for whole_line in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
     local lwidth = strwidth(whole_line)
     if msg_width >= lwidth then
+      -- The entire line fits into the available space; insert it as is.
+      -- Note that we do not trim it either.
       insert(Token(whole_line))
     elseif not M.options.reflow then
       -- If the message is wider than available space but we are explicitly
       -- asked not to reflow, then just truncate it.
       insert(Token(vim.fn.strcharpart(whole_line, 0, msg_width, true)))
     else
-      local split_begin = 0
+      local split_begin, postsplit = 0, nil
+      whole_line = vim.fn.trim(whole_line)
       while lwidth > 0 do
-        local split_len = msg_width
-        local line = Token(vim.fn.strcharpart(whole_line, split_begin, split_len, true))
-        insert(line)
+        local split_len, presplit = msg_width, nil
+        if postsplit then
+          split_len = split_len - 1
+        end
+
+        if lwidth > split_len
+            and not whitespace(whole_line, split_begin + split_len)
+            and not whitespace(whole_line, split_begin + split_len - 1)
+        then
+          if whitespace(whole_line, split_begin + split_len - 2) then
+            -- Avoid "split w/ord"
+            split_len = split_len - 1
+          elseif presplit_char then
+            if whitespace(whole_line, split_begin + split_len - 3) then
+              -- Avoid "split w-/ord"
+              split_len = split_len - 2
+            else
+              split_len = split_len - 1
+              presplit = presplit_char
+            end
+          end
+        end
+
+        local line = vim.fn.strcharpart(whole_line, split_begin, split_len, true)
+        line = vim.fn.trim(line)
+        if postsplit then
+          line = postsplit .. line
+        end
+        if presplit then
+          line = line .. presplit
+          postsplit = postsplit_char
+        else
+          postsplit = nil
+        end
+        insert(Token(line))
         split_begin = split_begin + split_len
         lwidth = lwidth - split_len
       end
