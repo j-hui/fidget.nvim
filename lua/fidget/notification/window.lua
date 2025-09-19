@@ -79,7 +79,7 @@ M.options    = {
   --- width, e.g., `0.5` for half of the editor.
   ---
   ---@type number
-  max_width = 0,
+  max_width = 0.3,
 
   --- Maximum height of the notification window
   ---
