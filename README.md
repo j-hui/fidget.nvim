@@ -238,6 +238,8 @@ Available options are shown below:
       align = "bottom",           -- How to align the notification window
       relative = "editor",        -- What the notification window position is relative to
       tabstop = 8,                -- Width of each tab character in the notification window
+      avoid = {}                  -- Filetypes the notification window should avoid
+                                  -- e.g., { "aerial", "NvimTree", "neotest-summary" }
     },
   },
 
@@ -245,9 +247,11 @@ Available options are shown below:
   integration = {
     ["nvim-tree"] = {
       enable = true,              -- Integrate with nvim-tree/nvim-tree.lua (if installed)
+                                  -- DEPRECATED; use notification.window.avoid = { "NvimTree" }
     },
     ["xcodebuild-nvim"] = {
       enable = true,              -- Integrate with wojciech-kulik/xcodebuild.nvim (if installed)
+                                  -- DEPRECATED; use notification.window.avoid = { "TestExplorer" }
     },
   },
 

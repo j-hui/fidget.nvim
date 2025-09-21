@@ -114,6 +114,15 @@ M.options    = {
   ---
   ---@type number
   tabstop = 8,
+
+  --- Filetypes the notification window should avoid
+  ---
+  --- Example: ~
+  --->lua
+  ---   avoid = { "aerial", "NvimTree", "nerdtree", "neotest-summary" }
+  ---<
+  ---@type string[]
+  avoid = {},
 }
 ---@options ]]
 
@@ -142,14 +151,6 @@ local state = {
   ---
   ---@type number|nil
   namespace_id = nil,
-
-  --- Additional offset.
-  ---
-  --- Useful for adding additional padding to account for space
-  --- taken up by other plugins' windows.
-  ---
-  ---@type number
-  x_offset = 0,
 }
 
 --- Suppress errors that may occur while render windows.
@@ -195,11 +196,20 @@ function M.guard(callable)
   error(err)
 end
 
---- Get the current width and height of the editor window.
----
----@return integer width
----@return integer height
-function M.get_editor_dimensions()
+---@param winnr integer
+---@return boolean avoid whether to avoid this window
+local function should_avoid(winnr)
+  if vim.api.nvim_win_get_config(winnr).relative ~= "" then
+    -- Always avoid floating windows
+    return true
+  end
+  local bufnr = vim.api.nvim_win_get_buf(winnr)
+  local ft = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
+  return ft == "fidget" or vim.tbl_contains(M.options.avoid, ft)
+end
+
+---@return integer height of the editor area, excludes statusline and tabline
+local function get_editor_height()
   local statusline_height = 0
   local laststatus = vim.opt.laststatus:get()
   if laststatus == 2 or laststatus == 3
@@ -208,16 +218,34 @@ function M.get_editor_dimensions()
     statusline_height = 1
   end
 
-  local height = vim.opt.lines:get() - (statusline_height + vim.opt.cmdheight:get())
+  return vim.opt.lines:get() - (statusline_height + vim.opt.cmdheight:get())
+end
 
-  -- Does not account for &signcolumn or &foldcolumn, but there is no amazing way to get the
-  -- actual "viewable" width of the editor
-  --
-  -- However, I cannot imagine that many people will render fidgets on the left side of their
-  -- editor as it will more often overlay text
-  local width = vim.opt.columns:get()
+---@return integer width of the editor area, including signcolumn and foldcolumn
+local function get_editor_width()
+  return vim.opt.columns:get()
+end
 
-  return width, height
+---@param winnr integer
+---@return integer effective_height of the window, excluding winbar
+local function get_effective_win_height(winnr)
+  local height = vim.api.nvim_win_get_height(0)
+  if vim.fn.exists("+winbar") > 0 and vim.opt.winbar:get() ~= "" then
+    -- When winbar is set, effective win height is reduced by 1 (see :help winbar)
+    return height - 1
+  end
+  return height
+end
+
+---@return integer tabline_height
+local function get_tabline_height()
+  local stal = vim.opt.showtabline:get()
+  if stal == 2 or (stal == 1 and #vim.api.nvim_list_tabpages() > 1) then
+    -- tabline is shown; height is 1
+    return 1
+  else
+    return 0
+  end
 end
 
 --- Compute the max width of the notification window.
@@ -236,65 +264,107 @@ function M.max_width()
   return math.max(4, math.floor(M.options.max_width))
 end
 
+---@param cursor_row integer current line number of cursor
+---@param max_rows integer total number of rows
+---@return boolean whether to align bottom
+local function should_align_bottom(cursor_row, max_rows)
+  if M.options.align == "bottom" then
+    return true
+  elseif M.options.align == "top" then
+    return false
+  else -- M.options.align == "avoid_cursor"
+    return cursor_row <= (max_rows / 2)
+  end
+end
+
+--- Look for "best" window to align notification window with.
+---
+--- If none of the windows need to be avoided, then we should end up either
+--- with the SE (align_bottom) or NE (not align_bottom) corner of the editor.
+---
+---@param row_max integer
+---@param align_bottom boolean
+---@return integer row
+---@return integer col
+local function search_for_editor_anchor(row_max, align_bottom)
+  local row, col
+  if align_bottom then
+    row, col = -math.huge, -math.huge
+  else
+    row, col = math.huge, -math.huge
+  end
+
+  if #M.options.avoid == 0 then
+    -- If M.options.avoid is empty, then we don't need to search through all
+    -- windows, and can just directly (and more efficiently) set row/col to
+    -- the editor's SE (align_bottom) or NE (not align_bottom) corner, later.
+  else -- #M.options.avoid > 0
+    -- Search for row/col of "best" window to align notification window with,
+    -- while avoiding windows whose filetype is blacklisted by M.options.avoid.
+    -- If none of the windows need to be avoided, we should still end up with
+    -- the editor's SE (align_bottom) or NE (not align_bottom) corner.
+    local wins = vim.api.nvim_tabpage_list_wins(0)
+    for _, win in ipairs(wins) do
+      if not should_avoid(win) then
+        local pos = vim.api.nvim_win_get_position(win)
+        if align_bottom then
+          -- Get SE corner of window
+          local h, w = vim.api.nvim_win_get_height(win), vim.api.nvim_win_get_width(win)
+          local r, c = pos[1] + h, pos[2] + w
+          if r + c > row + col then
+            row, col = r, c
+          end
+        else -- not align_bottom
+          -- Get NE corner of window
+          local w = vim.api.nvim_win_get_width(win)
+          local r, c = pos[1], pos[2] + w
+          if -r + c > -row + col then
+            row, col = r, c
+          end
+        end
+      end
+    end
+  end
+
+  -- If row/col are never set (because there is nothing to avoid, or because we
+  -- avoided everything), col will be negative. Set row/col to SE or NE corner
+  -- of the editor so that we have _some_ valid position.
+  if col < 0 then
+    col = get_editor_width()
+    row = align_bottom and row_max or get_tabline_height()
+  end
+  return row, col
+end
+
 --- Compute the row, col, anchor for |nvim_open_win()| to align the window.
 ---
---- (Thanks @levouh!)
----
----@return number       row
----@return number       col
----@return ("NE"|"SE")  anchor
+---@return number           row
+---@return number           col
+---@return ("NE"|"SE")      anchor
+---@return ("editor"|"win") relative
 function M.get_window_position()
-  local align_bottom, col, row, row_max
-  local first_line = vim.fn.line("w0")
-  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local row_max, align_bottom, col, row, relative
+  local cursor_row = vim.api.nvim_win_get_cursor(0)[1] - vim.fn.line("w0")
 
-  local function should_align_bottom(cursor_pos, rows)
-    if M.options.align == "top" then
-      return false
-    elseif M.options.align == "bottom" then
-      return true
-    else
-      return cursor_pos <= (rows / 2)
-    end
-  end
-
-  if M.options.relative == "editor" then
-    col, row_max = M.get_editor_dimensions()
-    local window_pos = vim.api.nvim_win_get_position(0)
-    local cursor_pos = window_pos[1] + (current_line - first_line)
-    align_bottom = should_align_bottom(cursor_pos, row_max)
-
-    if align_bottom then
-      row = row_max
-    else
-      -- When the layout is anchored at the top, need to check &tabline height
-      local stal = vim.opt.showtabline:get()
-      local tabline_shown = stal == 2 or (stal == 1 and #vim.api.nvim_list_tabpages() > 1)
-      row = tabline_shown and 1 or 0
-    end
-  else -- fidget relative to "window" (currently unreachable)
-    local cursor_pos = current_line - first_line
-
+  if M.options.relative == "win" and not should_avoid(0) then
+    relative = "win"
+    row_max = get_effective_win_height(0)
+    align_bottom = should_align_bottom(cursor_row, row_max)
+    row = align_bottom and row_max or 0
     col = vim.api.nvim_win_get_width(0)
-    row_max = vim.api.nvim_win_get_height(0)
-    if vim.fn.exists("+winbar") > 0 and vim.opt.winbar:get() ~= "" then
-      -- When winbar is set, effective win height is reduced by 1 (see :help winbar)
-      row_max = row_max - 1
-    end
-    align_bottom = should_align_bottom(cursor_pos, row_max)
-
-    row = align_bottom and row_max or 1
+  else -- M.options.relative == "editor", or we need to avoid current window
+    relative = "editor"
+    row_max = get_editor_height()
+    local window_pos = vim.api.nvim_win_get_position(0)
+    align_bottom = should_align_bottom(window_pos[1] + cursor_row, row_max)
+    row, col = search_for_editor_anchor(row_max, align_bottom)
   end
 
-  col = math.max(0, col - M.options.x_padding - state.x_offset)
-
-  if align_bottom then
-    row = math.max(0, row - M.options.y_padding)
-  else
-    row = math.min(row_max, row + M.options.y_padding)
-  end
-
-  return row, col, (align_bottom and "S" or "N") .. "E"
+  col = math.max(0, col - M.options.x_padding)
+  row = align_bottom
+      and math.max(0, row - M.options.y_padding)
+      or math.min(row_max, row + M.options.y_padding)
+  return row, col, (align_bottom and "S" or "N") .. "E", relative
 end
 
 --- Set local options on a window.
@@ -354,12 +424,13 @@ end
 ---@param row     number
 ---@param col     number
 ---@param anchor  ("NW"|"NE"|"SW"|"SE")
+---@param relative ("editor"|"win")
 ---@param width   number
 ---@param height  number
 ---@return number|nil window_id
-function M.get_window(row, col, anchor, width, height)
+function M.get_window(row, col, anchor, relative, width, height)
   -- Clamp width and height to dimensions of editor and user specification.
-  local editor_width, editor_height = M.get_editor_dimensions()
+  local editor_width, editor_height = get_editor_width(), get_editor_height()
   editor_width = math.max(0, editor_width - 4) -- HACK: guess width of signcolumn etc.
 
   if editor_width < 4 or editor_height < 4 then
@@ -381,7 +452,7 @@ function M.get_window(row, col, anchor, width, height)
   if state.window_id == nil or not vim.api.nvim_win_is_valid(state.window_id) then
     -- Create window to display notifications buffer, but don't enter (2nd param)
     state.window_id = vim.api.nvim_open_win(M.get_buffer(), false, {
-      relative = M.options.relative,
+      relative = relative,
       width = width,
       height = height,
       row = row,
@@ -397,16 +468,12 @@ function M.get_window(row, col, anchor, width, height)
   else
     -- Window is already created; reposition it in case anything has changed.
     vim.api.nvim_win_set_config(state.window_id, {
-      relative = M.options.relative,
+      relative = relative,
+      width = width,
+      height = height,
       row = row,
       col = col,
       anchor = anchor,
-      width = width,
-      height = height,
-      -- NOTE: Should we care about the following options here??
-      -- win = options.window.relative == "win" and api.nvim_get_current_win()
-      --     or nil, -- only relevant if we support other relative values
-      -- zindex = options.window.zindex,
     })
   end
 
@@ -473,8 +540,8 @@ end
 ---@param width   integer
 ---@return number|nil window_id
 function M.show(height, width)
-  local row, col, anchor = M.get_window_position()
-  return M.get_window(row, col, anchor, width, height)
+  local row, col, anchor, relative = M.get_window_position()
+  return M.get_window(row, col, anchor, relative, width, height)
 end
 
 --- Replace the set of lines in the Fidget window, right-justify them, and apply
@@ -546,17 +613,6 @@ function M.close()
     end
     state.buffer_id = nil
   end
-end
-
---- Set x_offset, shifting the horizontal position of the notification window.
----
---- Unlike the x_padding option, this API is meant to be called
---- programmatically, and intended for dynamically adjusting padding to
---- compensate for other plugins' side panels (e.g., nvim-tree).
----
----@param offset number
-function M.set_x_offset(offset)
-  state.x_offset = offset
 end
 
 return M
