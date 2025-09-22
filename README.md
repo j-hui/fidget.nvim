@@ -253,6 +253,27 @@ Available options are shown below:
       enable = true,              -- Integrate with wojciech-kulik/xcodebuild.nvim (if installed)
                                   -- DEPRECATED; use notification.window.avoid = { "TestExplorer" }
     },
+    ["clangd"] = {
+      --- Integrate with clangd LSP clangdFileStatus
+      --- Show clangd parsing progress
+      --- init_options.clangdFileStatus = true must be set in clangd LSP config
+      --- Example using lspconfig:
+      --- lspconfig.clangd.setup {
+      ---   init_options = {
+      ---     clangdFileStatus = true
+      ---   }
+      --- }
+      --- Note: if enabled, vim.lsp.handlers["textDocument/clangd.fileStatus"] will be hooked
+      --- You can use the handler of this sub module directly
+      enable = false,
+
+      --- Do not show notification if clangd isn't busy
+      --- for more than this number of ms
+      notification_delay = 500,
+
+      --- Annotation string shown next to the message
+      annote = "clangd",
+    },
   },
 
   -- Options related to logging
