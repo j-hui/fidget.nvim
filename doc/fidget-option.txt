@@ -18,7 +18,6 @@ Nvim LSP client options ......................... |fidget.option.progress.lsp|
 Notification options ............................ |fidget.option.notification|
 Notifications rendering options ............ |fidget.option.notification.view|
 Notifications window options ............. |fidget.option.notification.window|
-nvim-tree integration .................. |fidget.option.integration.nvim-tree|
 Logging options ....................................... |fidget.option.logger|
 
 
@@ -474,7 +473,7 @@ progress.lsp.log_handler              *fidget.option.progress.lsp.log_handler*
     Works by wrapping `vim.lsp.handlers["$/progress"]` with Fidget's logger.
     Invocations are logged at the `vim.log.levels.INFO` level.
 
-    This option exists primarily for debugging; leaving this set to `true` is
+    This option exists primarily for debugging; setting this to `true` is
     not recommended.
 
     Since it works by overriding Neovim's existing `$/progress` handler, you
@@ -609,6 +608,60 @@ notification.view.stack_upwards  *fidget.option.notification.view.stack_upwards*
 
     Default: ~
         `true`
+
+
+notification.view.align                *fidget.option.notification.view.align*
+
+    Indent messages longer than a single line
+
+    Example: ~
+>
+      align message style INFO
+          looks like this
+            when reflowed
+
+       align annote style INFO
+          looks like this when
+                      reflowed
+<
+
+    Type: ~
+        `"message"|"annote"`
+
+    Default: ~
+        `"message"`
+
+
+notification.view.reflow              *fidget.option.notification.view.reflow*
+
+    Reflow (wrap) messages wider than notification window
+
+    The various options determine how wrapping is handled mid-word.
+
+    Example: ~
+>
+          "hard" is reflo INFO
+            wed like this
+
+      "hyphenate" is ref- INFO
+          lowed like this
+
+      "ellipsis" is refl… INFO
+          …owed like this
+<
+
+    If this option is set to false, long lines will simply be truncated.
+
+    This option has no effect if |fidget.option.notification.window.max_width|
+    is `0` (i.e., infinite).
+
+    Annotes longer than this width on their own will not be wrapped.
+
+    Type: ~
+        `"hard"|"hyphenate"|"ellipsis"|false`
+
+    Default: ~
+        `"ellipsis"`
 
 
 notification.view.icon_separator  *fidget.option.notification.view.icon_separator*
@@ -781,11 +834,14 @@ notification.window.max_width    *fidget.option.notification.window.max_width*
 
     `0` means no maximum width.
 
+    Non-integral numbers between `0` and `1` mean a fraction of the editor
+    width, e.g., `0.5` for half of the editor.
+
     Type: ~
-        `integer`
+        `number`
 
     Default: ~
-        `0`
+        `0.3`
 
 
 notification.window.max_height  *fidget.option.notification.window.max_height*
@@ -858,22 +914,19 @@ notification.window.tabstop        *fidget.option.notification.window.tabstop*
         `8`
 
 
-==============================================================================
-nvim-tree integration                    *fidget.option.integration.nvim-tree*
+notification.window.avoid            *fidget.option.notification.window.avoid*
 
+    Filetypes the notification window should avoid
 
-integration.nvim-tree.enable      *fidget.option.integration.nvim-tree.enable*
-
-    Integrate with nvim-tree/nvim-tree.lua (if installed)
-
-    Dynamically offset Fidget's notifications window when the nvim-tree window
-    is open on the right side + the Fidget window is "editor"-relative.
-
+    Example: ~
+>lua
+      avoid = { "aerial", "NvimTree", "nerdtree", "neotest-summary" }
+<
     Type: ~
-        `boolean`
+        `string[]`
 
     Default: ~
-        `true`
+        `{}`
 
 
 ==============================================================================
