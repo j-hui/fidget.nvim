@@ -661,7 +661,7 @@ notification.view.reflow              *fidget.option.notification.view.reflow*
         `"hard"|"hyphenate"|"ellipsis"|false`
 
     Default: ~
-        `"ellipsis"`
+        `false`
 
 
 notification.view.icon_separator  *fidget.option.notification.view.icon_separator*
@@ -841,7 +841,7 @@ notification.window.max_width    *fidget.option.notification.window.max_width*
         `number`
 
     Default: ~
-        `0.3`
+        `0`
 
 
 notification.window.max_height  *fidget.option.notification.window.max_height*
