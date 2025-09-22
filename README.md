@@ -213,7 +213,7 @@ Available options are shown below:
     view = {
       stack_upwards = true,       -- Display notification items from bottom to top
       align = "message",          -- Indent messages longer than a single line
-      reflow = "ellipsis",        -- Reflow (wrap) messages wider than notification window
+      reflow = false,             -- Reflow (wrap) messages wider than notification window
       icon_separator = " ",       -- Separator between group name and icon
       group_separator = "---",    -- Separator between notification groups
       group_separator_hl =        -- Highlight group used for group separator
@@ -231,7 +231,7 @@ Available options are shown below:
       winblend = 100,             -- Background color opacity in the notification window
       border = "none",            -- Border around the notification window
       zindex = 45,                -- Stacking priority of the notification window
-      max_width = 0.3,            -- Maximum width of the notification window
+      max_width = 0,              -- Maximum width of the notification window
       max_height = 0,             -- Maximum height of the notification window
       x_padding = 1,              -- Padding from right edge of window boundary
       y_padding = 0,              -- Padding from bottom edge of window boundary
