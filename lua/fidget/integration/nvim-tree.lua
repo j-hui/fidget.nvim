@@ -1,33 +1,31 @@
 local M = {}
+local DEPRECATED = require("fidget.options").deprecated
 
 ---@options integration.nvim-tree [[
 --- nvim-tree integration
 M.options = {
   --- Integrate with nvim-tree/nvim-tree.lua (if installed)
   ---
-  --- DEPRECATED; use notification.window.avoid = { "NvimTree" }
-  ---
-  ---@type boolean
-  enable = true,
+  ---@type fidget.DeprecatedOption<boolean>
+  enable = DEPRECATED(true, [[Use 'notification.window.avoid = { "NvimTree" }' instead]])
 }
 ---@options ]]
 
-require("fidget.options").declare(M, "integration.nvim-tree", M.options, function()
-  if not M.options.enable then
-    return
-  end
+require("fidget.options").declare(M, "integration.nvim-tree", M.options)
 
-  local ok, _ = pcall(function() return require("nvim-tree.api") end)
-  if not ok then
-    return
-  end
+function M.plugin_present()
+  local ok, _ = pcall(require, "nvim-tree.api")
+  return ok
+end
 
-  -- TODO: deprecation notice
+function M.integration_needed()
+  return M.options.enable and M.plugin_present()
+end
 
-  local win = require("fidget.notification.window")
-  if not vim.tbl_contains(win.options.avoid, "NvimTree") then
-    table.insert(win.options.avoid, "NvimTree")
-  end
-end)
+function M.explicitly_configured()
+  return not (type(M.options.enable) == "table" and M.options.enable.deprecated_option)
+end
+
+M.filetype = "NvimTree"
 
 return M

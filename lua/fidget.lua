@@ -38,24 +38,13 @@ fidget.options = {
 }
 ---@options ]]
 
-require("fidget.options").declare(fidget, "", fidget.options, function(warn_log)
+require("fidget.options").declare(fidget, "", fidget.options, function()
   commands.setup()
   if fidget.options.notification.override_vim_notify then
     fidget.logger.info("overriding vim.notify() with fidget.notify()")
     vim.notify = fidget.notify
   end
-
   fidget.logger.info("fidget.nvim setup() complete.")
-  if #warn_log > 0 then
-    fidget.logger.warn("Encountered unknown options during setup():")
-    for _, w in ipairs(warn_log) do
-      fidget.logger.warn("-", w)
-    end
-    local warn_msg = string.format(
-      "Encountered %d unknown options during setup().\nSee log (%s) for details.",
-      #warn_log, fidget.options.logger.path)
-    fidget.notification.notify(warn_msg, vim.log.levels.WARN, { annote = "fidget.nvim" })
-  end
 end)
 
 --- Alias for |fidget.notification.notify|.

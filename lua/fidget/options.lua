@@ -1,5 +1,19 @@
 --- Declarative options for this plugin (not specific to Fidget).
 local M = {}
+local health = require("fidget.health")
+
+---@class fidget.DeprecatedOption<T> : { default_value: T, deprecated_option: string|true }
+
+---@generic T
+---@param default_value T
+---@param advice string|nil
+---@return fidget.DeprecatedOption<T>
+function M.deprecated(default_value, advice)
+  return {
+    default_value = default_value,
+    deprecated_option = advice or true,
+  }
+end
 
 --- Declare a table as a fidget module, so we can tell using is_fidget_module().
 local function set_fidget_module(m)
@@ -91,27 +105,25 @@ function M.declare(mod, name, default_opts, post_setup)
 
   ---@param opts table? table of options passed to setup function
   mod.setup = function(opts)
-    local warnlog = {}
     opts = opts or {}
     for key, setup in pairs(sub_setup) do
-      local subwarnlog = setup(opts[key])
-      for _, w in ipairs(subwarnlog) do
-        table.insert(warnlog, w)
-      end
+      setup(opts[key])
     end
     for key, val in pairs(opts) do
       if not sub_setup[key] then
         if mod.options[key] == nil then
-          table.insert(warnlog, "unknown option: " .. prefix .. tostring(key))
+          health.log_unknown_option(prefix .. tostring(key))
         else
+          if type(mod.options[key]) == "table" and mod.options[key].deprecated_option then
+            health.log_deprecated_option(prefix .. tostring(key), mod.options[key].deprecated_option)
+          end
           mod.options[key] = val
         end
       end
     end
     if post_setup then
-      post_setup(warnlog)
+      post_setup()
     end
-    return warnlog
   end
 end
 

@@ -13,7 +13,7 @@ local logger               = require("fidget.logger")
 
 --- Autocmd ID for the LSPAttach event.
 ---@type number?
-local lsp_attach_autocmd   = nil
+M.lsp_attach_autocmd       = nil
 
 --- Built-in `$/progress` handler.
 ---@type function
@@ -43,7 +43,7 @@ M.options                  = {
   --- Works by wrapping `vim.lsp.handlers["$/progress"]` with Fidget's logger.
   --- Invocations are logged at the `vim.log.levels.INFO` level.
   ---
-  --- This option exists primarily for debugging; leaving this set to `true` is
+  --- This option exists primarily for debugging; setting this to `true` is
   --- not recommended.
   ---
   --- Since it works by overriding Neovim's existing `$/progress` handler, you
@@ -55,14 +55,14 @@ M.options                  = {
 ---@options ]]
 
 require("fidget.options").declare(M, "progress.lsp", M.options, function()
-  if lsp_attach_autocmd ~= nil then
-    vim.api.nvim_del_autocmd(lsp_attach_autocmd)
-    lsp_attach_autocmd = nil
+  if M.lsp_attach_autocmd ~= nil then
+    vim.api.nvim_del_autocmd(M.lsp_attach_autocmd)
+    M.lsp_attach_autocmd = nil
   end
 
   if vim.ringbuf and M.options.progress_ringbuf_size > 0 then
     logger.info("Setting LSP progress ringbuf size to", M.options.progress_ringbuf_size)
-    lsp_attach_autocmd = vim.api.nvim_create_autocmd("LspAttach", {
+    M.lsp_attach_autocmd = vim.api.nvim_create_autocmd("LspAttach", {
       callback = function(args)
         local client = vim.lsp.get_client_by_id(args.data.client_id)
         client.progress = vim.ringbuf(M.options.progress_ringbuf_size)

@@ -1,33 +1,31 @@
 local M = {}
+local DEPRECATED = require("fidget.options").deprecated
 
 ---@options integration.xcodebuild-nvim [[
 --- xcodebuild.nvim integration
 M.options = {
   --- Integrate with wojciech-kulik/xcodebuild.nvim (if installed)
   ---
-  --- DEPRECATED; use notification.window.avoid = { "NvimTree" }
-  ---
-  ---@type boolean
-  enable = true,
+  ---@type fidget.DeprecatedOption<boolean>
+  enable = DEPRECATED(true, [[Use 'notification.window.avoid = { "TestExplorer" }' instead]])
 }
 ---@options ]]
 
-require("fidget.options").declare(M, "integration.xcodebuild-nvim", M.options, function()
-  if not M.options.enable then
-    return
-  end
+require("fidget.options").declare(M, "integration.xcodebuild-nvim", M.options)
 
+function M.plugin_present()
   local ok, _ = pcall(require, "xcodebuild")
-  if not ok then
-    return
-  end
+  return ok
+end
 
-  -- TODO: deprecation notice
+function M.integration_needed()
+  return M.options.enable and M.plugin_present()
+end
 
-  local win = require("fidget.notification.window")
-  if not vim.tbl_contains(win.options.avoid, "TestExplorer") then
-    table.insert(win.options.avoid, "TestExplorer")
-  end
-end)
+function M.explicitly_configured()
+  return not (type(M.options.enable) == "table" and M.options.enable.deprecated_option)
+end
+
+M.filetype = "TestExplorer"
 
 return M

@@ -118,7 +118,7 @@ require("fidget.options").declare(M, "notification.view", M.options)
 local is_multigrid_ui = false
 
 ---@return boolean is_multigrid_ui
-local function multigrid_ui()
+function M.check_multigrid_ui()
   for _, ui in ipairs(vim.api.nvim_list_uis()) do
     if ui.ext_multigrid then
       return true
@@ -128,7 +128,7 @@ local function multigrid_ui()
 end
 
 ---  Whether nr is a codepoint representing whitespace.
----comment
+---
 ---@param s string
 ---@param index integer
 ---@return boolean
@@ -415,7 +415,7 @@ end
 ---@return NotificationLine[] lines
 ---@return integer width
 function M.render(now, groups)
-  is_multigrid_ui = multigrid_ui()
+  is_multigrid_ui = M.check_multigrid_ui()
 
   ---@type NotificationLine[][]
   local chunks = {}
