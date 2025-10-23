@@ -132,7 +132,7 @@ For instance, using [Lazy](https://github.com/folke/lazy.nvim):
 ```lua
 {
   "j-hui/fidget.nvim",
-  tag = "*", -- alternatively, pin this to a specific version, e.g., "v1.6.1"
+  version = "*", -- alternatively, pin this to a specific version, e.g., "1.6.1"
   opts = {
     -- options
   },
