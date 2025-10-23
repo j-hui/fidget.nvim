@@ -1,5 +1,48 @@
 # Changelog
 
+## [2.0.0](https://github.com/j-hui/fidget.nvim/compare/v1.6.1...v2.0.0) (2025-10-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* avoid configurable filetypes when positioning notification window
+* limit window max_width to 0.3 + reflow by default
+* implement smart reflow w/ hyphenation support
+* reflow messages that exceed the max window width
+* render items with empty strings but non-empty annotes
+
+### Features
+
+* add line_margin option to pad lines with spaces ([046930d](https://github.com/j-hui/fidget.nvim/commit/046930ddf3e8f7618e338efa8050523a25321e7f))
+* add previewer to Telescope fidget picker ([#271](https://github.com/j-hui/fidget.nvim/issues/271)) ([c1725fb](https://github.com/j-hui/fidget.nvim/commit/c1725fbadd99c810273b202d67dbfedf66e61eaf)), closes [#270](https://github.com/j-hui/fidget.nvim/issues/270)
+* avoid configurable filetypes when positioning notification window ([dac6be2](https://github.com/j-hui/fidget.nvim/commit/dac6be264cb12e0e2532f4fdcf095c0cb7ab1609))
+* implement smart reflow w/ hyphenation support ([8260f03](https://github.com/j-hui/fidget.nvim/commit/8260f03158a192b3aa2c661fda23cd539bb743e4)), closes [#269](https://github.com/j-hui/fidget.nvim/issues/269)
+* implement vim.health checks ([cd88801](https://github.com/j-hui/fidget.nvim/commit/cd88801ec2207818d3f8e40ee8daf641e97cb5e0))
+* limit window max_width to 0.3 + reflow by default ([5e0804e](https://github.com/j-hui/fidget.nvim/commit/5e0804e7fb9511d046e52146f47f571278eabc33))
+* reflow messages that exceed the max window width ([a762068](https://github.com/j-hui/fidget.nvim/commit/a762068db2a950ab3d5fa3dbea4c66c805e89faf)), closes [#269](https://github.com/j-hui/fidget.nvim/issues/269) [#199](https://github.com/j-hui/fidget.nvim/issues/199)
+* render items with empty strings but non-empty annotes ([9db65d9](https://github.com/j-hui/fidget.nvim/commit/9db65d99681700b4e7c5135a74ffb6c11b933c16))
+* render notifications with extmarks ([2635400](https://github.com/j-hui/fidget.nvim/commit/2635400d77bf5d035e2de04b2b4205a1796ac16a))
+* skip group headers whose icon and name are both false ([a2467ae](https://github.com/j-hui/fidget.nvim/commit/a2467ae39b02b243bf6e706238a69ddc01016602)), closes [#273](https://github.com/j-hui/fidget.nvim/issues/273)
+* support fractional max_width option ([821ebe8](https://github.com/j-hui/fidget.nvim/commit/821ebe82aa9b6dc91e9656314fa35f4c8df0d09f))
+
+
+### Bug Fixes
+
+* ... expansion in Line function ([#293](https://github.com/j-hui/fidget.nvim/issues/293)) ([e931da8](https://github.com/j-hui/fidget.nvim/commit/e931da88b037e7ccdb9bc118b18fe60ca516402c)), closes [#292](https://github.com/j-hui/fidget.nvim/issues/292)
+* avoid empty line at the top ([#286](https://github.com/j-hui/fidget.nvim/issues/286)) ([2cb5edb](https://github.com/j-hui/fidget.nvim/commit/2cb5edb2dd6700a958a446b20bb2be04d318da9d))
+* call strdisplaywidth() within the context of the fidget buffer ([#280](https://github.com/j-hui/fidget.nvim/issues/280)) ([2a29bfd](https://github.com/j-hui/fidget.nvim/commit/2a29bfd5f8529f1e1ad3868a4f820de972189c90))
+* correctly adjust the window width to account for ext_mark eol ([1398da6](https://github.com/j-hui/fidget.nvim/commit/1398da669a5377a5c6aa9b6790de94b3786e0307))
+* correctly check for nvim version ([6ada5b6](https://github.com/j-hui/fidget.nvim/commit/6ada5b6b802e15f49d3142172f590bde652347ba)), closes [#285](https://github.com/j-hui/fidget.nvim/issues/285)
+* disable FidgetNoBlend highlight for multigrid UI ([#290](https://github.com/j-hui/fidget.nvim/issues/290)) ([4d5858b](https://github.com/j-hui/fidget.nvim/commit/4d5858bd4c471c895060e1b9f3575f1551184dc5))
+* fix off-by-one issue with buf line count ([53f03fa](https://github.com/j-hui/fidget.nvim/commit/53f03faa807ab87479749e50b022d08d72bb7601))
+* manually add padding when eol_right_align isn't available ([d0095a1](https://github.com/j-hui/fidget.nvim/commit/d0095a157201f85a0b2e537e9dcf4101f1e66040)), closes [#284](https://github.com/j-hui/fidget.nvim/issues/284)
+* Respect transparent backgrounds ([#283](https://github.com/j-hui/fidget.nvim/issues/283)) ([9121965](https://github.com/j-hui/fidget.nvim/commit/9121965fe5e9ad8f25a4ecaaaa66051867cbf98d))
+* set normal_hl and border_hl options with nvim_set_hl() ([a837f06](https://github.com/j-hui/fidget.nvim/commit/a837f0653ab0f07b9efb1870372a60a031208ac1)), closes [#288](https://github.com/j-hui/fidget.nvim/issues/288)
+* use FidgetNoBlend highlight group to block winblend ([46cb5c1](https://github.com/j-hui/fidget.nvim/commit/46cb5c1cac5c25ac255a335755551a8b476fa63f))
+* use select(#, ...) instead of #{...} ([6cca6a5](https://github.com/j-hui/fidget.nvim/commit/6cca6a561f0c78b04657cad55da4775f342e71ce))
+* use strwidth() instead of strdisplaywidth() ([e4e71e9](https://github.com/j-hui/fidget.nvim/commit/e4e71e915b2eb28126262f9591853929c9974400))
+* **window:** safely update buffer lines ([#279](https://github.com/j-hui/fidget.nvim/issues/279)) ([24025a5](https://github.com/j-hui/fidget.nvim/commit/24025a50d2c4e1e6159536710f3b1527a31266fc))
+
 ## [1.6.1](https://github.com/j-hui/fidget.nvim/compare/v1.6.0...v1.6.1) (2025-02-06)
 
 
