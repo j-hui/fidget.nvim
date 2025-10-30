@@ -31,7 +31,7 @@ local format_entry = function(entry)
     table.insert(chunks, { " ", "MsgArea" })
   end
 
-  table.insert(chunks, { entry.message, "MsgArea" })
+  table.insert(chunks, { entry.message:match("([^\n]*)"), "MsgArea" })
 
   return chunks
 end
