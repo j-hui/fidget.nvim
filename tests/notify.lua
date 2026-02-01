@@ -310,7 +310,7 @@ function M.run()
   -- notif.default_config.ttl = 500
 
   M.config = {
-    colorscheme = vim.g.colors_name,
+    colorscheme = vim.g.colors_name or "default",
     default = vim.deepcopy(notif.default_config),
     window = vim.deepcopy(notif.window.options),
     view = vim.deepcopy(notif.view.options),
