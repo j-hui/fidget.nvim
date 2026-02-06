@@ -462,7 +462,7 @@ function M.dedup_items(items)
       counts[key] = counts[key] + 1
     else
       counts[key] = 1
-      table.insert(deduped, item)
+      deduped[#deduped+1] = item
     end
   end
   return deduped, counts

@@ -118,6 +118,15 @@ end
 ---@param item  Item
 local function add_removed(state, now, group, item)
   if not item.skip_history then
+    -- Skip duplicates unless we have no items deduplication
+    if group.config.update_hook and #state.removed > 0 then
+      if state.removed[state.removed_first - 1].content_key
+        and state.removed[state.removed_first - 1].content_key == item.content_key
+      then
+        return
+      end
+    end
+
     local group_name = group.config.name
     if type(group_name) == "function" then
       group_name = group_name(now, group.items)
