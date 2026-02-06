@@ -432,8 +432,8 @@ function M.render_group_header(now, group)
   if name_tok and icon_tok then
     ---@cast group_name string
     ---@cast group_icon string
-    local sep_tok = Token(M.options.icon_separator)
-    local width = line_width(group_name, group_icon, M.options.icon_separator)
+    local sep_tok = Token(M.options.icon_separator or " ")
+    local width = line_width(group_name, group_icon, M.options.icon_separator or " ")
     if group.config.icon_on_left then
       return { hdr = Line(icon_tok, sep_tok, name_tok) }, width
     else
@@ -613,10 +613,12 @@ function M.render(now, groups)
   local chunks = {}
   local max_width = 0
 
-  cache.group_header = cache.group_header or {}
   cache.render_item = cache.render_item or {}
+  cache.group_header = cache.group_header or {}
+  cache.group_sep = cache.group_sep or { nil, nil } -- sep, width
 
   local size = window_max()
+  local max = math.max
 
   -- Force rendering when the length of the window change
   local resized = cache.render_width and cache.render_width ~= size or false
@@ -627,18 +629,11 @@ function M.render(now, groups)
 
   for idx, group in ipairs(groups) do
     if idx ~= 1 then
-      local sep, sep_width
-      if cache.group_separator and not resized then
-        sep = cache.group_separator.sep
-        sep_width = cache.group_separator.width
-      else
-        sep, sep_width = M.render_group_separator()
-        cache.group_separator = { sep = sep, width = sep_width }
+      if resized or not cache.group_sep[1] then
+        cache.group_sep[1], cache.group_sep[2] = M.render_group_separator()
       end
-      if sep then
-        table.insert(chunks, sep)
-        max_width = math.max(max_width, sep_width)
-      end
+      chunks[#chunks + 1] = cache.group_sep[1]
+      max_width = max(max_width, cache.group_sep[2])
     end
 
     if group.config.name then
@@ -646,49 +641,44 @@ function M.render(now, groups)
       if type(icon) == "function" then
         icon = group.config.icon(now, group.items)
       end
-      local hdr, hdr_width
-      if cache.group_header
-          and not resized
-          and cache.group_header[group.config.name]
-          and cache.group_header[group.config.name].icon == icon
-      then
-        hdr = cache.group_header[group.config.name].hdr
-        hdr_width = cache.group_header[group.config.name].width
-      else
-        hdr, hdr_width = M.render_group_header(now, group)
-        cache.group_header[group.config.name] = { hdr = hdr, width = hdr_width, icon = icon }
+      if not cache.group_header[group.config.name] then
+        cache.group_header[group.config.name] = { nil, nil, nil } -- hdr, width, icon
       end
-      if hdr then
-        table.insert(chunks, hdr)
-        max_width = math.max(max_width, hdr_width)
+      local hdr = cache.group_header[group.config.name]
+
+      if resized or not icon or hdr and icon ~= hdr[3] then
+        hdr[1], hdr[2] = M.render_group_header(now, group)
+        hdr[3] = icon
       end
+      chunks[#chunks + 1] = hdr[1]
+      max_width = max(max_width, hdr[2])
     end
 
     local items, counts = M.dedup_items(group.items)
+
     for i, item in ipairs(items) do
       if group.config.render_limit and i > group.config.render_limit then
         -- Don't bother rendering the rest (though they still exist)
         break
       end
-
       local key = item.content_key or item
+      local count = counts[key]
+      -- Caches lsp messages when update_hook is false
+      if not group.config.update_hook and group.config.priority then
+        key, count = item.message, 1
+      end
 
-      local it, it_width
-      if cache.render_item[key]
-          and not resized
-          and counts[key] == cache.render_item[key].count
-          and cache.render_width == size
-      then
-        it = cache.render_item[key].it
-        it_width = cache.render_item[key].width
-      else
-        it, it_width = M.render_item(item, group.config, counts[key])
-        cache.render_item[key] = { it = it, width = it_width, count = counts[key] }
+      if not cache.render_item[key] then
+        cache.render_item[key] = { nil, nil, nil } -- it, width, count
       end
-      if it then
-        table.insert(chunks, it)
-        max_width = math.max(max_width, it_width)
+      local it = cache.render_item[key]
+
+      if resized or count ~= it[3] then
+        it[1], it[2] = M.render_item(item, group.config, count)
+        it[3] = count
       end
+      chunks[#chunks + 1] = it[1]
+      max_width = max(max_width, it[2])
     end
   end
 
@@ -705,7 +695,7 @@ function M.render(now, groups)
     ---@cast chunks NotificationLine
     if chunks[i] and (chunks[i].hdr or chunks[i].line) then
       rows = rows + (chunks[i].hdr and 1 or 0) + (chunks[i].line and #chunks[i].line or 0)
-      table.insert(lines, chunks[i])
+      lines[#lines + 1] = chunks[i]
     end
   end
   ---@type Notification

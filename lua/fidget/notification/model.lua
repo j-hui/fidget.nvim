@@ -17,42 +17,50 @@ local poll   = require("fidget.poll")
 
 --- Cache used during rendering of notifications.
 ---
+---@alias CItem NotificationLine[]|nil
+---                                    width          count
+---@alias CacheItem { [1]: CItem, [2]: integer, [3]: integer }
+---                                                   icon
+---@alias CacheHdr  { [1]: CItem, [2]: integer, [3]: string }
+---@alias CacheSep  { [1]: CItem, [2]: integer }
+---
 ---@class Cache
----@field group_header    table<Display, CachedHdr>
----@field group_separator CacheSep
----@field render_item     table<Item|any, CachedItem>
----@field render_width    integer
+---@field group_header table<Display, CacheHdr>
+---@field group_sep    CacheSep
+---@field render_item  table<Item|any, CacheItem>
+---@field render_width integer
 local cache  = {}
-
---- Cached rendered lines: reused when `count` matches the current item group count.
----
----@class CachedItem
----@field it    NotificationLine[]|nil
----@field width integer
----@field count integer
-
---- Cached rendered lines: reused when `icon` matches the current group header icon.
----
----@class CachedHdr
----@field hdr   NotificationLine[]|nil
----@field width integer
----@field icon  string
-
---- Cached rendered lines: reused when `group_separator` is set.
----
----@class CacheSep
----@field sep   NotificationLine[]|nil
----@field width integer
 
 ---@return Cache
 function M.cache() return cache end
 
---- Deletes rendered lines from the cache.
+--- Deletes objects from the cache.
 ---
----@param item Item
-local function del_cached(item)
-  if cache.render_item and cache.render_item[item.content_key] then
-    cache.render_item[item.content_key] = nil
+---@param item Item|Group
+---@param last boolean?
+local function del_cached(item, last)
+  ---@type Group
+  if item.config and item.key and item.key ~= "default" then
+    -- Free up non-default headers (including lsp)
+    cache.group_header[item.config.name] = nil
+  end
+  if last then
+    if next(cache.render_item) ~= nil then
+      -- At the last notification, free up remaining cached items
+      for k, _ in pairs(cache.render_item) do
+        cache.render_item[k] = nil
+      end
+    end
+    return
+  end
+  ---@type Item
+  local key = item.content_key or item
+  if cache.render_item
+      and cache.render_item[key]
+      and cache.render_item[key][3] == 1
+  then
+    -- We do not use this item anymore (ttl reached)
+    cache.render_item[key] = nil
   end
 end
 
@@ -90,8 +98,8 @@ local function get_group(configs, groups, group_key)
     end
   end
 
-  -- Group not found; create it and insert it into list of active groups.
-
+  --- Group not found; create it and insert it into list of active groups.
+  ---
   ---@type Group
   local group = {
     key = group_key,
@@ -385,12 +393,16 @@ function M.tick(now, state)
   local new_groups = {}
   for _, group in ipairs(state.groups) do
     local new_items = {}
+    -- Dereference unused items on the last notification
+    if #group.items == 0 then
+      del_cached(group, true)
+    end
     for _, item in ipairs(group.items) do
       if item.expires_at > now then
         table.insert(new_items, item)
       else
-        add_removed(state, now, group, item)
         del_cached(item)
+        add_removed(state, now, group, item)
       end
     end
     if #group.items > 0 then
