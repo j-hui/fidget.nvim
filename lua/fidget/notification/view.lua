@@ -8,6 +8,9 @@ local logger = require("fidget.logger")
 ---@type Cache
 local cache = require("fidget.notification.model").cache()
 
+---@type table<string, vim.treesitter.Query>
+local tsquery = {}
+
 ---@class Notification
 ---@field opts    NotificationOpts   rendering options
 ---@field lines   NotificationLine[] lines to place into buffer
@@ -322,10 +325,15 @@ local function Highlight(source, lang, prev_hls)
     logger.warn(parser)
     return
   end
-  local tree = parser:parse()[1]
-  local query = vim.treesitter.query.get(lang, "highlights")
-  if not query then
-    return -- query file not found
+  local query
+  -- Caches highlights queries
+  if not tsquery[lang] then
+    query = vim.treesitter.query.get(lang, "highlights")
+    if not query then
+      return -- query file not found
+    end
+  else
+    query = tsquery[lang]
   end
 
   local hls = {} -- holds captured hl
@@ -336,7 +344,7 @@ local function Highlight(source, lang, prev_hls)
   local prev_line = 0
   local prev_text, prev_range
 
-  for id, node in query:iter_captures(tree:root(), source) do
+  for id, node in query:iter_captures(parser:parse()[1]:root(), source) do
     local text = vim.treesitter.get_node_text(node, source)
     if not text then
       goto continue
@@ -346,8 +354,8 @@ local function Highlight(source, lang, prev_hls)
       goto continue -- ignores spellcheck
     end
 
-    -- Finds hl groups id if exists
     local hl = vim.fn.hlID(name)
+    -- Finds hl groups id if exists
     if hl == 0 then
       hl = vim.fn.hlID("@" .. name)
       if hl == 0 then
@@ -357,9 +365,9 @@ local function Highlight(source, lang, prev_hls)
 
     local srow, scol, _, ecol = node:range()
     if prev_line ~= srow then
-      table.insert(hls, line) -- push to a new line
-      line = {}
+      hls[#hls + 1] = line -- push to a new line
       prev_line = srow
+      line = {}
     end
     if prev_text ~= text then
       prev_text = text
@@ -371,28 +379,34 @@ local function Highlight(source, lang, prev_hls)
     end
     -- Uses the same item renderer struct
     for _, token in ipairs(Tokenize(text)) do
-      local t = {
-        srow = srow,
-        scol = scol,
-        ecol = ecol,
-        text = token[3],
-        hl = hl
-      }
-      if not vim.tbl_contains(line,
-            function(w)
-              return vim.deep_equal(w, t)
-            end, { predicate = true })
-      then
-        table.insert(line, t)
+      local dup = false
+      -- Ignores duplicates
+      for i = 1, #line do
+        if srow == line[i].srow
+            and scol == line[i].scol
+            and ecol == line[i].ecol
+            and token[3] == line[i].text
+            and hl == line[i].hl then
+          dup = true
+          break
+        end
+      end
+      if not dup then
+        line[#line + 1] = {
+          srow = srow,
+          scol = scol,
+          ecol = ecol,
+          text = token[3],
+          hl = hl
+        }
       end
     end
     ::continue::
   end
   if #line > 0 then
-    table.insert(hls, line)
-    return hls
+    hls[#hls + 1] = line
   end
-  return nil
+  return hls
 end
 
 ---@return NotificationLine[]|nil lines
@@ -462,7 +476,7 @@ function M.dedup_items(items)
       counts[key] = counts[key] + 1
     else
       counts[key] = 1
-      deduped[#deduped+1] = item
+      deduped[#deduped + 1] = item
     end
   end
   return deduped, counts
