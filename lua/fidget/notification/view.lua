@@ -210,35 +210,39 @@ end
 ---@param source string
 ---@return Token[]
 local function Tokenize(source)
+  local strcharpart = vim.fn.strcharpart
+  local strchars = vim.fn.strchars
+  local concat = table.concat
+
   local pos = 0
   local tab = 0
   local res = {}
-  local len = vim.fn.strchars(source)
+  local len = strchars(source)
 
   while pos < len do
     ---@type string
-    local char = vim.fn.strcharpart(source, pos, 1)
+    local char = strcharpart(source, pos, 1)
 
     if char:match("%w") then
       local ptr = pos
       local word = { char }
 
       while ptr + 1 < len do
-        local c = vim.fn.strcharpart(source, ptr + 1, 1)
+        local c = strcharpart(source, ptr + 1, 1)
         if not c:match("%w") then
           break
         end
-        table.insert(word, c)
+        word[#word + 1] = c
         ptr = ptr + 1
       end
-      table.insert(res, { pos + tab, ptr + tab, table.concat(word) })
+      res[#res + 1] = { pos + tab, ptr + tab, concat(word) }
       pos = ptr + 1
     else
       if not char:match("%s") or char == "\t" then
         if char == "\t" then
           tab = tab + window.options.tabstop
         else
-          table.insert(res, { pos + tab, pos + tab, char })
+          res[#res + 1] = { pos + tab, pos + tab, char }
         end
       end
       pos = pos + 1
@@ -292,7 +296,7 @@ local function Annote(line, width, annote, sep, first, left)
     if left then
       line = { annote, unpack(line) }
     else
-      table.insert(line, annote)
+      line[#line + 1] = annote
     end
     width = width + line_width(annote[1])
   else
@@ -303,7 +307,7 @@ local function Annote(line, width, annote, sep, first, left)
       if left then
         line = { pad, unpack(line) }
       else
-        table.insert(line, pad)
+        line[#line + 1] = pad
       end
       width = width + len
     end
@@ -500,11 +504,11 @@ function M.render_item(item, config, count)
     return nil, 0
   end
 
-  local hl = {}
+  local hl = { nil, nil }
   if not is_multigrid_ui then
-    table.insert(hl, window.no_blend_hl)
+    hl[1] = window.no_blend_hl
   end
-  table.insert(hl, normal_hl())
+  hl[#hl + 1] = normal_hl()
 
   local hls
   local lang = item.lang and item.lang or M.options.highlight
@@ -548,13 +552,12 @@ function M.render_item(item, config, count)
         if annote then
           line, width = Annote(line, width, annote, sep, #tokens == 0, left)
         end
-        table.insert(tokens, Line(unpack(line))) -- push to newline
+        tokens[#tokens + 1] = Line(unpack(line)) -- push to newline
         next_start = token[1]
         extra_line = extra_line + 1              -- safeguard
         line_ptr = 0
         line = {}
       end
-
       ---@type NotificationItem
       local word = {
         scol = token[1] - next_start,
@@ -562,10 +565,11 @@ function M.render_item(item, config, count)
         text = token[3],
         hl = hl
       }
-      table.insert(line, word)
+      line[#line + 1] = word
 
       -- Adds treesitter highlights
       if hls then
+        local iter = vim.iter
         for _, tsline in ipairs(hls) do
           for _, ts in ipairs(tsline) do
             if ts.text == word.text and ts.srow + extra_line == #tokens then
@@ -580,10 +584,10 @@ function M.render_item(item, config, count)
                     word.text = ""
                   end
                 end
-                word.hl = vim.tbl_map(function(value)
+                word.hl = iter(word.hl):map(function(value)
                   if value ~= window.no_blend_hl then value = ts.hl end
                   return value
-                end, word.hl)
+                end):totable()
               end
             end
           end
@@ -600,7 +604,7 @@ function M.render_item(item, config, count)
     if annote then
       line, width = Annote(line, width, annote, sep, #tokens == 0, left)
     end
-    table.insert(tokens, Line(unpack(line)))
+    tokens[#tokens + 1] = Line(unpack(line))
   end
   -- The message is an empty string but there's an annotation to render
   if #tokens == 0 and annote then

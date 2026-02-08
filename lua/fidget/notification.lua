@@ -468,7 +468,7 @@ end
 ---
 ---@return Key[] keys
 function notification.group_keys()
-  return vim.tbl_map(function(group) return group.key end, state.groups)
+  return vim.iter(state.groups):map(function(group) return group.key end):totable()
 end
 
 return notification
