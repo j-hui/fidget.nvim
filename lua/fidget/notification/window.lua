@@ -566,6 +566,9 @@ function M.show(height, width)
   return M.get_window(row, col, anchor, relative, width, height)
 end
 
+---@type boolean
+local eol_right = vim.fn.has("nvim-0.11.0") == 1
+
 --- Replace the set of lines in the Fidget window, justify them, and apply highlights.
 ---
 ---@param message Notification
@@ -609,9 +612,8 @@ function M.set_lines(message)
         end
         vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, row, 0, {
           virt_text = chunk,
-          virt_text_pos = position == "left" and "eol" or (
-            vim.fn.has("nvim-0.11.0") == 1 and "eol_right_align" or "right_align"
-          )
+          virt_text_pos = position == "left" and "eol"
+              or eol_right and "eol_right_align" or "right_align"
         })
         row = row + 1
       end
@@ -622,9 +624,8 @@ function M.set_lines(message)
       end
       vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, row, 0, {
         virt_text = chunk,
-        virt_text_pos = message.opts.position == "left" and "eol" or (
-          vim.fn.has("nvim-0.11.0") == 1 and "eol_right_align" or "right_align"
-        )
+        virt_text_pos = message.opts.position == "left" and "eol"
+            or eol_right and "eol_right_align" or "right_align"
       })
       row = row + 1
     end
