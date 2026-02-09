@@ -566,46 +566,6 @@ function M.show(height, width)
   return M.get_window(row, col, anchor, relative, width, height)
 end
 
----@param buf   integer
----@param ns    integer
----@param row   integer
----@param text  any[]
----@param pos   string
----@param width integer
-local function set_extmark(buf, ns, row, text, pos, width)
-  if vim.fn.has("nvim-0.11.0") == 1 then
-    vim.api.nvim_buf_set_extmark(buf, ns, row, 0, {
-      virt_text = text,
-      virt_text_pos = pos == "left" and "eol" or "eol_right_align"
-    })
-  else
-    local left = pos == "left"
-    -- pre-0.11.0: eol_right_align was only introduced in 0.11.0;
-    -- without it we need to compute and add the padding ourselves
-    local len = 0
-    local padded = left and {} or { {} }
-    for _, tok in ipairs(text) do
-      len = len + vim.fn.strwidth(tok[1]) + vim.fn.count(tok[1], "\t") * math.max(0, M.options.tabstop - 1)
-      table.insert(padded, tok)
-    end
-    local pad_width = math.max(0, width - len)
-    if pad_width > 0 then
-      local pad = string.rep(" ", pad_width)
-      if left then
-        table.insert(padded, { pad, {} })
-      else
-        padded[1] = { pad, {} }
-      end
-    else
-      padded = text
-    end
-    vim.api.nvim_buf_set_extmark(buf, ns, row, 0, {
-      virt_text = padded,
-      virt_text_pos = "eol",
-    })
-  end
-end
-
 --- Replace the set of lines in the Fidget window, justify them, and apply highlights.
 ---
 ---@param message Notification
@@ -647,7 +607,12 @@ function M.set_lines(message)
             table.insert(chunk, t) -- backward compatibility
           end
         end
-        set_extmark(buffer_id, namespace_id, row, chunk, position, message.width)
+        vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, row, 0, {
+          virt_text = chunk,
+          virt_text_pos = position == "left" and "eol" or (
+            vim.fn.has("nvim-0.11.0") == 1 and "eol_right_align" or "right_align"
+          )
+        })
         row = row + 1
       end
     else
@@ -655,7 +620,12 @@ function M.set_lines(message)
       for _, hdr in ipairs(body.hdr) do
         table.insert(chunk, hdr)
       end
-      set_extmark(buffer_id, namespace_id, row, chunk, message.opts.position, message.width)
+      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, row, 0, {
+        virt_text = chunk,
+        virt_text_pos = message.opts.position == "left" and "eol" or (
+          vim.fn.has("nvim-0.11.0") == 1 and "eol_right_align" or "right_align"
+        )
+      })
       row = row + 1
     end
   end
