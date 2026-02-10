@@ -156,25 +156,6 @@ local function normal_hl()
   return "Normal" -- default
 end
 
---- The displayed width of some strings.
----
---- A simple wrapper around vim.fn.strwidth(), accounting for tab characters
---- manually.
----
---- We call this instead of vim.fn.strdisplaywidth() because that depends on
---- the state and size of the current window and buffer, which could be
---- anywhere.
----@param ... string
----@return integer len
-local function strwidth(...)
-  local w = 0
-  for _, s in ipairs({ ... }) do
-    w = w + vim.fn.strwidth(s) +
-        vim.fn.count(s, "\t") * math.max(0, window.options.tabstop - 1)
-  end
-  return w
-end
-
 ---@return integer len
 local function line_margin()
   return 2 * M.options.line_margin
@@ -184,7 +165,10 @@ end
 ---@param ... string
 ---@return integer len
 local function line_width(...)
-  local w = strwidth(...)
+  local w = 0
+  for _, s in pairs({ ... }) do
+    w = w + vim.fn.strwidth(s)
+  end
   return w == 0 and w or w + line_margin()
 end
 

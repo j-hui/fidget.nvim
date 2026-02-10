@@ -8,14 +8,13 @@
 ---
 --- Note that for now, it only supports editor-relative floats, though some code
 --- ported from the legacy version still supports window-relative floats.
-local M                         = {}
-local logger                    = require("fidget.logger")
-local need_to_check_integration = false
+local M      = {}
+local logger = require("fidget.logger")
 
 ---@options notification.window [[
 ---@protected
 --- Notifications window options
-M.options                       = {
+M.options    = {
   --- Base highlight group in the notification window
   ---
   --- Used by any Fidget notification text that is not otherwise highlighted,
@@ -128,7 +127,16 @@ M.options                       = {
 ---@options ]]
 
 require("fidget.options").declare(M, "notification.window", M.options, function()
-  need_to_check_integration = true
+  -- Integrate with other plugins if needed
+  vim.iter(require("fidget.integration").options):each(function(file)
+    local module = require("fidget.integration." .. file)
+    if module.options.enable == true then
+      if module.integration_needed()
+          and not vim.tbl_contains(M.options.avoid, module.filetype) then
+        table.insert(M.options.avoid, module.filetype)
+      end
+    end
+  end)
 end)
 
 --- The name of the highlight group that Fidget uses to prevent winblend from
@@ -211,20 +219,6 @@ local function should_avoid(winnr)
   return ft == "fidget" or vim.tbl_contains(M.options.avoid, ft)
 end
 
-local function check_integration()
-  local xcodebuild = require("fidget.integration.xcodebuild-nvim")
-  if not vim.tbl_contains(M.options.avoid, xcodebuild.filetype)
-      and xcodebuild.integration_needed() then
-    table.insert(M.options.avoid, xcodebuild.filetype)
-  end
-
-  local nvim_tree = require("fidget.integration.nvim-tree")
-  if not vim.tbl_contains(M.options.avoid, nvim_tree.filetype)
-      and nvim_tree.integration_needed() then
-    table.insert(M.options.avoid, nvim_tree.filetype)
-  end
-end
-
 ---@return integer height of the editor area, excludes statusline and tabline
 local function get_editor_height()
   local statusline_height = 0
@@ -246,7 +240,7 @@ end
 ---@param winnr integer
 ---@return integer effective_height of the window, excluding winbar
 local function get_effective_win_height(winnr)
-  local height = vim.api.nvim_win_get_height(0)
+  local height = vim.api.nvim_win_get_height(winnr)
   if vim.fn.exists("+winbar") > 0 and vim.opt.winbar:get() ~= "" then
     -- When winbar is set, effective win height is reduced by 1 (see :help winbar)
     return height - 1
@@ -360,11 +354,6 @@ end
 ---@return ("NE"|"SE")      anchor
 ---@return ("editor"|"win") relative
 function M.get_window_position()
-  if need_to_check_integration then
-    check_integration()
-    need_to_check_integration = false
-  end
-
   local row_max, align_bottom, col, row, relative
   local cursor_row = vim.api.nvim_win_get_cursor(0)[1] - vim.fn.line("w0")
 
@@ -424,10 +413,6 @@ function M.get_buffer()
   if state.buffer_id == nil or not vim.api.nvim_buf_is_valid(state.buffer_id) then
     -- Create an unlisted (1st param) scratch (2nd param) buffer
     state.buffer_id = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_set_option_value("filetype", "fidget", { buf = state.buffer_id })
-    -- We set this to a known value to ensure we correctly account for the width
-    -- of tab chars while calling strwidth() in notification.view.strwidth().
-    vim.api.nvim_set_option_value("tabstop", M.options.tabstop, { buf = state.buffer_id })
   end
   return state.buffer_id
 end
