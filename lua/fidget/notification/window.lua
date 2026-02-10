@@ -567,11 +567,13 @@ function M.set_lines(message)
   -- Prepare empty lines for extmarks
   local empty_lines = {}
   for _ = 1, message.rows, 1 do
-    table.insert(empty_lines, "")
+    empty_lines[#empty_lines + 1] = ""
   end
   vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, empty_lines)
+  empty_lines = nil
 
   local row = 0 -- top to bottom
+  local vtp = eol_right and "eol_right_align" or "right_align"
 
   for _, body in ipairs(message.lines) do
     local chunk = {}
@@ -587,30 +589,28 @@ function M.set_lines(message)
         for _, t in ipairs(token) do
           if t.text then
             if prev_ecol < t.scol then
-              table.insert(chunk, { string.rep(" ", t.scol - prev_ecol), t.hl })
+              chunk[#chunk + 1] = { string.rep(" ", t.scol - prev_ecol), t.hl }
             end
-            table.insert(chunk, { t.text, t.hl })
+            chunk[#chunk + 1] = { t.text, t.hl }
             prev_ecol = t.ecol
           else
-            table.insert(chunk, t) -- backward compatibility
+            chunk[#chunk + 1] = t -- backward compatibility
           end
         end
         vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, row, 0, {
           virt_text = chunk,
-          virt_text_pos = position == "left" and "eol"
-              or eol_right and "eol_right_align" or "right_align"
+          virt_text_pos = position == "left" and "eol" or vtp
         })
         row = row + 1
       end
     else
       ---@cast body NotificationTokens
       for _, hdr in ipairs(body.hdr) do
-        table.insert(chunk, hdr)
+        chunk[#chunk + 1] = hdr
       end
       vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, row, 0, {
         virt_text = chunk,
-        virt_text_pos = message.opts.position == "left" and "eol"
-            or eol_right and "eol_right_align" or "right_align"
+        virt_text_pos = message.opts.position == "left" and "eol" or vtp
       })
       row = row + 1
     end
