@@ -45,7 +45,7 @@ local function del_cached(item, last)
     cache.group_header[item.config.name] = nil
   end
   if last then
-    if next(cache.render_item) ~= nil then
+    if cache.render_item and next(cache.render_item) ~= nil then
       -- At the last notification, free up remaining cached items
       for k, _ in pairs(cache.render_item) do
         cache.render_item[k] = nil

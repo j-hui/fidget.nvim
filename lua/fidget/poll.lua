@@ -33,17 +33,11 @@ function M.unix_time(reltime)
   return math.floor(unix_time + reltime)
 end
 
----luv uv_timer_t handle
----@class uv_timer_t
----@field start fun(self: self, atk: number, delay: number, fn: function)
----@field stop fun(self: self)
----@field close fun(self: self)
-
 --- Encapsulates a function that should be called periodically.
 ---@class Poller
 ---@field name string
 ---@field private poll fun(self: Poller): boolean what to do for polling
----@field private timer uv_timer_t? timer handle when this poller is polling
+---@field private timer uv.uv_timer_t? timer handle when this poller is polling
 ---@field private current_time number time at each poll
 ---@field private err any? error object possibly encountered while polling
 ---
@@ -63,63 +57,70 @@ Poller.__index = Poller
 ---@param poll_rate number    must be greater than 0
 ---@param attack    number?   must be greater than or equal to 0
 function Poller:start_polling(poll_rate, attack)
-  if self.timer then
+  if self.timer and self.timer:is_active() then
     return
   end
-
-  attack = attack or 15
-
-  if poll_rate <= 0 then
-    local msg = string.format("Poller ( %s ) could not start due to non-positive poll_rate: %s", self.name, poll_rate)
-    logger.error(msg)
-    error(msg)
+  if not attack then
+    attack = 15
   end
-
-  if attack < 0 then
-    local msg = string.format("Poller ( %s ) could not start due to negative poll_rate: %s", self.name, poll_rate)
-    logger.error(msg)
-    error(msg)
+  if poll_rate <= 0 or attack < 0 then
+    local err = string.format(
+      "Poller ( %s ) could not start due to %s: %d",
+      self.name,
+      poll_rate <= 0 and "non-positive poll_rate" or "negative attack",
+      poll_rate <= 0 and poll_rate or attack
+    )
+    logger.error(err)
+    return
   end
+  local start_t = 0
+  local interval = math.ceil(1000 / poll_rate)
+  local notice = logger.at_level(vim.log.levels.INFO)
+  local time = M.get_time
 
-  self.timer = vim.loop.new_timer()
-
-  local start_time
-
-  if logger.at_level(vim.log.levels.INFO) then
-    start_time = M.get_time()
-    logger.info("Poller (", self.name, ") starting at", string.format("%.3fs", start_time))
-  end
-
-  self.timer:start(attack, math.ceil(1000 / poll_rate), vim.schedule_wrap(function()
-    if not self.timer or self.err ~= nil then
-      return
+  if not self.timer then
+    local err
+    self.timer, err = vim.loop.new_timer()
+    if not self.timer then
+      error(err) -- raise this
     end
+    if not self.callback then
+      self.callback = function()
+        if not self.timer or self.err ~= nil then
+          return
+        end
+        self.current_time = time()
 
-    self.current_time = M.get_time()
+        -- logger.debug(collectgarbage("count"))
 
-    local ok, cont = pcall(self.poll, self)
+        local ok, res = pcall(self.poll, self)
+        if not ok or not res then
+          self.timer:stop()
 
-    if not ok or not cont then
-      self.timer:stop()
-      self.timer:close()
-      self.timer = nil
-
-      if logger.at_level(vim.log.levels.INFO) then
-        -- NOTE: the timing info logged here is not tied to self.current_time
-        local end_time = M.get_time()
-        local duration = end_time - (start_time or math.huge)
-        local message = string.format("stopping at %.3fs (duration: %.3fs)", end_time, duration)
-        local reason = ok and "due to completion" or string.format("due to error: %s", tostring(cont))
-        logger.info("Poller (", self.name, ")", message, reason)
-      end
-
-      if not ok then
-        -- Save error object and propagate it
-        self.err = cont
-        error(cont)
+          if notice then
+            local end_t = time()
+            -- NOTE: the timing info logged here is not tied to self.current_time
+            logger.info(string.format(
+              "Poller ( %s ) stopping at %.3fs (duration: %.3fs) due to %s",
+              self.name,
+              end_t,
+              end_t - (start_t or math.huge),
+              ok and "completion" or "error"
+            ))
+          end
+          if not ok then
+            self.err = res
+            logger.error(res)
+          end
+        end
       end
     end
-  end))
+  end
+  if notice then
+    start_t = time()
+    logger.info(string.format("Poller ( %s ) starting at %.3f", self.name, start_t))
+  end
+  self.timer:start(attack, interval, vim.schedule_wrap(self.callback))
 end
 
 --- Call the poll() function once, if the poller isn't already running.
@@ -152,9 +153,9 @@ end
 
 --- Whether a poller is actively polling.
 ---
----@return boolean is_polling
+---@return boolean? is_polling
 function Poller:is_polling()
-  return self.timer ~= nil
+  return self.timer and self.timer:is_active()
 end
 
 --- Query poller for potential encountered error.
@@ -162,6 +163,17 @@ end
 ---@return any? error_object
 function Poller:has_error()
   return self.err
+end
+
+--- Release timer resources
+function Poller:release()
+  if self.timer then
+    if self.timer:is_active() then
+      self.timer:stop()
+    end
+    self.timer:close()
+    self.timer = nil
+  end
 end
 
 --- Forget about error object so that poller can start polling again.

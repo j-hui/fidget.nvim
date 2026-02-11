@@ -327,9 +327,7 @@ end
 ---
 ---@return boolean closed_successfully Whether the window closed successfully.
 function notification.close()
-  return notification.window.guard(function()
-    notification.window.close()
-  end)
+  return notification.window.guard(notification.window.close)
 end
 
 --- Clear active notifications.
@@ -365,6 +363,7 @@ function notification.reset()
   notification.clear()
   notification.clear_history()
   notification.poller:reset_error() -- Clear error if previously encountered one
+  notification.poller:release() -- Release timer resources
 end
 
 --- The poller for the notification subsystem.
