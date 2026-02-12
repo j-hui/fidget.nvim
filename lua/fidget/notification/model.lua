@@ -399,28 +399,24 @@ end
 ---@param now number timestamp of current frame.
 ---@param state  State
 function M.tick(now, state)
-  local new_groups = {}
-  for _, group in ipairs(state.groups) do
-    local new_items = {}
+  for i = #state.groups, 1, -1 do
+    local group = state.groups[i]
     -- Dereference unused items on the last notification
     if #group.items == 0 then
       del_cached(group, true)
-    end
-    for _, item in ipairs(group.items) do
-      if item.expires_at > now then
-        table.insert(new_items, item)
-      else
-        del_cached(item)
-        add_removed(state, now, group, item)
+      table.remove(state.groups, i)
+    else
+      for j = #group.items, 1, -1 do
+        local item = group.items[j]
+
+        if item.expires_at <= now then
+          del_cached(item)
+          add_removed(state, now, group, item)
+          table.remove(group.items, j)
+        end
       end
     end
-    if #group.items > 0 then
-      group.items = new_items
-      table.insert(new_groups, group)
-    else
-    end
   end
-  state.groups = new_groups
 end
 
 --- Generate a notifications history according to the provided filter.
