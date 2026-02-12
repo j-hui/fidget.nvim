@@ -1,24 +1,11 @@
 local M = {}
 local logger = require("fidget.logger")
 
---- Arbitrary point in time that timestamps are computed relative to.
----
---- Units are in seconds. `unix_time` is relative to Jan 1 1970, while
---- `origin_time` is relative to some arbitrary system-specific time.
----
---- This module captures both at the time so that we can freely convert between
---- the two. By default, we use `origin_time` / `reltime()` since these offer
---- higher precision, but then we use `unix_time` to normalize it to something
---- human-readable.
----
----@type number, number
-local unix_time, origin_time = vim.fn.localtime(), vim.fn.reltime()
-
---- Obtain the seconds passed since this module was initialized.
+--- Returns the current high-resolution timestamp (in nanoseconds).
 ---
 ---@return number
 function M.get_time()
-  return vim.fn.reltimefloat(vim.fn.reltime(origin_time))
+  return vim.uv.hrtime()
 end
 
 --- Obtain the (whole) seconds passed since Jan 1, 1970.
@@ -26,11 +13,9 @@ end
 --- In particular, the result from this function is suitable for consumption by
 --- |strftime()|.
 ---
----@param reltime number|nil
----@return number localtime
-function M.unix_time(reltime)
-  reltime = reltime or M.get_time()
-  return math.floor(unix_time + reltime)
+---@return integer localtime
+function M.unix_time()
+  return vim.uv.clock_gettime("realtime").sec
 end
 
 --- Encapsulates a function that should be called periodically.
@@ -38,7 +23,8 @@ end
 ---@field name string
 ---@field private poll fun(self: Poller): boolean what to do for polling
 ---@field private timer uv.uv_timer_t? timer handle when this poller is polling
----@field private current_time number time at each poll
+---@field private start_t number start time of the poller
+---@field private current_t number time at each poll
 ---@field private err any? error object possibly encountered while polling
 ---
 --- Note that when the Poller:poll() method returns true, the poller should
@@ -57,7 +43,7 @@ Poller.__index = Poller
 ---@param poll_rate number    must be greater than 0
 ---@param attack    number?   must be greater than or equal to 0
 function Poller:start_polling(poll_rate, attack)
-  if self.timer and self.timer:is_active() then
+  if self.timer and self.timer:is_active() or self.err ~= nil then
     return
   end
   if not attack then
@@ -73,14 +59,13 @@ function Poller:start_polling(poll_rate, attack)
     logger.error(err)
     return
   end
-  local start_t = 0
   local interval = math.ceil(1000 / poll_rate)
   local notice = logger.at_level(vim.log.levels.INFO)
   local time = M.get_time
 
   if not self.timer then
     local err
-    self.timer, err = vim.loop.new_timer()
+    self.timer, err = vim.uv.new_timer()
     if not self.timer then
       error(err) -- raise this
     end
@@ -89,7 +74,7 @@ function Poller:start_polling(poll_rate, attack)
         if not self.timer or self.err ~= nil then
           return
         end
-        self.current_time = time()
+        self.current_t = time()
 
         -- logger.debug(collectgarbage("count"))
 
@@ -98,13 +83,13 @@ function Poller:start_polling(poll_rate, attack)
           self.timer:stop()
 
           if notice then
-            local end_t = time()
+            local end_t = time() / 1e9
             -- NOTE: the timing info logged here is not tied to self.current_time
             logger.info(string.format(
               "Poller ( %s ) stopping at %.3fs (duration: %.3fs) due to %s",
               self.name,
               end_t,
-              end_t - (start_t or math.huge),
+              end_t - self.start_t,
               ok and "completion" or "error"
             ))
           end
@@ -117,10 +102,10 @@ function Poller:start_polling(poll_rate, attack)
     end
   end
   if notice then
-    start_t = time()
-    logger.info(string.format("Poller ( %s ) starting at %.3f", self.name, start_t))
+    self.start_t = time() / 1e9
+    logger.info(string.format("Poller ( %s ) starting at %.3f", self.name, self.start_t))
   end
-  self.timer:start(attack, interval, vim.schedule_wrap(self.callback))
+  self.timer:start(attack, interval, function() vim.schedule(self.callback) end)
 end
 
 --- Call the poll() function once, if the poller isn't already running.
@@ -130,9 +115,9 @@ function Poller:poll_once()
   end
 
   vim.schedule(function()
-    self.current_time = M.get_time()
+    self.current_t = M.get_time()
     if logger.at_level(vim.log.levels.INFO) then
-      logger.info("Poller (", self.name, ") polling once at", string.format("%.3fs", self.current_time))
+      logger.info("Poller (", self.name, ") polling once at", string.format("%.3fs", self.current_t))
     end
     local ok, err = pcall(self.poll, self)
     if not ok then
@@ -148,7 +133,7 @@ end
 ---
 ---@return number
 function Poller:now()
-  return self.current_time
+  return self.current_t
 end
 
 --- Whether a poller is actively polling.
@@ -198,11 +183,12 @@ function M.Poller(opts)
 
   ---@type Poller
   local poller = {
-    name         = name,
-    poll         = opts.poll or function() return false end,
-    timer        = nil,
-    current_time = 0,
-    err          = nil,
+    name      = name,
+    poll      = opts.poll or function() return false end,
+    timer     = nil,
+    start_t   = 0, -- log metric
+    current_t = 0, -- frame time
+    err       = nil,
   }
   return setmetatable(poller, Poller)
 end

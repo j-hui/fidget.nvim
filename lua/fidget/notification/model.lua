@@ -121,7 +121,7 @@ local function add_removed(state, now, group, item)
     -- Skip duplicates unless we have no items deduplication
     if group.config.update_hook and #state.removed > 0 then
       if state.removed[state.removed_first - 1].content_key
-        and state.removed[state.removed_first - 1].content_key == item.content_key
+          and state.removed[state.removed_first - 1].content_key == item.content_key
       then
         return
       end
@@ -138,7 +138,7 @@ local function add_removed(state, now, group, item)
     end
 
     ---@cast item HistoryItem
-    item.last_updated = poll.unix_time(now)
+    item.last_updated = poll.unix_time()
     item.removed = true
     item.group_key = group.key
     item.group_name = group_name
@@ -157,7 +157,7 @@ end
 local function item_to_history(item, extra)
   ---@type HistoryItem
   item = vim.tbl_extend("force", item, extra)
-  item.last_updated = poll.unix_time(item.last_updated)
+  item.last_updated = poll.unix_time()
   return item
 end
 
@@ -248,9 +248,9 @@ end
 ---@return            number expiry_time
 local function compute_expiry(now, ttl, default_ttl)
   if not ttl or ttl == 0 then
-    return now + (default_ttl or 3)
+    return now + ((default_ttl or 3) * 10 ^ 9)
   else
-    return now + ttl
+    return now + (ttl * 10 ^ 9)
   end
 end
 
