@@ -180,18 +180,19 @@ local state = {
 --- (Thanks @wookayin and @0xAdk!)
 ---
 ---@param callable fun()
+---@param args any?
 ---@return boolean suppressed_error
-function M.guard(callable)
+function M.guard(callable, args)
+  local ok, err = pcall(callable, args)
+  if ok then
+    return true
+  end
+
   local whitelist = {
     "E11: Invalid in command%-line window",
     "E523: Not allowed here",
     "E565: Not allowed to change",
   }
-
-  local ok, err = pcall(callable)
-  if ok then
-    return true
-  end
 
   if type(err) ~= "string" then
     -- Don't know how to deal with this kind of error object

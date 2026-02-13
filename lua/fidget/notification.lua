@@ -363,8 +363,11 @@ function notification.reset()
   notification.clear()
   notification.clear_history()
   notification.poller:reset_error() -- Clear error if previously encountered one
-  notification.poller:release() -- Release timer resources
+  notification.poller:release()     -- Release timer resources
 end
+
+---@private
+local _guard = notification.window.guard
 
 --- The poller for the notification subsystem.
 ---@protected
@@ -380,9 +383,8 @@ notification.poller = poll.Poller {
         return true
       end
 
-      notification.window.guard(function()
-        notification.window.set_lines(message)
-      end)
+      _guard(notification.window.set_lines, message)
+
       return true
     else
       if state.view_suppressed then
