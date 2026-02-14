@@ -233,11 +233,6 @@ local function get_editor_height()
   return vim.opt.lines:get() - (statusline_height + vim.opt.cmdheight:get())
 end
 
----@return integer width of the editor area, including signcolumn and foldcolumn
-local function get_editor_width()
-  return vim.opt.columns:get()
-end
-
 ---@param winnr integer
 ---@return integer effective_height of the window, excluding winbar
 local function get_effective_win_height(winnr)
@@ -260,6 +255,23 @@ local function get_tabline_height()
   end
 end
 
+---@type integer
+local columns = vim.o.columns
+
+--- Updates columns value when window size changes
+vim.api.nvim_create_autocmd('VimResized', {
+  callback = function()
+    columns = vim.o.columns
+  end
+})
+
+--- Returns the cached width of the editor area, including signcolumns and foldcolumn
+---
+---@return integer
+function M.get_editor_width()
+  return columns
+end
+
 --- Compute the max width of the notification window.
 ---
 ---@return integer
@@ -269,7 +281,7 @@ function M.max_width()
   end
 
   if M.options.max_width < 1 then
-    local width = vim.opt.columns:get()
+    local width = vim.o.columns
     return math.ceil(width * M.options.max_width)
   end
 
@@ -342,7 +354,7 @@ local function search_for_editor_anchor(row_max, align_bottom)
   -- avoided everything), col will be negative. Set row/col to SE or NE corner
   -- of the editor so that we have _some_ valid position.
   if col < 0 then
-    col = get_editor_width()
+    col = M.get_editor_width()
     row = align_bottom and row_max or get_tabline_height()
   end
   return row, col
@@ -438,7 +450,7 @@ end
 ---@return number|nil window_id
 function M.get_window(row, col, anchor, relative, width, height)
   -- Clamp width and height to dimensions of editor and user specification.
-  local editor_width, editor_height = get_editor_width(), get_editor_height()
+  local editor_width, editor_height = M.get_editor_width(), get_editor_height()
   editor_width = math.max(0, editor_width - 4) -- HACK: guess width of signcolumn etc.
 
   if editor_width < 4 or editor_height < 4 then

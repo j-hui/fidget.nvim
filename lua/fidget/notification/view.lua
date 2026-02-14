@@ -176,7 +176,7 @@ end
 local function window_max()
   local pad = line_margin() + 4
   local win = window.max_width() - pad
-  local ed = vim.opt.columns:get() - pad
+  local ed = window.get_editor_width() - pad
   -- We ditch math.huge constant here because we need a limit to split lines
   if win <= 0 or ed < win then
     return ed
