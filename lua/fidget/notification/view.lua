@@ -6,7 +6,7 @@ local window = require("fidget.notification.window")
 local logger = require("fidget.logger")
 
 ---@type Cache
-local cache = require("fidget.notification.model").cache()
+local cache = require("fidget.notification.model").cache
 
 ---@type table<string, vim.treesitter.Query>
 local tsquery = {}

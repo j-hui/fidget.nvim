@@ -30,9 +30,7 @@ local poll   = require("fidget.poll")
 ---@field render_item  table<Item|any, CacheItem>
 ---@field render_width integer
 local cache  = {}
-
----@return Cache
-function M.cache() return cache end
+M.cache      = cache
 
 --- Deletes objects from the cache.
 ---
