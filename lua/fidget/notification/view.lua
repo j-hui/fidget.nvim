@@ -609,30 +609,47 @@ end
 --- Render notifications into lines and highlights.
 ---
 ---@param now number timestamp of current render frame
----@param groups Group[]
----@return Notification
-function M.render(now, groups)
+---@param state State
+---@return Notification?
+function M.render(now, state)
+  if window.options.relative == "win" then
+    local id = vim.api.nvim_get_current_win()
+    -- Force rendering when the window id change
+    if not cache.window or
+        cache.window and cache.window ~= id
+    then
+      if cache.window then
+        state:update()
+      end
+      cache.window = id
+    end
+  end
+  local size = window_max()
+  local resized = cache.render_width and cache.render_width ~= size or false
+  -- Force rendering when the length of the window change
+  if resized and not state.render then
+    state:update()
+  end
+  if not state.render then
+    -- Otherwise return and avoid recomputing unnecessarily
+    return
+  end
+  if not cache.render_width or resized then
+    cache.render_width = size
+  end
+
   is_multigrid_ui = M.check_multigrid_ui()
 
   ---@type NotificationLine[][]
   local chunks = {}
   local max_width = 0
+  local max = math.max
 
   cache.render_item = cache.render_item or {}
   cache.group_header = cache.group_header or {}
   cache.group_sep = cache.group_sep or { nil, nil } -- sep, width
 
-  local size = window_max()
-  local max = math.max
-
-  -- Force rendering when the length of the window change
-  local resized = cache.render_width and cache.render_width ~= size or false
-
-  if not cache.render_width or resized then
-    cache.render_width = size
-  end
-
-  for idx, group in ipairs(groups) do
+  for idx, group in ipairs(state.groups) do
     if idx ~= 1 then
       if resized or not cache.group_sep[1] then
         cache.group_sep[1], cache.group_sep[2] = M.render_group_separator()

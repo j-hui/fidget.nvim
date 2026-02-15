@@ -29,6 +29,7 @@ local poll   = require("fidget.poll")
 ---@field group_sep    CacheSep
 ---@field render_item  table<Item|any, CacheItem>
 ---@field render_width integer
+---@field window       integer
 local cache  = {}
 M.cache      = cache
 
@@ -65,6 +66,7 @@ end
 --- The abstract state of the notifications subsystem.
 ---@class State
 ---@field groups          Group[]         active notification groups
+---@field render          boolean         whether the notification should be rendered
 ---@field view_suppressed boolean         whether the notification window is suppressed
 ---@field removed         HistoryItem[]   ring buffer of removed notifications, kept around for history
 ---@field removed_cap     number          capacity of removed ring buffer
@@ -331,6 +333,7 @@ function M.update(now, configs, state, msg, level, opts)
       return (a.config.priority or 50) - (b.config.priority or 50)
     end)
   end
+  state:update()
 end
 
 --- Remove an item from a particular group.
@@ -403,6 +406,7 @@ function M.tick(now, state)
     if #group.items == 0 then
       del_cached(group, true)
       table.remove(state.groups, i)
+      state:update()
     else
       for j = #group.items, 1, -1 do
         local item = group.items[j]
@@ -411,6 +415,7 @@ function M.tick(now, state)
           del_cached(item)
           add_removed(state, now, group, item)
           table.remove(group.items, j)
+          state:update()
         end
       end
     end

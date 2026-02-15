@@ -1,10 +1,10 @@
 ---@mod fidget.notification Notification subsystem
-local notification          = {}
-notification.model          = require("fidget.notification.model")
-notification.window         = require("fidget.notification.window")
-notification.view           = require("fidget.notification.view")
-local poll                  = require("fidget.poll")
-local logger                = require("fidget.logger")
+local notification  = {}
+notification.model  = require("fidget.notification.model")
+notification.window = require("fidget.notification.window")
+notification.view   = require("fidget.notification.view")
+local poll          = require("fidget.poll")
+local logger        = require("fidget.logger")
 
 --- Used to determine the identity of notification items and groups.
 ---@alias Key any
@@ -108,14 +108,29 @@ local logger                = require("fidget.logger")
 ---@field include_active  boolean|nil Include items that have not been removed (default: true)
 
 --- The "model" (abstract state) of notifications.
----@type State
-local state                 = {
+---@class State
+local state         = {
   groups          = {},
+  render          = false,
   view_suppressed = false,
   removed         = {},
   removed_cap     = 128,
   removed_first   = 1,
 }
+
+--- Must be called when the groups table changes
+function state:update()
+  if not self.render then
+    self.render = true
+  end
+end
+
+--- Serves as a lock to prevent unnecessary rendering
+function state:wait()
+  if self.render then
+    self.render = false
+  end
+end
 
 --- Default notification configuration.
 ---
@@ -376,19 +391,25 @@ notification.poller = poll.Poller {
   poll = function(self)
     notification.model.tick(self:now(), state)
 
-    local message = notification.view.render(self:now(), state.groups)
+    local message = notification.view.render(self:now(), state)
 
-    if #message.lines > 0 then
+    if message and #message.lines > 0 and state.render then
       if state.view_suppressed then
         return true
       end
 
       _guard(notification.window.set_lines, message)
 
+      state:wait()
+
       return true
     else
       if state.view_suppressed then
         return false
+      else
+        if not state.render then
+          return true
+        end
       end
 
       -- If we could not close the window, keep polling, i.e., keep trying to close the window.

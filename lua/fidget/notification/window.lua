@@ -217,7 +217,7 @@ local function should_avoid(winnr)
   end
   local bufnr = vim.api.nvim_win_get_buf(winnr)
   local ft = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
-  return ft == "fidget" or vim.tbl_contains(M.options.avoid, ft)
+  return vim.iter(M.options.avoid):any(function(v) return v == ft end)
 end
 
 ---@return integer height of the editor area, excludes statusline and tabline
