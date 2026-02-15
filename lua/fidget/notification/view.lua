@@ -176,10 +176,14 @@ end
 local function window_max()
   local pad = line_margin() + 4
   local win = window.max_width() - pad
-  local ed = window.get_editor_width() - pad
+  local len = window.get_editor_width() - pad
+  -- Respects window relative positioning
+  if window.options.relative == "win" then
+    win = math.min(win, vim.api.nvim_win_get_width(0) - pad)
+  end
   -- We ditch math.huge constant here because we need a limit to split lines
-  if win <= 0 or ed < win then
-    return ed
+  if win <= 0 or len < win then
+    return len
   end
   return win
 end
@@ -472,12 +476,13 @@ end
 
 --- Render a notification item, containing message and annote.
 ---
----@param item   Item
----@param config Config
----@param count  number
+---@param item      Item
+---@param config    Config
+---@param count     number
+---@param max_width number
 ---@return NotificationItems|nil lines
----@return integer                 width
-function M.render_item(item, config, count)
+---@return integer               width
+function M.render_item(item, config, count, max_width)
   if item.hidden then
     return nil, 0
   end
@@ -507,15 +512,13 @@ function M.render_item(item, config, count)
   end
   -- We have to keep track of extra lines added in tokens to not cause a desync with hls
   local extra_line = 0
+  local width = 0
 
   ---@type NotificationItem[]|NotificationToken[]
   local tokens = {}
   local annote = item.annote and Token(item.annote, item.style)
   local left = item.position and item.position == "left" or M.options.text_position == "left"
   local sep = config.annote_separator or " "
-
-  local width = 0
-  local max_width = window_max()
 
   for s in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
     local line = {}
@@ -676,7 +679,7 @@ function M.render(now, groups)
       local it = cache.render_item[key]
 
       if resized or count ~= it[3] then
-        it[1], it[2] = M.render_item(item, group.config, count)
+        it[1], it[2] = M.render_item(item, group.config, count, size)
         it[3] = count
       end
       chunks[#chunks + 1] = it[1]
@@ -690,7 +693,6 @@ function M.render(now, groups)
   else
     start, stop, step = 1, #chunks, 1
   end
-
   local rows = 0
   local lines = {}
   for i = start, stop, step do
@@ -699,6 +701,10 @@ function M.render(now, groups)
       rows = rows + (chunks[i].hdr and 1 or 0) + (chunks[i].line and #chunks[i].line or 0)
       lines[#lines + 1] = chunks[i]
     end
+  end
+  if window.options.relative == "win" then
+    -- Ensure text fits within the window width
+    max_width = max_width > size and size + line_margin() or max_width
   end
   ---@type Notification
   return {
