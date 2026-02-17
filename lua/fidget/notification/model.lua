@@ -117,6 +117,8 @@ end
 ---@param group Group
 ---@param item  Item
 local function add_removed(state, now, group, item)
+  del_cached(item)
+  state:update()
   if not item.skip_history then
     -- Skip duplicates unless we have no items deduplication
     if group.config.update_hook and #state.removed > 0 then
@@ -352,6 +354,7 @@ function M.remove(state, now, group_key, item_key)
           table.remove(group.items, i)
           add_removed(state, now, group, item)
           if #group.items == 0 then
+            del_cached(group, true)
             table.remove(state.groups, g)
           end
           return true
@@ -411,10 +414,8 @@ function M.tick(now, state)
         local item = group.items[j]
 
         if item.expires_at <= now then
-          del_cached(item)
           add_removed(state, now, group, item)
           table.remove(group.items, j)
-          state:update()
         end
       end
     end
