@@ -460,6 +460,13 @@ SC.subcommands = {
       { name = "group_key", type = GroupKey, desc = "group to clear" },
     },
   },
+  reset = {
+    desc = "Reset notification subsystem state",
+    func = function()
+      require("fidget.notification").reset()
+    end,
+    args = {}
+  },
   history = {
     desc = "Show notifications history",
     func = function(args)
