@@ -231,6 +231,12 @@ notification.options = {
   ---@type 0|1|2|3|4|5
   filter = vim.log.levels.INFO,
 
+  -- Whether to show errors that occur while rendering notifications
+  -- When false, errors are logged instead of shown to the user
+  ---
+  ---@type boolean
+  show_errors = false,
+
   --- Number of removed messages to retain in history
   ---
   --- Set to 0 to keep around history indefinitely (until cleared).
@@ -415,6 +421,15 @@ notification.poller = poll.Poller {
       -- If we could not close the window, keep polling, i.e., keep trying to close the window.
       return not notification.close()
     end
+  end,
+  raise = function(self)
+    if self:has_error() then
+      notification.close()
+
+      self:reset_error()
+      self:release()
+    end
+    return notification.options.show_errors
   end
 }
 

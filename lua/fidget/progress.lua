@@ -249,6 +249,15 @@ progress.poller = poll.Poller {
       end
     end
     return true
+  end,
+  raise = function(self)
+    if self:has_error() then
+      notification.close()
+
+      self:reset_error()
+      self:release()
+    end
+    return notification.options.show_errors
   end
 }
 

@@ -19,13 +19,17 @@ function M.unix_time()
 end
 
 --- Encapsulates a function that should be called periodically.
+---
+---@alias Cb fun(self: Poller): boolean
+---
 ---@class Poller
----@field name string
----@field private poll fun(self: Poller): boolean what to do for polling
----@field private timer uv.uv_timer_t? timer handle when this poller is polling
----@field private start_t number start time of the poller
----@field private current_t number time at each poll
----@field private err any? error object possibly encountered while polling
+---@field name              string
+---@field private poll      Cb             what to do for polling
+---@field private raise     Cb             handle errors encountered while polling
+---@field private timer     uv.uv_timer_t? timer handle when this poller is polling
+---@field private start_t   number         start time of the poller
+---@field private current_t number         time at each poll
+---@field private err       any?           error object possibly encountered while polling
 ---
 --- Note that when the Poller:poll() method returns true, the poller should
 --- call it again, but if it returns anything false-y, the poller will stop.
@@ -84,7 +88,7 @@ function Poller:start_polling(poll_rate, attack)
 
           if notice then
             local end_t = time() / 1e9
-            -- NOTE: the timing info logged here is not tied to self.current_time
+            -- This timing info is not tied to frame time (current_t)
             logger.info(string.format(
               "Poller ( %s ) stopping at %.3fs (duration: %.3fs) due to %s",
               self.name,
@@ -95,6 +99,9 @@ function Poller:start_polling(poll_rate, attack)
           end
           if not ok then
             self.err = res
+            if self:raise() then
+              error(res)
+            end
             logger.error(res)
           end
         end
@@ -117,12 +124,15 @@ function Poller:poll_once()
   vim.schedule(function()
     self.current_t = M.get_time()
     if logger.at_level(vim.log.levels.INFO) then
-      logger.info("Poller (", self.name, ") polling once at", string.format("%.3fs", self.current_t))
+      logger.info(string.format("Poller ( %s ) polling once at %.3fs", self.name, self.current_t / 1e9))
     end
     local ok, err = pcall(self.poll, self)
     if not ok then
       self.err = err
-      error(err)
+      if self:raise() then
+        error(err)
+      end
+      logger.error(err)
     end
   end)
 end
@@ -167,7 +177,7 @@ function Poller:reset_error()
 end
 
 --- Construct a Poller object.
----@param opts { name: string?, poll: fun(self: Poller): boolean }?
+---@param opts { name: string?, poll: Cb, raise: Cb }?
 ---@return Poller poller
 function M.Poller(opts)
   opts = opts or {}
@@ -185,6 +195,7 @@ function M.Poller(opts)
   local poller = {
     name      = name,
     poll      = opts.poll or function() return false end,
+    raise     = opts.raise or function() return false end,
     timer     = nil,
     start_t   = 0, -- log metric
     current_t = 0, -- frame time
