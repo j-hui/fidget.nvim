@@ -115,9 +115,9 @@ function M.poll_for_messages()
       if type(value) == 'table' and value.kind then
         local message = {
           token = progress.token,
-          title = value.title,
-          message = value.message,
-          percentage = value.done and nil or value.percentage,
+          title = value.title ~= vim.NIL and value.title or nil,
+          message = value.message ~= vim.NIL and value.message or nil,
+          percentage = value.done and nil or (value.percentage ~= vim.NIL and value.percentage or nil),
           done = value.kind == "end",
           cancellable = value.cancellable or false,
           lsp_client = client,
