@@ -43,8 +43,16 @@ end
 local function check_integrations()
   vim.health.start("fidget.integration")
 
+  -- The recommended migration away from the implicit integrations is to add the
+  -- integration's filetype to 'notification.window.avoid'. Once that is done,
+  -- the integration is effectively superseded, so don't warn about it anymore.
+  local avoid = require("fidget.notification.window").options.avoid
+  local function avoided(ft)
+    return vim.tbl_contains(avoid, ft)
+  end
+
   local xcodebuild = require("fidget.integration.xcodebuild-nvim")
-  if not xcodebuild.explicitly_configured() and xcodebuild.plugin_present() then
+  if not xcodebuild.explicitly_configured() and xcodebuild.plugin_present() and not avoided(xcodebuild.filetype) then
     vim.health.warn("xcodebuild.nvim integration is implicitly enabled", {
       "This automatic integration will be removed in a future release.",
       "Add 'TestExplorer' to the 'notification.window.avoid' list to ensure Fidget continues to avoid xcodebuild.nvim's explorer window.",
@@ -52,7 +60,7 @@ local function check_integrations()
   end
 
   local nvim_tree = require("fidget.integration.nvim-tree")
-  if not nvim_tree.explicitly_configured() and nvim_tree.plugin_present() then
+  if not nvim_tree.explicitly_configured() and nvim_tree.plugin_present() and not avoided(nvim_tree.filetype) then
     vim.health.warn("nvim-tree.lua integration is implicitly enabled", {
       "This automatic integration will be removed in a future release.",
       "Add 'NvimTree' to the 'notification.window.avoid' list to ensure Fidget continues to avoid nvim-tree.lua's file explorer.",
