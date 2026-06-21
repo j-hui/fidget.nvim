@@ -1,10 +1,10 @@
 ---@mod fidget.notification Notification subsystem
-local notification          = {}
-notification.model          = require("fidget.notification.model")
-notification.window         = require("fidget.notification.window")
-notification.view           = require("fidget.notification.view")
-local poll                  = require("fidget.poll")
-local logger                = require("fidget.logger")
+local notification  = {}
+notification.model  = require("fidget.notification.model")
+notification.window = require("fidget.notification.window")
+notification.view   = require("fidget.notification.view")
+local poll          = require("fidget.poll")
+local logger        = require("fidget.logger")
 
 --- Used to determine the identity of notification items and groups.
 ---@alias Key any
@@ -21,6 +21,8 @@ local logger                = require("fidget.logger")
 ---@field key           Key|nil       Replace existing notification item of the same key
 ---@field group         Key|nil       Group that this notification item belongs to
 ---@field annote        string|nil    Optional single-line title that accompanies the message
+---@field position      string|nil    Optional text position inside the window
+---@field lang          string|nil    Optional tree-sitter highlight language to use
 ---@field hidden        boolean|nil   Whether this item should be shown
 ---@field ttl           number|nil    How long after a notification item should exist; pass 0 to use default value
 ---@field update_only   boolean|nil   If true, don't create new notification items
@@ -76,6 +78,8 @@ local logger                = require("fidget.logger")
 ---@field content_key   Key         What to deduplicate items by (do not deduplicate if `nil`)
 ---@field message       string      Displayed message for the item
 ---@field annote        string|nil  Optional title that accompanies the message
+---@field position      string|nil  Optional text position inside the window
+---@field lang          string|nil  Optional tree-sitter highlight language to use
 ---@field style         string      Style used to render the annote/title, if any
 ---@field hidden        boolean     Whether this item should be shown
 ---@field expires_at    number      What time this item should be removed; math.huge means never
@@ -86,11 +90,11 @@ local logger                = require("fidget.logger")
 --- A notification element in the notifications history.
 ---
 ---@class HistoryItem : Item
----@field removed       boolean     Whether this item is deleted
----@field group_key     Key         Key of the group this item belongs to
----@field group_name    string|nil  Title of the group this item belongs to
----@field group_icon    string|nil  Icon of the group this item belongs to
----@field last_updated  number      What time this item was last updated, in seconds since Jan 1, 1970
+---@field removed       boolean          Whether this item is deleted
+---@field group_key     Key              Key of the group this item belongs to
+---@field group_name    string|false|nil Title of the group this item belongs to
+---@field group_icon    string|false|nil Icon of the group this item belongs to
+---@field last_updated  number           What time this item was last updated, in seconds since Jan 1, 1970
 
 --- Filter options when querying for notifications history.
 ---
@@ -104,14 +108,29 @@ local logger                = require("fidget.logger")
 ---@field include_active  boolean|nil Include items that have not been removed (default: true)
 
 --- The "model" (abstract state) of notifications.
----@type State
-local state                 = {
+---@class State
+local state         = {
   groups          = {},
+  render          = false,
   view_suppressed = false,
   removed         = {},
   removed_cap     = 128,
   removed_first   = 1,
 }
+
+--- Must be called when the groups table changes
+function state:update()
+  if not self.render then
+    self.render = true
+  end
+end
+
+--- Serves as a lock to prevent unnecessary rendering
+function state:wait()
+  if self.render then
+    self.render = false
+  end
+end
 
 --- Default notification configuration.
 ---
@@ -156,8 +175,8 @@ notification.default_config = {
 --- Sets a |fidget.notification.Item|'s `content_key`, for deduplication.
 ---
 --- This default implementation sets an item's `content_key` to its `message`,
---- appended with its `annote` (or a null byte if it has no `annote`), a rough
---- "hash" of its contents. You can write your own `update_hook` that "hashes"
+--- appended with its `position` and `annote` (or a null byte if it has no `annote`),
+--- a rough "hash" of its contents. You can write your own `update_hook` that "hashes"
 --- the message differently, e.g., only considering the `message`, or taking the
 --- `data` or style fields into account.
 ---
@@ -181,13 +200,19 @@ notification.default_config = {
 ---
 ---@param item Item
 function notification.set_content_key(item)
-    item.content_key = item.message .. " " .. (item.annote and item.annote or string.char(0))
+  item.content_key = string.format(
+    "%s-%s-%s%s",
+    item.message,
+    item.lang and item.lang or "",
+    item.position and item.position or "",
+    item.annote and item.annote or string.char(0)
+  )
 end
 
 ---@options notification [[
 ---@protected
 --- Notification options
-notification.options        = {
+notification.options = {
   --- How frequently to update and render notifications
   ---
   --- Measured in Hertz (frames per second).
@@ -205,6 +230,12 @@ notification.options        = {
   ---
   ---@type 0|1|2|3|4|5
   filter = vim.log.levels.INFO,
+
+  -- Whether to show errors that occur while rendering notifications
+  -- When false, errors are logged instead of shown to the user
+  ---
+  ---@type boolean
+  show_errors = false,
 
   --- Number of removed messages to retain in history
   ---
@@ -320,9 +351,7 @@ end
 ---
 ---@return boolean closed_successfully Whether the window closed successfully.
 function notification.close()
-  return notification.window.guard(function()
-    notification.window.close()
-  end)
+  return notification.window.guard(notification.window.close)
 end
 
 --- Clear active notifications.
@@ -358,7 +387,11 @@ function notification.reset()
   notification.clear()
   notification.clear_history()
   notification.poller:reset_error() -- Clear error if previously encountered one
+  notification.poller:release()     -- Release timer resources
 end
+
+---@private
+local _guard = notification.window.guard
 
 --- The poller for the notification subsystem.
 ---@protected
@@ -367,26 +400,39 @@ notification.poller = poll.Poller {
   poll = function(self)
     notification.model.tick(self:now(), state)
 
-    -- TODO: if not modified, don't re-render
-    local lines, width = notification.view.render(self:now(), state.groups)
+    local message = notification.view.render(self:now(), state)
 
-    if #lines > 0 then
+    if message and #message.lines > 0 and state.render then
       if state.view_suppressed then
         return true
       end
 
-      notification.window.guard(function()
-        notification.window.set_lines(lines, width)
-      end)
+      _guard(notification.window.set_lines, message)
+
+      state:wait()
+
       return true
     else
       if state.view_suppressed then
         return false
+      else
+        if not state.render then
+          return true
+        end
       end
 
       -- If we could not close the window, keep polling, i.e., keep trying to close the window.
       return not notification.close()
     end
+  end,
+  raise = function(self)
+    if self:has_error() then
+      notification.close()
+
+      self:reset_error()
+      self:release()
+    end
+    return notification.options.show_errors
   end
 }
 
@@ -462,7 +508,7 @@ end
 ---
 ---@return Key[] keys
 function notification.group_keys()
-  return vim.tbl_map(function(group) return group.key end, state.groups)
+  return vim.iter(state.groups):map(function(group) return group.key end):totable()
 end
 
 return notification

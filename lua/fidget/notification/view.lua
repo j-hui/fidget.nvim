@@ -1,12 +1,44 @@
 --- Helper methods used to render notification model elements into views.
 ---
---- TODO: partial/in-place rendering, to avoid building new strings.
 local M = {}
 
 local window = require("fidget.notification.window")
+local logger = require("fidget.logger")
+
+---@type Cache
+local cache = require("fidget.notification.model").cache
+
+---@type table<string, vim.treesitter.Query>
+local tsquery = {}
+
+---@class Notification
+---@field opts    NotificationOpts   rendering options
+---@field lines   NotificationLine[] lines to place into buffer
+---@field rows    integer            total amount of lines
+---@field width   integer            width of longest line
+
+---@class NotificationOpts
+---@field upwards  boolean display from bottom to top
+---@field position string  virtual text position
 
 --- A list of highlighted tokens.
----@class NotificationLine : NotificationToken[]
+---@alias NotificationLine NotificationTokens[]|NotificationItems[]
+
+--- NOTE: may need to double check this up
+--- not sure I wrote the lls docs properly its a lot of nested table and cases
+---
+---@alias NotificationTokens { hdr: NotificationToken[] }
+---@alias NotificationItems { line: NotificationItem[], opts: NotificationItemOpts }
+
+---@class NotificationItem
+---@field ecol integer
+---@field scol integer
+---@field text string
+---@field hl   string[]
+
+--- Per-message rendering options
+---@class NotificationItemOpts
+---@field position string
 
 --- A tuple consisting of some text and a stack of highlights.
 ---@class NotificationToken : {[1]: string, [2]: string[]}
@@ -23,6 +55,21 @@ M.options = {
   ---@type boolean
   stack_upwards = true,
 
+  --- Position of the text inside the window
+  ---
+  ---@type "left"|"right"
+  text_position = "right",
+
+  --- Automatically highlight notification using tree-sitter
+  ---
+  ---@type string|false
+  highlight = "markdown_inline",
+
+  --- Hide markdown tags with the "conceal" highlight name
+  ---
+  ---@type boolean
+  hide_conceal = true,
+
   --- Indent messages longer than a single line
   ---
   --- Example: ~
@@ -38,32 +85,6 @@ M.options = {
   ---
   ---@type "message"|"annote"
   align = "message",
-
-  --- Reflow (wrap) messages wider than notification window
-  ---
-  --- The various options determine how wrapping is handled mid-word.
-  ---
-  --- Example: ~
-  --->
-  ---       "hard" is reflo INFO
-  ---         wed like this
-  ---
-  ---   "hyphenate" is ref- INFO
-  ---       lowed like this
-  ---
-  ---   "ellipsis" is refl… INFO
-  ---       …owed like this
-  ---<
-  ---
-  --- If this option is set to false, long lines will simply be truncated.
-  ---
-  --- This option has no effect if |fidget.option.notification.window.max_width|
-  --- is `0` (i.e., infinite).
-  ---
-  --- Annotes longer than this width on their own will not be wrapped.
-  ---
-  ---@type "hard"|"hyphenate"|"ellipsis"|false
-  reflow = false,
 
   --- Separator between group name and icon
   ---
@@ -127,36 +148,12 @@ function M.check_multigrid_ui()
   return false
 end
 
----  Whether nr is a codepoint representing whitespace.
----
----@param s string
----@param index integer
----@return boolean
-local function whitespace(s, index)
-  -- Same heuristic as vim.fn.trim(): <= 32 includes all ASCII whitespace
-  -- (as well as other control chars, which we don't care about).
-  -- Note that 160 is the unicode no-break space but we don't want to break on
-  -- that anyway.
-  return vim.fn.strgetchar(s, index) <= 32
-end
-
---- The displayed width of some strings.
----
---- A simple wrapper around vim.fn.strwidth(), accounting for tab characters
---- manually.
----
---- We call this instead of vim.fn.strdisplaywidth() because that depends on
---- the state and size of the current window and buffer, which could be
---- anywhere.
----@param ... string
----@return integer len
-local function strwidth(...)
-  local w = 0
-  for _, s in ipairs({ ... }) do
-    w = w + vim.fn.strwidth(s) +
-        vim.fn.count(s, "\t") * math.max(0, window.options.tabstop - 1)
+---@return string
+local function normal_hl()
+  if window.options.normal_hl ~= "Normal" and window.options.normal_hl ~= "" then
+    return window.options.normal_hl
   end
-  return w
+  return "Normal" -- default
 end
 
 ---@return integer len
@@ -168,10 +165,82 @@ end
 ---@param ... string
 ---@return integer len
 local function line_width(...)
-  local w = strwidth(...)
+  local w = 0
+  for _, s in pairs({ ... }) do
+    w = w + vim.fn.strwidth(s)
+  end
   return w == 0 and w or w + line_margin()
 end
 
+---@return number
+local function window_max()
+  local pad = line_margin() + 4
+  local win = window.max_width() - pad
+  local len = window.get_editor_width() - pad
+  -- Respects window relative positioning
+  if window.options.relative == "win" then
+    win = math.min(win, vim.api.nvim_win_get_width(0) - pad)
+  end
+  -- We ditch math.huge constant here because we need a limit to split lines
+  if win <= 0 or len < win then
+    return len
+  end
+  return win
+end
+
+--- Tokenize a string into a list of tokens.
+---
+--- A token is a contiguous sequence of characters or an individual non-space character.
+--- Ignores consecutives whitespace.
+---                      scol          ecol          word
+---@alias Token  { [1]: integer, [2]: integer, [3]: string }
+---
+---@param source string
+---@return Token[]
+local function Tokenize(source)
+  local strcharpart = vim.fn.strcharpart
+  local strchars = vim.fn.strchars
+  local concat = table.concat
+
+  local pos = 0
+  local tab = 0
+  local res = {}
+  local len = strchars(source)
+
+  while pos < len do
+    ---@type string
+    local char = strcharpart(source, pos, 1)
+
+    if char:match("%w") then
+      local ptr = pos
+      local word = { char }
+
+      while ptr + 1 < len do
+        local c = strcharpart(source, ptr + 1, 1)
+        if not c:match("%w") then
+          break
+        end
+        word[#word + 1] = c
+        ptr = ptr + 1
+      end
+      res[#res + 1] = { pos + tab, ptr + tab, concat(word) }
+      pos = ptr + 1
+    else
+      if not char:match("%s") or char == "\t" then
+        if char == "\t" then
+          tab = tab + window.options.tabstop
+        else
+          res[#res + 1] = { pos + tab, pos + tab, char }
+        end
+      end
+      pos = pos + 1
+    end
+  end
+  return res
+end
+
+--- Pack an arbitrary text and its highlight inside a notification token.
+---
 ---@param text string the text in this token
 ---@param ... string  highlights to apply to text
 ---@return NotificationToken
@@ -182,7 +251,9 @@ local function Token(text, ...)
   return { text, { window.no_blend_hl, ... } }
 end
 
----@param ... NotificationToken
+--- Pack a notification token inside margin and returns a notification line.
+---
+---@param ... NotificationToken|NotificationItem
 ---@return NotificationLine
 local function Line(...)
   if select("#", ...) == 0 then
@@ -195,6 +266,141 @@ local function Line(...)
   return line
 end
 
+--- Insert an annote or indent associated content line.
+---
+---@param line   table
+---@param width  integer
+---@param annote NotificationToken
+---@param first  boolean
+---@param left   boolean
+---@return table   line
+---@return integer width
+local function Annote(line, width, annote, sep, first, left)
+  if not annote then
+    return line, width
+  end
+  if first then
+    annote[1] = left and annote[1] .. sep or sep .. annote[1]
+    if left then
+      line = { annote, unpack(line) }
+    else
+      line[#line + 1] = annote
+    end
+    width = width + line_width(annote[1])
+  else
+    -- Indent messages longer than a single line (see notification.view.align)
+    if M.options.align == "message" then
+      local len = vim.fn.strwidth(annote[1])
+      local pad = Token(string.rep(sep, len))
+      if left then
+        line = { pad, unpack(line) }
+      else
+        line[#line + 1] = pad
+      end
+      width = width + len
+    end
+  end
+  return line, width
+end
+
+--- Returns the Treesitter highlight groups for a given source and language.
+---
+---@param source   string
+---@param lang     string
+---@param prev_hls table|nil
+---@return table|nil hls
+local function Highlight(source, lang, prev_hls)
+  local ok, parser = pcall(function()
+    return vim.treesitter.get_string_parser(source, lang)
+  end)
+  if not ok then
+    logger.warn(parser)
+    return
+  end
+  local query
+  -- Caches highlights queries
+  if not tsquery[lang] then
+    query = vim.treesitter.query.get(lang, "highlights")
+    if not query then
+      return -- query file not found
+    end
+  else
+    query = tsquery[lang]
+  end
+
+  local hls = {} -- holds captured hl
+  if prev_hls then
+    hls = prev_hls
+  end
+  local line = {}
+  local prev_line = 0
+  local prev_text, prev_range
+
+  for id, node in query:iter_captures(parser:parse()[1]:root(), source) do
+    local text = vim.treesitter.get_node_text(node, source)
+    if not text then
+      goto continue
+    end
+    local name = query.captures[id]
+    if name == "spell" or name == "nospell" then
+      goto continue -- ignores spellcheck
+    end
+
+    local hl = vim.fn.hlID(name)
+    -- Finds hl groups id if exists
+    if hl == 0 then
+      hl = vim.fn.hlID("@" .. name)
+      if hl == 0 then
+        hl = vim.fn.hlID(normal_hl()) -- fallback
+      end
+    end
+
+    local srow, scol, _, ecol = node:range()
+    if prev_line ~= srow then
+      hls[#hls + 1] = line -- push to a new line
+      prev_line = srow
+      line = {}
+    end
+    if prev_text ~= text then
+      prev_text = text
+      prev_range = srow
+    else
+      if srow == prev_range then
+        line[#line].hl = hl -- latest node takes priority
+      end
+    end
+    -- Uses the same item renderer struct
+    for _, token in ipairs(Tokenize(text)) do
+      local dup = false
+      -- Ignores duplicates
+      for i = 1, #line do
+        if srow == line[i].srow
+            and scol == line[i].scol
+            and ecol == line[i].ecol
+            and token[3] == line[i].text
+            and hl == line[i].hl then
+          dup = true
+          break
+        end
+      end
+      if not dup then
+        line[#line + 1] = {
+          srow = srow,
+          scol = scol,
+          ecol = ecol,
+          text = token[3],
+          hl = hl
+        }
+      end
+    end
+    ::continue::
+  end
+  if #line > 0 then
+    hls[#hls + 1] = line
+  end
+  return hls
+end
+
 ---@return NotificationLine[]|nil lines
 ---@return integer                width
 function M.render_group_separator()
@@ -202,8 +408,7 @@ function M.render_group_separator()
   if not line then
     return nil, 0
   end
-  return { Line(Token(line, M.options.group_separator_hl)) }, line_width(line)
-  -- TODO: cache the return value, this never changes
+  return { hdr = Line(Token(line, M.options.group_separator_hl)) }, line_width(line)
 end
 
 --- Render the header of a group, containing group name and icon.
@@ -233,19 +438,19 @@ function M.render_group_header(now, group)
   if name_tok and icon_tok then
     ---@cast group_name string
     ---@cast group_icon string
-    local sep_tok = Token(M.options.icon_separator) -- TODO: cache this
-    local width = line_width(group_name, group_icon, M.options.icon_separator)
+    local sep_tok = Token(M.options.icon_separator or " ")
+    local width = line_width(group_name, group_icon, M.options.icon_separator or " ")
     if group.config.icon_on_left then
-      return { Line(icon_tok, sep_tok, name_tok) }, width
+      return { hdr = Line(icon_tok, sep_tok, name_tok) }, width
     else
-      return { Line(name_tok, sep_tok, icon_tok) }, width
+      return { hdr = Line(name_tok, sep_tok, icon_tok) }, width
     end
   elseif name_tok then
     ---@cast group_name string
-    return { Line(name_tok) }, line_width(group_name)
+    return { hdr = Line(name_tok) }, line_width(group_name)
   elseif icon_tok then
     ---@cast group_icon string
-    return { Line(icon_tok) }, line_width(group_icon)
+    return { hdr = Line(icon_tok) }, line_width(group_icon)
   else
     -- No group header to render
     return nil, 0
@@ -263,7 +468,7 @@ function M.dedup_items(items)
       counts[key] = counts[key] + 1
     else
       counts[key] = 1
-      table.insert(deduped, item)
+      deduped[#deduped + 1] = item
     end
   end
   return deduped, counts
@@ -271,12 +476,13 @@ end
 
 --- Render a notification item, containing message and annote.
 ---
----@param item   Item
----@param config Config
----@param count  number
----@return NotificationLine[]|nil lines
----@return integer                max_width
-function M.render_item(item, config, count)
+---@param item      Item
+---@param config    Config
+---@param count     number
+---@param max_width number
+---@return NotificationItems|nil lines
+---@return integer               width
+function M.render_item(item, config, count, max_width)
   if item.hidden then
     return nil, 0
   end
@@ -287,167 +493,214 @@ function M.render_item(item, config, count)
     return nil, 0
   end
 
-  local lines, item_width = {}, 0
-
-  local ann_tok = item.annote and Token(item.annote, item.style)
-  local sep_tok = Token(config.annote_separator or " ")
-
-  -- How much space is available to message lines
-  local msg_width = window.max_width()
-      - line_margin() -- adjusted for line margin
-      - 1             -- adjusted for ext_mark margin
-
-  local presplit_char, postsplit_char = nil, nil
-  if M.options.reflow == "hyphenate" then
-    presplit_char = "-"
-  elseif M.options.reflow == "ellipsis" then
-    presplit_char = "…"
-    postsplit_char = "…"
+  local hl = { nil, nil }
+  if not is_multigrid_ui then
+    hl[1] = window.no_blend_hl
   end
+  hl[#hl + 1] = normal_hl()
 
-  if ann_tok and msg_width ~= math.huge and M.options.reflow then
-    -- If we need annote, adjust remaining available width for message line(s)
-    local ann_width = strwidth(sep_tok[1], ann_tok[1])
-    if ann_width > msg_width then
-      -- No room for annote + item line. Put annote on line of its own.
-      table.insert(lines, Line(ann_tok))
-      item_width = line_width(ann_tok[1])
-      -- Pretend there was no annote to begin with.
-      ann_tok = nil
-    else
-      -- Reduce available space for message line(s); that will get printed next
-      -- to annote and sep in first iteration of loop below.
-      msg_width = msg_width - ann_width
-    end
-  end
-
-  local function insert(line)
-    if ann_tok then
-      -- Need to emite annote token in this line
-      table.insert(lines, Line(line, sep_tok, ann_tok))
-      item_width = math.max(item_width, line_width(line[1], sep_tok[1], ann_tok[1]))
-
-      if M.options.align == "annote" then
-        -- Refund available msg_width with length of annote + sepeparator
-        msg_width, ann_tok = msg_width + strwidth(sep_tok[1], ann_tok[1]), nil
-      else -- M.options.align == "message"
-        -- Replace annote token with equivalent width of space
-        ann_tok = Token(string.rep(" ", strwidth(ann_tok[1])))
+  local hls
+  local lang = item.lang and item.lang or M.options.highlight
+  if lang and lang ~= "" then
+    hls = Highlight(msg, lang)
+    if hls then
+      -- Also use inline for markdown
+      if lang == "markdown" then
+        hls = Highlight(msg, "markdown_inline", hls)
       end
-    else
-      table.insert(lines, Line(line))
-      item_width = math.max(item_width, line_width(line[1]))
     end
   end
+  -- We have to keep track of extra lines added in tokens to not cause a desync with hls
+  local extra_line = 0
+  local width = 0
 
-  for whole_line in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
-    local lwidth = strwidth(whole_line)
-    if msg_width >= lwidth then
-      -- The entire line fits into the available space; insert it as is.
-      -- Note that we do not trim it either.
-      insert(Token(whole_line))
-    elseif not M.options.reflow then
-      -- If the message is wider than available space but we are explicitly
-      -- asked not to reflow, then just truncate it.
-      insert(Token(vim.fn.strcharpart(whole_line, 0, msg_width, true)))
-    else
-      local split_begin, postsplit = 0, nil
-      whole_line = vim.fn.trim(whole_line)
-      while lwidth > 0 do
-        local split_len, presplit = msg_width, nil
-        if postsplit then
-          split_len = split_len - 1
+  ---@type NotificationItem[]|NotificationToken[]
+  local tokens = {}
+  local annote = item.annote and Token(item.annote, item.style)
+  local left = item.position and item.position == "left" or M.options.text_position == "left"
+  local sep = config.annote_separator or " "
+
+  for s in vim.gsplit(msg, "\n", { plain = true, trimempty = true }) do
+    local line = {}
+    local line_ptr = 0
+    local prev_end = 0
+    local next_start = 0
+    local bytes_offset = 0
+
+    for _, token in ipairs(Tokenize(s)) do
+      if not token then
+        break
+      end
+      local spacing = token[1] - prev_end
+      local strlen = vim.fn.strwidth(token[3]) -- cell width
+
+      -- Check if the line would overflow notification window if added as it is
+      if line_ptr + strlen + spacing >= max_width - (annote and line_width(annote[1]) or 0) then
+        if annote then
+          line, width = Annote(line, width, annote, sep, #tokens == 0, left)
         end
+        tokens[#tokens + 1] = Line(unpack(line)) -- push to newline
+        next_start = token[1]
+        extra_line = extra_line + 1              -- safeguard
+        line_ptr = 0
+        line = {}
+      end
+      ---@type NotificationItem
+      local word = {
+        scol = token[1] - next_start,
+        ecol = token[2] - next_start + 1,
+        text = token[3],
+        hl = hl
+      }
+      line[#line + 1] = word
 
-        if lwidth > split_len
-            and not whitespace(whole_line, split_begin + split_len)
-            and not whitespace(whole_line, split_begin + split_len - 1)
-        then
-          if whitespace(whole_line, split_begin + split_len - 2) then
-            -- Avoid "split w/ord"
-            split_len = split_len - 1
-          elseif presplit_char then
-            if whitespace(whole_line, split_begin + split_len - 3) then
-              -- Avoid "split w-/ord"
-              split_len = split_len - 2
-            else
-              split_len = split_len - 1
-              presplit = presplit_char
+      -- Adds treesitter highlights
+      if hls then
+        local iter = vim.iter
+        for _, tsline in ipairs(hls) do
+          for _, ts in ipairs(tsline) do
+            if ts.text == word.text and ts.srow + extra_line == #tokens then
+              -- paint the whole line
+              if ts.scol == 0 and ts.ecol == 0
+                  or
+                  word.scol >= ts.scol - next_start - bytes_offset then
+                -- Removes concealed token
+                if M.options.hide_conceal then
+                  if ts.hl == vim.fn.hlID("conceal") then
+                    line_ptr = line_ptr - strlen
+                    word.text = ""
+                  end
+                end
+                word.hl = iter(word.hl):map(function(value)
+                  if value ~= window.no_blend_hl then value = ts.hl end
+                  return value
+                end):totable()
+              end
             end
           end
         end
-
-        local line = vim.fn.strcharpart(whole_line, split_begin, split_len, true)
-        line = vim.fn.trim(line)
-        if postsplit then
-          line = postsplit .. line
-        end
-        if presplit then
-          line = line .. presplit
-          postsplit = postsplit_char
-        else
-          postsplit = nil
-        end
-        insert(Token(line))
-        split_begin = split_begin + split_len
-        lwidth = lwidth - split_len
       end
+      -- Stores extra bytes needed to sync hls
+      if #token[3] > strlen then
+        bytes_offset = bytes_offset + #token[3]
+      end
+      prev_end = token[2] + 1
+      line_ptr = line_ptr + strlen + spacing
+      width = math.max(width, line_ptr + line_margin())
     end
-  end
-
-  if #lines == 0 then
-    if ann_tok then
-      -- The message is an empty string, but there's an annotation to render.
-      return { Line(ann_tok) }, line_width(item.annote)
-    else
-      -- Don't render empty messages
-      return nil, 0
+    if annote then
+      line, width = Annote(line, width, annote, sep, #tokens == 0, left)
     end
-  else
-    return lines, item_width
+    tokens[#tokens + 1] = Line(unpack(line))
   end
+  -- The message is an empty string but there's an annotation to render
+  if #tokens == 0 and annote then
+    tokens = { Line(annote) }
+  end
+  return {
+    line = tokens,
+    --- Options to be passed to window render for this notification
+    --- For now only text position is used
+    ---@type NotificationItemOpts
+    opts = { position = item.position }
+  }, width
 end
 
 --- Render notifications into lines and highlights.
 ---
 ---@param now number timestamp of current render frame
----@param groups Group[]
----@return NotificationLine[] lines
----@return integer width
-function M.render(now, groups)
+---@param state State
+---@return Notification?
+function M.render(now, state)
+  if window.options.relative == "win" then
+    local id = vim.api.nvim_get_current_win()
+    -- Force rendering when the window id change
+    if not cache.window or
+        cache.window and cache.window ~= id
+    then
+      if cache.window then
+        state:update()
+      end
+      cache.window = id
+    end
+  end
+  local size = window_max()
+  local resized = cache.render_width and cache.render_width ~= size or false
+  -- Force rendering when the length of the window change
+  if resized and not state.render then
+    state:update()
+  end
+  if not state.render then
+    -- Otherwise return and avoid recomputing unnecessarily
+    return
+  end
+  if not cache.render_width or resized then
+    cache.render_width = size
+  end
+
   is_multigrid_ui = M.check_multigrid_ui()
 
   ---@type NotificationLine[][]
   local chunks = {}
   local max_width = 0
+  local max = math.max
 
-  for idx, group in ipairs(groups) do
+  cache.render_item = cache.render_item or {}
+  cache.group_header = cache.group_header or {}
+  cache.group_sep = cache.group_sep or { nil, nil } -- sep, width
+
+  for idx, group in ipairs(state.groups) do
     if idx ~= 1 then
-      local sep, sep_width = M.render_group_separator()
-      if sep then
-        table.insert(chunks, sep)
-        max_width = math.max(max_width, sep_width)
+      if resized or not cache.group_sep[1] then
+        cache.group_sep[1], cache.group_sep[2] = M.render_group_separator()
       end
+      chunks[#chunks + 1] = cache.group_sep[1]
+      max_width = max(max_width, cache.group_sep[2])
     end
 
-    local hdr, hdr_width = M.render_group_header(now, group)
-    if hdr then
-      table.insert(chunks, hdr)
-      max_width = math.max(max_width, hdr_width)
+    if group.config.name then
+      local icon = group.config.icon
+      if type(icon) == "function" then
+        icon = group.config.icon(now, group.items)
+      end
+      if not cache.group_header[group.config.name] then
+        cache.group_header[group.config.name] = { nil, nil, nil } -- hdr, width, icon
+      end
+      local hdr = cache.group_header[group.config.name]
+
+      if resized or not icon or hdr and icon ~= hdr[3] then
+        hdr[1], hdr[2] = M.render_group_header(now, group)
+        hdr[3] = icon
+      end
+      chunks[#chunks + 1] = hdr[1]
+      max_width = max(max_width, hdr[2])
     end
 
     local items, counts = M.dedup_items(group.items)
+
     for i, item in ipairs(items) do
       if group.config.render_limit and i > group.config.render_limit then
         -- Don't bother rendering the rest (though they still exist)
         break
       end
-
-      local it, it_width = M.render_item(item, group.config, counts[item.content_key or item])
-      if it then
-        table.insert(chunks, it)
-        max_width = math.max(max_width, it_width)
+      local key = item.content_key or item
+      local count = counts[key]
+      -- Caches lsp messages when update_hook is false
+      if not group.config.update_hook and group.config.priority then
+        key, count = item.message, 1
       end
+
+      if not cache.render_item[key] then
+        cache.render_item[key] = { nil, nil, nil } -- it, width, count
+      end
+      local it = cache.render_item[key]
+
+      if resized or count ~= it[3] then
+        it[1], it[2] = M.render_item(item, group.config, count, size)
+        it[3] = count
+      end
+      chunks[#chunks + 1] = it[1]
+      max_width = max(max_width, it[2])
     end
   end
 
@@ -457,14 +710,30 @@ function M.render(now, groups)
   else
     start, stop, step = 1, #chunks, 1
   end
-
+  local rows = 0
   local lines = {}
   for i = start, stop, step do
-    for _, line in ipairs(chunks[i]) do
-      table.insert(lines, line)
+    ---@cast chunks NotificationLine
+    if chunks[i] and (chunks[i].hdr or chunks[i].line) then
+      rows = rows + (chunks[i].hdr and 1 or 0) + (chunks[i].line and #chunks[i].line or 0)
+      lines[#lines + 1] = chunks[i]
     end
   end
-  return lines, max_width
+  if window.options.relative == "win" then
+    -- Ensure text fits within the window width
+    max_width = max_width > size and size + line_margin() or max_width
+  end
+  ---@type Notification
+  return {
+    rows = rows,
+    lines = lines,
+    width = max_width,
+    ---@type NotificationOpts
+    opts = {
+      upwards = M.options.stack_upwards,
+      position = M.options.text_position,
+    }
+  }
 end
 
 --- Display notification items in Neovim messages.

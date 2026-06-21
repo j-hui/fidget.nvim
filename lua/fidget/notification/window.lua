@@ -8,14 +8,13 @@
 ---
 --- Note that for now, it only supports editor-relative floats, though some code
 --- ported from the legacy version still supports window-relative floats.
-local M                         = {}
-local logger                    = require("fidget.logger")
-local need_to_check_integration = false
+local M      = {}
+local logger = require("fidget.logger")
 
 ---@options notification.window [[
 ---@protected
 --- Notifications window options
-M.options                       = {
+M.options    = {
   --- Base highlight group in the notification window
   ---
   --- Used by any Fidget notification text that is not otherwise highlighted,
@@ -128,7 +127,16 @@ M.options                       = {
 ---@options ]]
 
 require("fidget.options").declare(M, "notification.window", M.options, function()
-  need_to_check_integration = true
+  -- Integrate with other plugins if needed
+  vim.iter(require("fidget.integration").options):each(function(file)
+    local module = require("fidget.integration." .. file)
+    if module.options.enable == true then
+      if module.integration_needed()
+          and not vim.tbl_contains(M.options.avoid, module.filetype) then
+        table.insert(M.options.avoid, module.filetype)
+      end
+    end
+  end)
 end)
 
 --- The name of the highlight group that Fidget uses to prevent winblend from
@@ -172,18 +180,19 @@ local state = {
 --- (Thanks @wookayin and @0xAdk!)
 ---
 ---@param callable fun()
+---@param args any?
 ---@return boolean suppressed_error
-function M.guard(callable)
+function M.guard(callable, args)
+  local ok, err = pcall(callable, args)
+  if ok then
+    return true
+  end
+
   local whitelist = {
     "E11: Invalid in command%-line window",
     "E523: Not allowed here",
     "E565: Not allowed to change",
   }
-
-  local ok, err = pcall(callable)
-  if ok then
-    return true
-  end
 
   if type(err) ~= "string" then
     -- Don't know how to deal with this kind of error object
@@ -208,21 +217,7 @@ local function should_avoid(winnr)
   end
   local bufnr = vim.api.nvim_win_get_buf(winnr)
   local ft = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
-  return ft == "fidget" or vim.tbl_contains(M.options.avoid, ft)
-end
-
-local function check_integration()
-  local xcodebuild = require("fidget.integration.xcodebuild-nvim")
-  if not vim.tbl_contains(M.options.avoid, xcodebuild.filetype)
-      and xcodebuild.integration_needed() then
-    table.insert(M.options.avoid, xcodebuild.filetype)
-  end
-
-  local nvim_tree = require("fidget.integration.nvim-tree")
-  if not vim.tbl_contains(M.options.avoid, nvim_tree.filetype)
-      and nvim_tree.integration_needed() then
-    table.insert(M.options.avoid, nvim_tree.filetype)
-  end
+  return vim.iter(M.options.avoid):any(function(v) return v == ft end)
 end
 
 ---@return integer height of the editor area, excludes statusline and tabline
@@ -238,15 +233,10 @@ local function get_editor_height()
   return vim.opt.lines:get() - (statusline_height + vim.opt.cmdheight:get())
 end
 
----@return integer width of the editor area, including signcolumn and foldcolumn
-local function get_editor_width()
-  return vim.opt.columns:get()
-end
-
 ---@param winnr integer
 ---@return integer effective_height of the window, excluding winbar
 local function get_effective_win_height(winnr)
-  local height = vim.api.nvim_win_get_height(0)
+  local height = vim.api.nvim_win_get_height(winnr)
   if vim.fn.exists("+winbar") > 0 and vim.opt.winbar:get() ~= "" then
     -- When winbar is set, effective win height is reduced by 1 (see :help winbar)
     return height - 1
@@ -265,6 +255,23 @@ local function get_tabline_height()
   end
 end
 
+---@type integer
+local columns = vim.o.columns
+
+--- Updates columns value when window size changes
+vim.api.nvim_create_autocmd('VimResized', {
+  callback = function()
+    columns = vim.o.columns
+  end
+})
+
+--- Returns the cached width of the editor area, including signcolumns and foldcolumn
+---
+---@return integer
+function M.get_editor_width()
+  return columns
+end
+
 --- Compute the max width of the notification window.
 ---
 ---@return integer
@@ -274,7 +281,7 @@ function M.max_width()
   end
 
   if M.options.max_width < 1 then
-    local width = vim.opt.columns:get()
+    local width = vim.o.columns
     return math.ceil(width * M.options.max_width)
   end
 
@@ -347,7 +354,7 @@ local function search_for_editor_anchor(row_max, align_bottom)
   -- avoided everything), col will be negative. Set row/col to SE or NE corner
   -- of the editor so that we have _some_ valid position.
   if col < 0 then
-    col = get_editor_width()
+    col = M.get_editor_width()
     row = align_bottom and row_max or get_tabline_height()
   end
   return row, col
@@ -360,11 +367,6 @@ end
 ---@return ("NE"|"SE")      anchor
 ---@return ("editor"|"win") relative
 function M.get_window_position()
-  if need_to_check_integration then
-    check_integration()
-    need_to_check_integration = false
-  end
-
   local row_max, align_bottom, col, row, relative
   local cursor_row = vim.api.nvim_win_get_cursor(0)[1] - vim.fn.line("w0")
 
@@ -424,10 +426,6 @@ function M.get_buffer()
   if state.buffer_id == nil or not vim.api.nvim_buf_is_valid(state.buffer_id) then
     -- Create an unlisted (1st param) scratch (2nd param) buffer
     state.buffer_id = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_set_option_value("filetype", "fidget", { buf = state.buffer_id })
-    -- We set this to a known value to ensure we correctly account for the width
-    -- of tab chars while calling strwidth() in notification.view.strwidth().
-    vim.api.nvim_set_option_value("tabstop", M.options.tabstop, { buf = state.buffer_id })
   end
   return state.buffer_id
 end
@@ -452,7 +450,7 @@ end
 ---@return number|nil window_id
 function M.get_window(row, col, anchor, relative, width, height)
   -- Clamp width and height to dimensions of editor and user specification.
-  local editor_width, editor_height = get_editor_width(), get_editor_height()
+  local editor_width, editor_height = M.get_editor_width(), get_editor_height()
   editor_width = math.max(0, editor_width - 4) -- HACK: guess width of signcolumn etc.
 
   if editor_width < 4 or editor_height < 4 then
@@ -579,13 +577,13 @@ function M.show(height, width)
   return M.get_window(row, col, anchor, relative, width, height)
 end
 
---- Replace the set of lines in the Fidget window, right-justify them, and apply
---- highlights.
+---@type boolean
+local eol_right = vim.fn.has("nvim-0.11.0") == 1
+
+--- Replace the set of lines in the Fidget window, justify them, and apply highlights.
 ---
----
----@param lines       NotificationLine[]  lines to place into buffer
----@param width       integer             width of longest line
-function M.set_lines(lines, width)
+---@param message Notification
+function M.set_lines(message)
   local buffer_id = M.get_buffer()
   local namespace_id = M.get_namespace()
 
@@ -593,37 +591,57 @@ function M.set_lines(lines, width)
   vim.api.nvim_buf_clear_namespace(buffer_id, namespace_id, 0, -1)
 
   -- Prepare empty lines for extmarks
-  local empty_lines = vim.tbl_map(function() return "" end, lines)
+  local empty_lines = {}
+  for _ = 1, message.rows, 1 do
+    empty_lines[#empty_lines + 1] = ""
+  end
   vim.api.nvim_buf_set_lines(buffer_id, 0, -1, false, empty_lines)
+  empty_lines = nil
 
-  for iline, line in ipairs(lines) do
-    if vim.fn.has("nvim-0.11.0") == 1 then
-      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, iline - 1, 0, {
-        virt_text = line,
-        virt_text_pos = "eol_right_align",
-      })
+  local row = 0 -- top to bottom
+  local vtp = eol_right and "eol_right_align" or "right_align"
+
+  for _, body in ipairs(message.lines) do
+    local chunk = {}
+
+    ---@cast body NotificationItems
+    if body.line then
+      local position = body.opts and body.opts.position or message.opts.position
+
+      for _, token in ipairs(body.line) do
+        chunk = {}
+        local prev_ecol = 0
+
+        for _, t in ipairs(token) do
+          if t.text then
+            if prev_ecol < t.scol then
+              chunk[#chunk + 1] = { string.rep(" ", t.scol - prev_ecol), t.hl }
+            end
+            chunk[#chunk + 1] = { t.text, t.hl }
+            prev_ecol = t.ecol
+          else
+            chunk[#chunk + 1] = t -- backward compatibility
+          end
+        end
+        vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, row, 0, {
+          virt_text = chunk,
+          virt_text_pos = position == "left" and "eol" or vtp
+        })
+        row = row + 1
+      end
     else
-      -- pre-0.11.0: eol_right_align was only introduced in 0.11.0;
-      -- without it we need to compute and add the padding ourselves
-      local len, padded = 0, { {} }
-      for _, tok in ipairs(line) do
-        len = len + vim.fn.strwidth(tok[1]) +
-            vim.fn.count(tok[1], "\t") * math.max(0, M.options.tabstop - 1)
-        table.insert(padded, tok)
+      ---@cast body NotificationTokens
+      for _, hdr in ipairs(body.hdr) do
+        chunk[#chunk + 1] = hdr
       end
-      local pad_width = math.max(0, width - len)
-      if pad_width > 0 then
-        padded[1] = { string.rep(" ", pad_width), {} }
-      else
-        padded = line
-      end
-      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, iline - 1, 0, {
-        virt_text = padded,
-        virt_text_pos = "eol",
+      vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, row, 0, {
+        virt_text = chunk,
+        virt_text_pos = message.opts.position == "left" and "eol" or vtp
       })
+      row = row + 1
     end
   end
-  M.show(vim.api.nvim_buf_line_count(buffer_id), width)
+  M.show(vim.api.nvim_buf_line_count(buffer_id), message.width)
 end
 
 --- Close the Fidget window and associated buffers.

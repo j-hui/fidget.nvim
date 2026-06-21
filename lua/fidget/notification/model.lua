@@ -15,9 +15,58 @@ local M      = {}
 local logger = require("fidget.logger")
 local poll   = require("fidget.poll")
 
+--- Cache used during rendering of notifications.
+---
+---@alias CItem NotificationLine[]|nil
+---                                    width          count
+---@alias CacheItem { [1]: CItem, [2]: integer, [3]: integer }
+---                                                   icon
+---@alias CacheHdr  { [1]: CItem, [2]: integer, [3]: string }
+---@alias CacheSep  { [1]: CItem, [2]: integer }
+---
+---@class Cache
+---@field group_header table<Display, CacheHdr>
+---@field group_sep    CacheSep
+---@field render_item  table<Item|any, CacheItem>
+---@field render_width integer
+---@field window       integer
+local cache  = {}
+M.cache      = cache
+
+--- Deletes objects from the cache.
+---
+---@param item Item|Group
+---@param last boolean?
+local function del_cached(item, last)
+  ---@type Group
+  if item.config and item.key and item.key ~= "default" then
+    -- Free up non-default headers (including lsp)
+    cache.group_header[item.config.name] = nil
+  end
+  if last then
+    if cache.render_item and next(cache.render_item) ~= nil then
+      -- At the last notification, free up remaining cached items
+      for k, _ in pairs(cache.render_item) do
+        cache.render_item[k] = nil
+      end
+    end
+    return
+  end
+  ---@type Item
+  local key = item.content_key or item
+  if cache.render_item
+      and cache.render_item[key]
+      and cache.render_item[key][3] == 1
+  then
+    -- We do not use this item anymore (ttl reached)
+    cache.render_item[key] = nil
+  end
+end
+
 --- The abstract state of the notifications subsystem.
 ---@class State
 ---@field groups          Group[]         active notification groups
+---@field render          boolean         whether the notification should be rendered
 ---@field view_suppressed boolean         whether the notification window is suppressed
 ---@field removed         HistoryItem[]   ring buffer of removed notifications, kept around for history
 ---@field removed_cap     number          capacity of removed ring buffer
@@ -32,7 +81,7 @@ local poll   = require("fidget.poll")
 ---@class HistoryExtra
 ---@field removed   boolean
 ---@field group_key Key
----@field group_name string|nil
+---@field group_name string|false|nil
 ---@field group_icon string|nil
 
 --- Get the notification group indexed by group_key; create one if none exists.
@@ -49,8 +98,8 @@ local function get_group(configs, groups, group_key)
     end
   end
 
-  -- Group not found; create it and insert it into list of active groups.
-
+  --- Group not found; create it and insert it into list of active groups.
+  ---
   ---@type Group
   local group = {
     key = group_key,
@@ -68,7 +117,17 @@ end
 ---@param group Group
 ---@param item  Item
 local function add_removed(state, now, group, item)
+  del_cached(item)
+  state:update()
   if not item.skip_history then
+    -- Skip duplicates unless we have no items deduplication
+    if group.config.update_hook and #state.removed > 0 then
+      local n = state.removed_first > 1 and state.removed_first - 1 or 1
+      if state.removed[n].content_key and state.removed[n].content_key == item.content_key then
+        return
+      end
+    end
+
     local group_name = group.config.name
     if type(group_name) == "function" then
       group_name = group_name(now, group.items)
@@ -80,7 +139,7 @@ local function add_removed(state, now, group, item)
     end
 
     ---@cast item HistoryItem
-    item.last_updated = poll.unix_time(now)
+    item.last_updated = poll.unix_time()
     item.removed = true
     item.group_key = group.key
     item.group_name = group_name
@@ -99,7 +158,7 @@ end
 local function item_to_history(item, extra)
   ---@type HistoryItem
   item = vim.tbl_extend("force", item, extra)
-  item.last_updated = poll.unix_time(item.last_updated)
+  item.last_updated = poll.unix_time()
   return item
 end
 
@@ -190,9 +249,9 @@ end
 ---@return            number expiry_time
 local function compute_expiry(now, ttl, default_ttl)
   if not ttl or ttl == 0 then
-    return now + (default_ttl or 3)
+    return now + ((default_ttl or 3) * 10 ^ 9)
   else
-    return now + ttl
+    return now + (ttl * 10 ^ 9)
   end
 end
 
@@ -237,6 +296,8 @@ function M.update(now, configs, state, msg, level, opts)
       group_key = group_key,
       message = msg,
       annote = opts.annote or annote_from_level(group.config, level),
+      position = opts.position or nil,
+      lang = opts.lang or nil,
       style = style_from_level(group.config, level) or group.config.annote_style or "Question",
       hidden = opts.hidden or false,
       expires_at = compute_expiry(now, opts.ttl, group.config.ttl),
@@ -254,6 +315,8 @@ function M.update(now, configs, state, msg, level, opts)
     item.message = msg or item.message
     item.style = style_from_level(group.config, level) or item.style
     item.annote = opts.annote or annote_from_level(group.config, level) or item.annote
+    item.position = opts.position or item.position
+    item.lang = opts.lang or item.lang
     item.hidden = opts.hidden or item.hidden
     item.expires_at = opts.ttl and compute_expiry(now, opts.ttl, group.config.ttl) or item.expires_at
     item.skip_history = opts.skip_history or item.skip_history
@@ -271,6 +334,7 @@ function M.update(now, configs, state, msg, level, opts)
       return (a.config.priority or 50) - (b.config.priority or 50)
     end)
   end
+  state:update()
 end
 
 --- Remove an item from a particular group.
@@ -290,6 +354,7 @@ function M.remove(state, now, group_key, item_key)
           table.remove(group.items, i)
           add_removed(state, now, group, item)
           if #group.items == 0 then
+            del_cached(group, true)
             table.remove(state.groups, g)
           end
           return true
@@ -337,23 +402,24 @@ end
 ---@param now number timestamp of current frame.
 ---@param state  State
 function M.tick(now, state)
-  local new_groups = {}
-  for _, group in ipairs(state.groups) do
-    local new_items = {}
-    for _, item in ipairs(group.items) do
-      if item.expires_at > now then
-        table.insert(new_items, item)
-      else
-        add_removed(state, now, group, item)
+  for i = #state.groups, 1, -1 do
+    local group = state.groups[i]
+    -- Dereference unused items on the last notification
+    if #group.items == 0 then
+      del_cached(group, true)
+      table.remove(state.groups, i)
+      state:update()
+    else
+      for j = #group.items, 1, -1 do
+        local item = group.items[j]
+
+        if item.expires_at <= now then
+          add_removed(state, now, group, item)
+          table.remove(group.items, j)
+        end
       end
     end
-    if #group.items > 0 then
-      group.items = new_items
-      table.insert(new_groups, group)
-    else
-    end
   end
-  state.groups = new_groups
 end
 
 --- Generate a notifications history according to the provided filter.
