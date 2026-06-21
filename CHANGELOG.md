@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/j-hui/fidget.nvim/compare/v2.0.0...v2.1.0) (2026-06-21)
+
+
+### Features
+
+* add option to logging entirely ([c4bad06](https://github.com/j-hui/fidget.nvim/commit/c4bad0640d931e52bb3f5ab946d15a3ffaba2360))
+
 ## [2.0.0](https://github.com/j-hui/fidget.nvim/compare/v1.6.1...v2.0.0) (2026-06-21)
 
 
