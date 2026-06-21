@@ -156,6 +156,16 @@ local state = {
   namespace_id = nil,
 }
 
+--- Reload namespace highlights on colorscheme change
+---
+vim.api.nvim_create_autocmd('ColorScheme', {
+  callback = function()
+    if state.window_id then
+      M.set_namespace_hl()
+    end
+  end
+})
+
 --- Suppress errors that may occur while render windows.
 ---
 --- The E523 error (Not allowed here) happens when 'secure' operations
@@ -518,50 +528,53 @@ function M.get_window(row, col, anchor, relative, width, height)
   return state.window_id
 end
 
---- Get the namespace ID used to apply highlights in the notification buffer.
+--- Setup highlight groups used to apply highlights inside window
 ---
---- Creates it if it doesn't already exist.
+function M.set_namespace_hl()
+  local base_normal_hl = vim.api.nvim_get_hl(0, { name = "Normal" })
+
+  local normal_hl = base_normal_hl
+  if M.options.normal_hl ~= "" and M.options.normal_hl ~= "Normal" then
+    -- Options say that we should use something else as Normal
+    normal_hl = vim.api.nvim_get_hl(0, { name = M.options.normal_hl })
+
+    -- A non-Normal highlight might lack a background, so we explicitly copy
+    -- it over from the actual normal highlight group
+    normal_hl.bg = normal_hl.bg or base_normal_hl.bg
+  end
+
+  -- For some reason, these are annotated as distinct types even though the
+  -- documentation for nvim_get_hl() indicates they share the same schema.
+  ---@diagnostic disable-next-line: cast-type-mismatch
+  ---@cast normal_hl vim.api.keyset.highlight
+
+  vim.api.nvim_set_hl(state.namespace_id, "Normal", normal_hl)
+  vim.api.nvim_set_hl(state.namespace_id, "NormalNC", normal_hl)
+
+  normal_hl.blend = 0
+  vim.api.nvim_set_hl(state.namespace_id, M.no_blend_hl, normal_hl)
+
+  local border_hl = vim.api.nvim_get_hl(0, {
+    name = M.options.border_hl == "" and "FloatBorder" or M.options.border_hl,
+  })
+
+  ---@diagnostic disable-next-line: cast-type-mismatch
+  ---@cast border_hl vim.api.keyset.highlight
+
+  -- Explicitly ignore FloatBorder background and use background from whatever
+  -- was determined to be "normal", which is *probably* the right thing to do.
+  border_hl.bg = normal_hl.bg
+
+  vim.api.nvim_set_hl(state.namespace_id, "FloatBorder", border_hl)
+end
+
+--- Get a namespace ID or creates an existing one if it doesn't exist
 ---
 ---@return number namespace_id
 function M.get_namespace()
   if state.namespace_id == nil then
     state.namespace_id = vim.api.nvim_create_namespace("fidget-window")
-
-    local base_normal_hl = vim.api.nvim_get_hl(0, { name = "Normal" })
-
-    local normal_hl = base_normal_hl
-    if M.options.normal_hl ~= "" and M.options.normal_hl ~= "Normal" then
-      -- Options say that we should use something else as Normal
-      normal_hl = vim.api.nvim_get_hl(0, { name = M.options.normal_hl })
-
-      -- A non-Normal highlight might lack a background, so we explicitly copy
-      -- it over from the actual normal highlight group
-      normal_hl.bg = normal_hl.bg or base_normal_hl.bg
-    end
-
-    -- For some reason, these are annotated as distinct types even though the
-    -- documentation for nvim_get_hl() indicates they share the same schema.
-    ---@diagnostic disable-next-line: cast-type-mismatch
-    ---@cast normal_hl vim.api.keyset.highlight
-
-    vim.api.nvim_set_hl(state.namespace_id, "Normal", normal_hl)
-    vim.api.nvim_set_hl(state.namespace_id, "NormalNC", normal_hl)
-
-    normal_hl.blend = 0
-    vim.api.nvim_set_hl(state.namespace_id, M.no_blend_hl, normal_hl)
-
-    local border_hl = vim.api.nvim_get_hl(0, {
-      name = M.options.border_hl == "" and "FloatBorder" or M.options.border_hl,
-    })
-
-    ---@diagnostic disable-next-line: cast-type-mismatch
-    ---@cast border_hl vim.api.keyset.highlight
-
-    -- Explicitly ignore FloatBorder background and use background from whatever
-    -- was determined to be "normal", which is *probably* the right thing to do.
-    border_hl.bg = normal_hl.bg
-
-    vim.api.nvim_set_hl(state.namespace_id, "FloatBorder", border_hl)
+    M.set_namespace_hl()
   end
   return state.namespace_id
 end
