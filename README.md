@@ -233,9 +233,10 @@ Available options are shown below:
       zindex = 45,                -- Stacking priority of the notification window
       max_width = 0,              -- Maximum width of the notification window
       max_height = 0,             -- Maximum height of the notification window
-      x_padding = 1,              -- Padding from right edge of window boundary
-      y_padding = 0,              -- Padding from bottom edge of window boundary
-      align = "bottom",           -- How to align the notification window
+      x_padding = 1,              -- Padding from edge of window boundary
+      y_padding = 0,              -- Padding from top/bottom edge of window boundary
+      align = "bottom",           -- How to align the notification window vertically
+      h_align = "right",          -- How to align the notification window horizontally
       relative = "editor",        -- What the notification window position is relative to
       tabstop = 8,                -- Width of each tab character in the notification window
       avoid = {}                  -- Filetypes the notification window should avoid

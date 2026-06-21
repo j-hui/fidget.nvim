@@ -98,10 +98,15 @@ M.options                       = {
   ---@type integer
   y_padding = 0,
 
-  --- How to align the notification window
+  --- How to align the notification window vertically
   ---
   ---@type "top"|"bottom"|"avoid_cursor"
   align = "bottom",
+
+  --- How to align the notification window horizontally
+  ---
+  ---@type "right"|"left"
+  h_align = "right",
 
   --- What the notification window position is relative to
   ---
@@ -287,6 +292,11 @@ local function should_align_bottom(cursor_row, max_rows)
   end
 end
 
+---@return boolean whether to align left
+local function should_align_left()
+  return M.options.h_align == "left"
+end
+
 --- Look for "best" window to align notification window with.
 ---
 --- If none of the windows need to be avoided, then we should end up either
@@ -294,9 +304,11 @@ end
 ---
 ---@param row_max integer
 ---@param align_bottom boolean
+---@param align_left boolean
 ---@return integer row
 ---@return integer col
-local function search_for_editor_anchor(row_max, align_bottom)
+local function search_for_editor_anchor(row_max, align_bottom, align_left)
+  -- Use -math.huge as sentinel for unset col regardless of alignment
   local row, col
   if align_bottom then
     row, col = -math.huge, -math.huge
@@ -304,43 +316,57 @@ local function search_for_editor_anchor(row_max, align_bottom)
     row, col = math.huge, -math.huge
   end
 
-  if #M.options.avoid == 0 then
-    -- If M.options.avoid is empty, then we don't need to search through all
-    -- windows, and can just directly (and more efficiently) set row/col to
-    -- the editor's SE (align_bottom) or NE (not align_bottom) corner, later.
-  else -- #M.options.avoid > 0
+  if #M.options.avoid > 0 then
     -- Search for row/col of "best" window to align notification window with,
     -- while avoiding windows whose filetype is blacklisted by M.options.avoid.
-    -- If none of the windows need to be avoided, we should still end up with
-    -- the editor's SE (align_bottom) or NE (not align_bottom) corner.
     local wins = vim.api.nvim_tabpage_list_wins(0)
     for _, win in ipairs(wins) do
       if not should_avoid(win) then
         local pos = vim.api.nvim_win_get_position(win)
         if align_bottom then
-          -- Get SE corner of window
-          local h, w = vim.api.nvim_win_get_height(win), vim.api.nvim_win_get_width(win)
-          local r, c = pos[1] + h, pos[2] + w
-          if r + c > row + col then
-            row, col = r, c
+          if align_left then
+            -- Get SW corner of window
+            local h = vim.api.nvim_win_get_height(win)
+            local r, c = pos[1] + h, pos[2]
+            if r - c > row - col then
+              row, col = r, c
+            end
+          else
+            -- Get SE corner of window
+            local h, w = vim.api.nvim_win_get_height(win), vim.api.nvim_win_get_width(win)
+            local r, c = pos[1] + h, pos[2] + w
+            if r + c > row + col then
+              row, col = r, c
+            end
           end
         else -- not align_bottom
-          -- Get NE corner of window
-          local w = vim.api.nvim_win_get_width(win)
-          local r, c = pos[1], pos[2] + w
-          if -r + c > -row + col then
-            row, col = r, c
+          if align_left then
+            -- Get NW corner of window
+            local r, c = pos[1], pos[2]
+            if -r - c > -row - col then
+              row, col = r, c
+            end
+          else
+            -- Get NE corner of window
+            local w = vim.api.nvim_win_get_width(win)
+            local r, c = pos[1], pos[2] + w
+            if -r + c > -row + col then
+              row, col = r, c
+            end
           end
         end
       end
     end
   end
 
-  -- If row/col are never set (because there is nothing to avoid, or because we
-  -- avoided everything), col will be negative. Set row/col to SE or NE corner
-  -- of the editor so that we have _some_ valid position.
+  -- If col is still the sentinel (-math.huge), no valid window was found.
+  -- Fall back to the editor corner.
   if col < 0 then
-    col = get_editor_width()
+    if align_left then
+      col = 0
+    else
+      col = get_editor_width()
+    end
     row = align_bottom and row_max or get_tabline_height()
   end
   return row, col
@@ -350,31 +376,36 @@ end
 ---
 ---@return number           row
 ---@return number           col
----@return ("NE"|"SE")      anchor
+---@return ("NE"|"SE"|"NW"|"SW")      anchor
 ---@return ("editor"|"win") relative
 function M.get_window_position()
   local row_max, align_bottom, col, row, relative
   local cursor_row = vim.api.nvim_win_get_cursor(0)[1] - vim.fn.line("w0")
+  local align_left = should_align_left()
 
   if M.options.relative == "win" and not should_avoid(0) then
     relative = "win"
     row_max = get_effective_win_height(0)
     align_bottom = should_align_bottom(cursor_row, row_max)
     row = align_bottom and row_max or 0
-    col = vim.api.nvim_win_get_width(0)
+    col = align_left and 0 or vim.api.nvim_win_get_width(0)
   else -- M.options.relative == "editor", or we need to avoid current window
     relative = "editor"
     row_max = get_editor_height()
     local window_pos = vim.api.nvim_win_get_position(0)
     align_bottom = should_align_bottom(window_pos[1] + cursor_row, row_max)
-    row, col = search_for_editor_anchor(row_max, align_bottom)
+    row, col = search_for_editor_anchor(row_max, align_bottom, align_left)
   end
 
-  col = math.max(0, col - M.options.x_padding)
+  if align_left then
+    col = col + M.options.x_padding
+  else
+    col = math.max(0, col - M.options.x_padding)
+  end
   row = align_bottom
       and math.max(0, row - M.options.y_padding)
       or math.min(row_max, row + M.options.y_padding)
-  return row, col, (align_bottom and "S" or "N") .. "E", relative
+  return row, col, (align_bottom and "S" or "N") .. (align_left and "W" or "E"), relative
 end
 
 --- Set local options on a window.
@@ -579,6 +610,7 @@ end
 function M.set_lines(lines, width)
   local buffer_id = M.get_buffer()
   local namespace_id = M.get_namespace()
+  local align_left = should_align_left()
 
   -- Clear previous highlights
   vim.api.nvim_buf_clear_namespace(buffer_id, namespace_id, 0, -1)
@@ -591,22 +623,27 @@ function M.set_lines(lines, width)
     if vim.fn.has("nvim-0.11.0") == 1 then
       vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, iline - 1, 0, {
         virt_text = line,
-        virt_text_pos = "eol_right_align",
+        virt_text_pos = align_left and "eol" or "eol_right_align",
       })
     else
-      -- pre-0.11.0: eol_right_align was only introduced in 0.11.0;
-      -- without it we need to compute and add the padding ourselves
-      local len, padded = 0, { {} }
+      local len = 0
       for _, tok in ipairs(line) do
         len = len + vim.fn.strwidth(tok[1]) +
             vim.fn.count(tok[1], "\t") * math.max(0, M.options.tabstop - 1)
-        table.insert(padded, tok)
       end
-      local pad_width = math.max(0, width - len)
-      if pad_width > 0 then
-        padded[1] = { string.rep(" ", pad_width), {} }
-      else
+      local padded
+      if align_left then
         padded = line
+      else
+        local pad_width = math.max(0, width - len)
+        if pad_width > 0 then
+          padded = { { string.rep(" ", pad_width), {} } }
+          for _, tok in ipairs(line) do
+            table.insert(padded, tok)
+          end
+        else
+          padded = line
+        end
       end
       vim.api.nvim_buf_set_extmark(buffer_id, namespace_id, iline - 1, 0, {
         virt_text = padded,

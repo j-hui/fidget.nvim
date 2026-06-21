@@ -343,7 +343,11 @@ function M.render_item(item, config, count)
   local function insert(line)
     if ann_tok then
       -- Need to emite annote token in this line
-      table.insert(lines, Line(line, sep_tok, ann_tok))
+      if window.options.h_align == "left" then
+        table.insert(lines, Line(ann_tok, sep_tok, line))
+      else
+        table.insert(lines, Line(line, sep_tok, ann_tok))
+      end
       item_width = math.max(item_width, line_width(line[1], sep_tok[1], ann_tok[1]))
 
       if M.options.align == "annote" then
