@@ -474,7 +474,7 @@ SC.subcommands = {
       include_removed = {
         name = "true|false",
         type = SC.Boolean,
-        desc = "whether to clear items that have have been removed (default: `true`)"
+        desc = "whether to clear items that have been removed (default: `true`)"
       },
       include_active = {
         name = "true|false",
@@ -497,7 +497,7 @@ SC.subcommands = {
       include_removed = {
         name = "true|false",
         type = SC.Boolean,
-        desc = "whether to clear items that have have been removed (default: true)"
+        desc = "whether to clear items that have been removed (default: true)"
       },
       include_active = {
         name = "true|false",

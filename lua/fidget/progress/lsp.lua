@@ -47,7 +47,7 @@ M.options                  = {
   --- not recommended.
   ---
   --- Since it works by overriding Neovim's existing `$/progress` handler, you
-  --- should not use this function if you'd like Neovim to use your overriden
+  --- should not use this function if you'd like Neovim to use your overridden
   --- `$/progress` handler! It will conflict with the handler that Fidget tries
   --- to install for logging purposes.
   log_handler = false,

@@ -173,7 +173,7 @@ vim.api.nvim_create_autocmd('ColorScheme', {
 --- Fidget tries to close the window while a command-line window is focused.
 --- See #136.
 ---
---- This utility provides a workaround to simply supress the error.
+--- This utility provides a workaround to simply suppress the error.
 --- All other errors will be re-thrown.
 ---
 --- (Thanks @wookayin and @0xAdk!)
