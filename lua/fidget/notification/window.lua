@@ -471,7 +471,20 @@ function M.get_window(row, col, anchor, relative, width, height)
     height = math.min(height, M.options.max_height)
   end
 
-  if state.window_id == nil or not vim.api.nvim_win_is_valid(state.window_id) then
+  local valid = state.window_id and vim.api.nvim_win_is_valid(state.window_id)
+
+  -- Window exists but is in a different tabpage
+  if valid
+      and vim.api.nvim_win_get_tabpage(state.window_id) ~= vim.api.nvim_get_current_tabpage()
+      and not pcall(vim.api.nvim_win_set_config, state.window_id, { win = vim.api.nvim_get_current_win() })
+  then
+    -- manually close and so recreate before https://github.com/neovim/neovim/pull/35816
+    vim.api.nvim_win_close(state.window_id, true)
+    valid = nil
+    state.window_id = nil
+  end
+
+  if not valid then
     -- Create window to display notifications buffer, but don't enter (2nd param)
     state.window_id = vim.api.nvim_open_win(M.get_buffer(), false, {
       relative = relative,
