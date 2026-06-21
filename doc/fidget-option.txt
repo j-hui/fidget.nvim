@@ -477,7 +477,7 @@ progress.lsp.log_handler              *fidget.option.progress.lsp.log_handler*
     not recommended.
 
     Since it works by overriding Neovim's existing `$/progress` handler, you
-    should not use this function if you'd like Neovim to use your overriden
+    should not use this function if you'd like Neovim to use your overridden
     `$/progress` handler! It will conflict with the handler that Fidget tries
     to install for logging purposes.
     Default: ~
@@ -881,13 +881,24 @@ notification.window.y_padding    *fidget.option.notification.window.y_padding*
 
 notification.window.align            *fidget.option.notification.window.align*
 
-    How to align the notification window
+    How to align the notification window vertically
 
     Type: ~
         `"top"|"bottom"|"avoid_cursor"`
 
     Default: ~
         `"bottom"`
+
+
+notification.window.h_align        *fidget.option.notification.window.h_align*
+
+    How to align the notification window horizontally
+
+    Type: ~
+        `"right"|"left"`
+
+    Default: ~
+        `"right"`
 
 
 notification.window.relative      *fidget.option.notification.window.relative*
