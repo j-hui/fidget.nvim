@@ -11,6 +11,8 @@ local window = require("fidget.notification.window")
 --- A tuple consisting of some text and a stack of highlights.
 ---@class NotificationToken : {[1]: string, [2]: string[]}
 
+local cache = {}
+
 ---@options notification.view [[
 ---@protected
 --- Notifications rendering options
@@ -112,6 +114,8 @@ M.options = {
 ---@options ]]
 
 require("fidget.options").declare(M, "notification.view", M.options, function()
+  cache = {} -- clear cache
+
   vim.api.nvim_create_autocmd({ "UIEnter", "UILeave" }, {
     group = vim.api.nvim_create_augroup("fidget_multigrid_ui", { clear = true }),
     callback = function() M.is_multigrid_ui(true) end,
@@ -210,8 +214,12 @@ function M.render_group_separator()
   if not line then
     return nil, 0
   end
-  return { Line(Token(line, M.options.group_separator_hl)) }, line_width(line)
-  -- TODO: cache the return value, this never changes
+
+  if cache.group_sep == nil then
+    cache.group_sep = { Line(Token(line, M.options.group_separator_hl)) }
+    cache.width = line_width(line)
+  end
+  return cache.group_sep, cache.width
 end
 
 --- Render the header of a group, containing group name and icon.
@@ -241,7 +249,10 @@ function M.render_group_header(now, group)
   if name_tok and icon_tok then
     ---@cast group_name string
     ---@cast group_icon string
-    local sep_tok = Token(M.options.icon_separator) -- TODO: cache this
+    if cache.icon_sep == nil then
+      cache.icon_sep = Token(M.options.icon_separator)
+    end
+    local sep_tok = cache.icon_sep
     local width = line_width(group_name, group_icon, M.options.icon_separator)
     if group.config.icon_on_left then
       return { Line(icon_tok, sep_tok, name_tok) }, width
