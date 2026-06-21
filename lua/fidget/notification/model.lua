@@ -51,11 +51,23 @@ local function get_group(configs, groups, group_key)
 
   -- Group not found; create it and insert it into list of active groups.
 
+  ---@type Config
+  local config
+  if configs[group_key] then
+    config = configs[group_key]
+  else
+    config = vim.deepcopy(configs.default)
+    if type(group_key) == "string" then
+      -- If freshly creating group and group_key is a name, use it as the name
+      config.name = group_key
+    end
+  end
+
   ---@type Group
   local group = {
     key = group_key,
     items = {},
-    config = configs[group_key] or configs.default
+    config = config
   }
   table.insert(groups, group)
   return group, #groups

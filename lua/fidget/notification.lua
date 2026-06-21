@@ -392,16 +392,25 @@ notification.poller = poll.Poller {
 
 --- Dynamically add, overwrite, or delete a notification configuration.
 ---
---- Inherits missing keys from the default config.
+--- If config.name is not set and key is a string, uses the key as the name.
+--- Inherits other missing keys from the default config.
 ---
 ---@param key       Key         Which config to set.
----@param config    Config|nil  What to set as config.
+---@param config    Config|nil  What to set as config; nil to delete.
 ---@param overwrite boolean     Whether to overwrite existing config, if any.
 ---
 ---@see fidget.notification.Config
 function notification.set_config(key, config, overwrite)
+  if config == nil then
+    notification.options.configs[key] = nil
+    return
+  end
+
   if overwrite or not notification.options.configs[key] then
     notification.options.configs[key] = vim.tbl_extend("keep", config, notification.options.configs.default)
+    if not config.name and type(key) == "string" then
+      notification.options.configs[key].name = key
+    end
   end
 end
 
