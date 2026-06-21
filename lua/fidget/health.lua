@@ -92,7 +92,7 @@ local function check_notification()
     info("vim.notify() is not set to fidget.notify()")
   end
 
-  if notification.view.check_multigrid_ui() then
+  if notification.view.is_multigrid_ui() then
     info("Rendering notifications for multigrid UI (e.g., neovide)")
   else
     info("Rendering notifications for regular UI (e.g., nvim TUI)")

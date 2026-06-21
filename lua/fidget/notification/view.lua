@@ -111,20 +111,28 @@ M.options = {
 }
 ---@options ]]
 
-require("fidget.options").declare(M, "notification.view", M.options)
+require("fidget.options").declare(M, "notification.view", M.options, function()
+  vim.api.nvim_create_autocmd({ "UIEnter", "UILeave" }, {
+    group = vim.api.nvim_create_augroup("fidget_multigrid_ui", { clear = true }),
+    callback = function() M.is_multigrid_ui(true) end,
+  })
+end)
 
---- True when using GUI clients like neovide. Set before each render() phase.
----@type boolean
-local is_multigrid_ui = false
+--- True when using GUI clients like neovide. Updated on UIEnter/UILeave.
+---@type boolean | nil
+local saw_multigrid_ui = nil
 
----@return boolean is_multigrid_ui
-function M.check_multigrid_ui()
-  for _, ui in ipairs(vim.api.nvim_list_uis()) do
-    if ui.ext_multigrid then
-      return true
+function M.is_multigrid_ui(force)
+  if saw_multigrid_ui == nil or force then
+    saw_multigrid_ui = false
+    for _, ui in ipairs(vim.api.nvim_list_uis()) do
+      if ui.ext_multigrid then
+        saw_multigrid_ui = true
+        break
+      end
     end
   end
-  return false
+  return saw_multigrid_ui
 end
 
 ---  Whether nr is a codepoint representing whitespace.
@@ -176,7 +184,7 @@ end
 ---@param ... string  highlights to apply to text
 ---@return NotificationToken
 local function Token(text, ...)
-  if is_multigrid_ui then
+  if M.is_multigrid_ui() then
     return { text, { ... } }
   end
   return { text, { window.no_blend_hl, ... } }
@@ -415,8 +423,6 @@ end
 ---@return NotificationLine[] lines
 ---@return integer width
 function M.render(now, groups)
-  is_multigrid_ui = M.check_multigrid_ui()
-
   ---@type NotificationLine[][]
   local chunks = {}
   local max_width = 0
