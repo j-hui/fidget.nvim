@@ -275,12 +275,13 @@ notification.reset()                                 *fidget.notification.reset*
 notification.set_config({key}, {config}, {overwrite})
      Dynamically add, overwrite, or delete a notification configuration.
 
-     Inherits missing keys from the default config.
+     If config.name is not set and key is a string, uses the key as the name.
+     Inherits other missing keys from the default config.
 
 
     Parameters: ~
         {key}        (Key)         Which config to set.
-        {config}     (Config|nil)  What to set as config.
+        {config}     (Config|nil)  What to set as config; nil to delete.
         {overwrite}  (boolean)     Whether to overwrite existing config, if any.
 
 
