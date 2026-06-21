@@ -10,7 +10,6 @@
 --- ported from the legacy version still supports window-relative floats.
 local M                         = {}
 local logger                    = require("fidget.logger")
-local need_to_check_integration = false
 
 ---@options notification.window [[
 ---@protected
@@ -127,9 +126,7 @@ M.options                       = {
 }
 ---@options ]]
 
-require("fidget.options").declare(M, "notification.window", M.options, function()
-  need_to_check_integration = true
-end)
+require("fidget.options").declare(M, "notification.window", M.options)
 
 --- The name of the highlight group that Fidget uses to prevent winblend from
 --- "bleeding" the main editor window into the notification window.
@@ -219,20 +216,6 @@ local function should_avoid(winnr)
   local bufnr = vim.api.nvim_win_get_buf(winnr)
   local ft = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
   return ft == "fidget" or vim.tbl_contains(M.options.avoid, ft)
-end
-
-local function check_integration()
-  local xcodebuild = require("fidget.integration.xcodebuild-nvim")
-  if not vim.tbl_contains(M.options.avoid, xcodebuild.filetype)
-      and xcodebuild.integration_needed() then
-    table.insert(M.options.avoid, xcodebuild.filetype)
-  end
-
-  local nvim_tree = require("fidget.integration.nvim-tree")
-  if not vim.tbl_contains(M.options.avoid, nvim_tree.filetype)
-      and nvim_tree.integration_needed() then
-    table.insert(M.options.avoid, nvim_tree.filetype)
-  end
 end
 
 ---@return integer height of the editor area, excludes statusline and tabline
@@ -370,11 +353,6 @@ end
 ---@return ("NE"|"SE")      anchor
 ---@return ("editor"|"win") relative
 function M.get_window_position()
-  if need_to_check_integration then
-    check_integration()
-    need_to_check_integration = false
-  end
-
   local row_max, align_bottom, col, row, relative
   local cursor_row = vim.api.nvim_win_get_cursor(0)[1] - vim.fn.line("w0")
 

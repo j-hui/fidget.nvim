@@ -34,7 +34,6 @@ fidget.options = {
   progress = fidget.progress,
   notification = fidget.notification,
   logger = fidget.logger,
-  integration = require("fidget.integration")
 }
 ---@options ]]
 

@@ -40,26 +40,6 @@ local function check_options()
   end
 end
 
-local function check_integrations()
-  vim.health.start("fidget.integration")
-
-  local xcodebuild = require("fidget.integration.xcodebuild-nvim")
-  if not xcodebuild.explicitly_configured() and xcodebuild.plugin_present() then
-    vim.health.warn("xcodebuild.nvim integration is implicitly enabled", {
-      "This automatic integration will be removed in a future release.",
-      "Add 'TestExplorer' to the 'notification.window.avoid' list to ensure Fidget continues to avoid xcodebuild.nvim's explorer window.",
-    })
-  end
-
-  local nvim_tree = require("fidget.integration.nvim-tree")
-  if not nvim_tree.explicitly_configured() and nvim_tree.plugin_present() then
-    vim.health.warn("nvim-tree.lua integration is implicitly enabled", {
-      "This automatic integration will be removed in a future release.",
-      "Add 'NvimTree' to the 'notification.window.avoid' list to ensure Fidget continues to avoid nvim-tree.lua's file explorer.",
-    })
-  end
-end
-
 local function check_progress()
   vim.health.start("fidget.progress")
   local progress = require("fidget.progress")
@@ -121,7 +101,6 @@ end
 
 function M.check()
   check_options()
-  check_integrations()
   check_progress()
   check_notification()
 end
