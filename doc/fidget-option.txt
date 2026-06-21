@@ -944,6 +944,19 @@ notification.window.avoid            *fidget.option.notification.window.avoid*
 Logging options                                         *fidget.option.logger*
 
 
+logger.enable                                    *fidget.option.logger.enable*
+
+    Whether to enable file logging
+
+    Set to `false` to disable all file I/O from the logger.
+
+    Type: ~
+        `boolean`
+
+    Default: ~
+        `true`
+
+
 logger.level                                      *fidget.option.logger.level*
 
     Minimum logging level
