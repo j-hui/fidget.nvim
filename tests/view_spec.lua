@@ -4,7 +4,7 @@ local is_nil = assert.is_nil
 
 describe("notification view cache", function()
   before_each(function()
-    require("fidget").setup({})
+    require("fidget").setup({ logger = { enable = false } })
   end)
 
   it("is_multigrid_ui returns a boolean", function()

@@ -7,6 +7,13 @@ local PLUGIN_PATH_PATTERN = "(/lua/fidget.+)"
 ---@protected
 --- Logging options
 M.options = {
+  --- Whether to enable file logging
+  ---
+  --- Set to `false` to disable all file I/O from the logger.
+  ---
+  ---@type boolean
+  enable = true,
+
   --- Minimum logging level
   ---
   --- Set to `vim.log.levels.OFF` to disable logging, or `vim.log.levels.TRACE`
@@ -53,6 +60,10 @@ M.options = {
 ---@options ]]
 
 require("fidget.options").declare(M, "logger", M.options, function()
+  if not M.options.enable then
+    return
+  end
+
   -- Create directory where log will reside
   vim.fn.mkdir(vim.fn.fnamemodify(M.options.path, ":p:h"), "p")
 
@@ -170,6 +181,10 @@ end
 ---
 ---@return file*|nil
 function M.open_log()
+  if not M.options.enable then
+    return
+  end
+
   local fp = io.open(M.options.path, "a")
   if fp == nil then
     return
