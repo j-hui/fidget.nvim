@@ -552,6 +552,9 @@ function M.set_namespace_hl()
     normal_hl.bg = normal_hl.bg or base_normal_hl.bg
   end
 
+  if state.namespace_id == nil then
+    state.namespace_id = vim.api.nvim_create_namespace("fidget-window")
+  end
   -- For some reason, these are annotated as distinct types even though the
   -- documentation for nvim_get_hl() indicates they share the same schema.
   ---@diagnostic disable-next-line: cast-type-mismatch
@@ -582,7 +585,6 @@ end
 ---@return number namespace_id
 function M.get_namespace()
   if state.namespace_id == nil then
-    state.namespace_id = vim.api.nvim_create_namespace("fidget-window")
     M.set_namespace_hl()
   end
   return state.namespace_id
